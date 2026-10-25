@@ -12,20 +12,20 @@ services:
     networks:
       - pg-network
 
-#  db:
-#    build:
-#      context: .
-#      dockerfile: docker/db/Dockerfile
-#    ports:
-#      - "${POSTGRES_PORT:-5433}:5432"
-#    environment:
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_USER: ${POSTGRES_USER}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#    networks:
-#      - pg-network
-#    volumes:
-#      - ./docker/db:/docker-entrypoint-initdb.d
+  db:
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - pg-network
+    volumes:
+      - ./docker/db:/docker-entrypoint-initdb.d
 
   php:
     build:
