@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?></title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/themeInit.js"></script>
+    <script src="/js/theme.js" defer></script>
 </head>
 <body>
     <header class="nav">
