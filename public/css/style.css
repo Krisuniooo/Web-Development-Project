@@ -1,0 +1,73 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Page variables */
+  --color-text: #E7E9F5;
+  --color-text-secondary: #C3C7DE;
+  --color-muted: #9097B8;
+  --color-disabled: #5D6280;
+  --color-surface: #151930;
+  --color-surface-raised: #1C2140;
+  --color-background: #0D0F1C;
+  --color-border: #2A3056;
+  --color-accent: #8F9CFF;
+  --color-accent-strong: #B4BDFF;
+  --color-success: #45D6A4;
+  --color-danger: #FF5D78;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --radius: 1rem;
+
+  /* Available platforms */
+  --color-platform-discord: #5865F2;
+  --color-platform-twitch: #9146FF;
+  --color-platform-kick: #53FC18;
+  --color-platform-telegram: #26A5E4;
+
+  /* Available System one classifiers */
+  --color-model-laya: #2A7DE1;
+  --color-model-basal-pico: #D95638;
+  --color-model-basal-mini: #9A9EB5;
+
+  /* ASCII eye variables */
+  --color-eye-sclera: #5C6499;
+  --color-eye-iris: #7F8CFF;
+  --color-eye-highlight: #FFFFFF;
+  --eye-highlight-glow: 0 0 4px #FFFFFF, 0 0 14px #C9D0FF;
+  --eye-glow: drop-shadow(0 0 18px rgba(143, 156, 255, 0.35));
+}
+
+[data-theme="light"] {
+  /* Page variables */
+  --color-text: #14162B;
+  --color-text-secondary: #3A3F5E;
+  --color-muted: #5B6185;
+  --color-disabled: #A2A6BF;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #ECEEFA;
+  --color-background: #F3F4FB;
+  --color-border: #D6D9EE;
+  --color-accent: #4C5BEA;
+  --color-accent-strong: #3746D6;
+  --color-success: #0E9F6E;
+  --color-danger: #D92D4C;
+
+  /* ASCII eye variables */
+  --color-eye-sclera: #8D94C6;
+  --color-eye-iris: #3342D6;
+  --color-eye-highlight: #0D0F1C;
+  --eye-highlight-glow: none;
+  --eye-glow: none;  
+}
+
+body {
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.6;
+}
