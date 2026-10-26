@@ -1,3 +1,5 @@
+<?php $scripts[] = '/js/model-orbit.js'; ?>
+
 <!-- Maybe I should swap it to load from database later -->
 <?php
 

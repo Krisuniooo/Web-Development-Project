@@ -145,6 +145,7 @@
 }
 
 .models-display--center {
+  grid-area: 1 / 1;
   position: relative;
   display: grid;
   place-items: center;
@@ -171,6 +172,7 @@
 }
 
 .models-orbit {
+  grid-area: 1 / 1;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -210,6 +212,13 @@
 .models-orbit-item--size {
   color: var(--color-muted);
   font-size: var(--font-size-xs);
+}
+
+.models-orbit-item {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 @media (max-width: 640px) {
