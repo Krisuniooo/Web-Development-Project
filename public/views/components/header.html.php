@@ -1,4 +1,4 @@
-<?php $stylesheets = ['/css/header.css']; ?>
+<?php $stylesheets[] = '/css/header.css'; ?>
 
 <header class="nav">
     <a href="/" class="logo">

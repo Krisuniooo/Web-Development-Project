@@ -22,12 +22,16 @@
   --space-1: 0.5rem;
   --space-2: 1rem;
   --space-3: 1.5rem;
+  --space-4: 2.25rem;
+  --space-section: clamp(3rem, 7vw, 6rem);
   --radius: 1rem;
   --radius-pill: 999px;
 
   --font-size-xs: 0.8125rem;
   --font-size-sm: 0.9375rem;
   --font-size-lg: 1.5rem;
+  --font-size-lead: clamp(1.25rem, 2vw, 1.625rem);
+  --font-size-display: clamp(2.75rem, 5.6vw, 4.75rem);
 
   --control-size: 40px;
   --focus-ring: 2px solid var(--color-accent-strong);

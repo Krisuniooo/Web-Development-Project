@@ -1,6 +1,8 @@
+<?php $stylesheets[] = '/css/home.css'; ?>
+
 <?php include __DIR__ . '/components/header.html.php'; ?>
 <main>
-    <section class="hero"></section>
+    <?php include __DIR__ . '/home/hero.html.php'; ?>
     <section class="models"></section>
     <section class="how-it-works"></section>
     <section class="CTA"></section>
