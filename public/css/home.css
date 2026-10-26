@@ -103,3 +103,69 @@
     justify-self: start;
   }
 }
+
+.models {
+  padding: var(--space-section) var(--space-3);
+  text-align: center;
+}
+
+.models-title {
+  margin: 0;
+  font-size: var(--font-size-display);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.models-description {
+  max-width: 44ch;
+  margin: var(--space-2) auto 0;
+  color: var(--color-muted);
+}
+
+.models-display {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 760px;
+  max-height: 680px;
+  aspect-ratio: 1;
+  margin: var(--space-3) auto 0;
+}
+
+.models-display::before {
+  content: "";
+  position: absolute;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+.models-display--center {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(96px, 22%, 160px);
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 28%;
+  background: linear-gradient(160deg, var(--color-surface-raised), var(--color-surface));
+  box-shadow: 0 30px 80px -10px color-mix(in srgb, var(--color-accent) 55%, transparent);
+  transition: scale 0.25s;
+}
+.models-display--center:hover {
+  scale: 1.04;
+}
+.models-display--center:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.models-display--logo {
+  display: block;
+  width: 70%;
+  height: auto;
+}
