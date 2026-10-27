@@ -295,3 +295,103 @@
     max-width: 440px;
   }
 }
+
+.CTA {
+  padding: var(--space-section) var(--space-3);
+  text-align: center;
+  background: radial-gradient(ellipse 50% 60% at 50% 55%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%);
+}
+
+.CTA-title {
+  max-width: 20ch;
+  margin: 0 auto;
+  font-size: clamp(2rem, 5vw, 3.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.CTA-composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 780px;
+  margin: var(--space-4) auto 0;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) * 1.5);
+  background: var(--color-surface);
+  text-align: left;
+  box-shadow: 0 30px 70px -30px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  transition: border-color 0.25s;
+}
+.CTA-composer:hover {
+  border-color: var(--color-accent);
+}
+
+.CTA-composer--icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  filter: var(--icon-filter);
+  opacity: 0.7;
+}
+
+.CTA-composer--text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  white-space: nowrap;
+}
+
+.CTA-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-background);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.CTA-button:hover {
+  background: var(--color-accent-strong);
+}
+.CTA-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+.CTA-button i {
+  transition: translate 0.25s;
+}
+.CTA-button:hover i {
+  translate: 3px -3px;
+}
+
+.CTA-description {
+  margin: var(--space-3) 0 0;
+  color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+  .CTA-composer {
+    flex-wrap: wrap;
+    padding: var(--space-2);
+  }
+  .CTA-composer--text {
+    white-space: normal;
+  }
+  .CTA-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
