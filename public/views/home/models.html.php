@@ -8,11 +8,13 @@ $models = [
         "label" => "Laya",
         "size" => "421M",
         "logo" => "/assets/models/laya.png",
+        "github" => "https://github.com/NandhaKishorM/laya",
     ],
     [
         "label" => "Basal-omni-pico",
         "size" => "0.8B",
         "logo" => "/assets/models/basal.png",
+        "github" => "https://github.com/rkinas/basal",
     ],
 ]
 
@@ -24,21 +26,23 @@ $models = [
     <div class="models-display">
         <ul class="models-orbit">
             <?php foreach($models as $model): ?>
-                <li class="models-orbit-item">
-                    <img
-                        src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>"
-                        alt=""
-                        class="models-orbit-item--logo"
-                        width="64"
-                        height="64"
-                    />
-                    <span class="models-orbit-item--label">
-                        <?= htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8') ?>
-                    </span>
-                    <span class="models-orbit-item--size">
-                        <?= htmlspecialchars($model['size'], ENT_QUOTES, 'UTF-8') ?>
-                    </span>
-                </li>
+                <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">
+                    <li class="models-orbit-item">
+                        <img
+                            src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>"
+                            alt=""
+                            class="models-orbit-item--logo"
+                            width="64"
+                            height="64"
+                        />
+                        <span class="models-orbit-item--label">
+                            <?= htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                        <span class="models-orbit-item--size">
+                            <?= htmlspecialchars($model['size'], ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                    </li>
+                </a>
             <?php endforeach; ?>
         </ul>
         <a href="https://github.com/Krisuniooo/Web-Development-Project" class="models-display--center" target="_blank" rel="noopener noreferrer">

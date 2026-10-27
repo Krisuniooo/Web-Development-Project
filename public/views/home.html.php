@@ -4,7 +4,7 @@
 <main>
     <?php include __DIR__ . '/home/hero.html.php'; ?>
     <?php include __DIR__ . '/home/models.html.php'; ?>
-    <section class="how-it-works"></section>
+    <?php include __DIR__ . '/home/how-it-works.html.php'; ?>
     <section class="CTA"></section>
 </main>
 <footer class="footer">
