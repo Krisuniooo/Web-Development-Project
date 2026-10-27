@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-require_once __DIR__ . '/AppController.php';
-
-
 final class DefaultController extends AppController
 {
     public function index(): void
     {
         $this->render('home', [
             'pageTitle' => 'Moja aplikacja',
+            'models' => require dirname(__DIR__, 2) . '/config/models.php',
         ]);
     }
 
