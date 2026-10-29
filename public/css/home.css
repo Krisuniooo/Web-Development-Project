@@ -15,6 +15,105 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.hero-message-stream::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-background) 88%, transparent) 40%, transparent 52%),
+    radial-gradient(ellipse 26% 34% at 74% 45%, color-mix(in srgb, var(--color-background) 80%, transparent) 35%, transparent);
+}
+
+.hero-message {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: 12px 12px 12px 4px;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  white-space: nowrap;
+  opacity: 0.6;
+  transition: border-color 0.35s, opacity 0.35s, box-shadow 0.35s;
+}
+
+.hero-message--icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  filter: var(--icon-filter);
+  opacity: 0.55;
+}
+
+.hero-message--nickname {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.hero-message--text {
+  color: var(--color-text-secondary);
+}
+
+.hero-message--censored {
+  color: transparent;
+  text-shadow: 0 0 4px var(--color-danger);
+}
+
+.hero-message--verdict {
+  display: none;
+  align-items: center;
+  gap: var(--space-0);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.hero-message--verdict-icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  color: var(--color-background);
+  font-size: 0.625rem;
+  animation: hero-verdict-pop 0.3s ease-out;
+}
+
+@keyframes hero-verdict-pop {
+  from {
+    scale: 0.4;
+    opacity: 0;
+  }
+}
+
+.hero-message.is-allowed,
+.hero-message.is-blocked {
+  opacity: 0.9;
+}
+.hero-message.is-allowed {
+  border-color: var(--color-success);
+}
+.hero-message.is-blocked {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--color-danger) 60%, transparent);
+}
+.hero-message.is-allowed .hero-message--verdict,
+.hero-message.is-blocked .hero-message--verdict {
+  display: inline-flex;
+}
+.hero-message.is-allowed .hero-message--verdict-icon {
+  background: var(--color-success);
+}
+.hero-message.is-blocked .hero-message--text {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--color-danger) 70%, transparent);
 }
 
 .hero-content {
@@ -92,6 +191,12 @@
 }
 
 @media (max-width: 860px) {
+  .hero-message-stream {
+    opacity: 0.35;
+  }
+  .hero-message-stream::after {
+    display: none;
+  }
   .hero {
     grid-template-columns: 1fr;
     grid-template-areas:

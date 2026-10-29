@@ -11,6 +11,7 @@ final class DefaultController extends AppController
         $this->render('home', [
             'pageTitle' => 'Moja aplikacja',
             'models' => require dirname(__DIR__, 2) . '/config/models.php',
+            'chatMessages' => require dirname(__DIR__, 2) . '/config/chat-messages.php',
         ]);
     }
 
