@@ -1,4 +1,5 @@
 <?php $scripts[] = '/js/message-stream.js'; ?>
+<?php $scripts[] = '/js/eye.js'; ?>
 
 <section class="hero">
     <div class="hero-message-stream" data-messages="<?= htmlspecialchars(json_encode($chatMessages), ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
@@ -10,5 +11,12 @@
             <button type="button" class="hero-action-button--secondary">Button 2</button>
         </div>
     </div>
-    <div class="hero-eye"></div> <!-- TODO -->
+    <div class="hero-eye" aria-hidden="true">
+        <div class="hero-eye--frame" data-frames="<?= htmlspecialchars(json_encode($eyeFrames), ENT_QUOTES, 'UTF-8') ?>">
+            <pre class="hero-eye--sclera-layer"></pre>
+            <div class="hero-eye--opening">
+                <pre class="hero-eye--iris-layer"></pre>
+            </div>
+        </div>
+    </div>
 </section>

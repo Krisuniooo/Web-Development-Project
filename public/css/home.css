@@ -22,9 +22,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--color-background) 88%, transparent) 40%, transparent 52%),
-    radial-gradient(ellipse 26% 34% at 74% 45%, color-mix(in srgb, var(--color-background) 80%, transparent) 35%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-background) 88%, transparent) 40%, transparent 52%);
 }
 
 .hero-message {
@@ -129,6 +127,57 @@
   grid-area: eye;
   position: relative;
   z-index: 1;
+  width: 100%;
+  max-width: 640px;
+  container-type: inline-size;
+}
+
+.hero-eye::before {
+  content: "";
+  position: absolute;
+  inset: -30% -12%;
+  z-index: -1;
+  background: radial-gradient(closest-side, var(--color-background) 65%, transparent);
+}
+
+.hero-eye--frame {
+  display: grid;
+  justify-content: center;
+  color: var(--color-eye-iris);
+  font-family: var(--font-mono);
+  font-size: calc(100cqw / 105 / 0.6);
+  line-height: 1.12;
+  user-select: none;
+  filter: var(--eye-glow);
+}
+
+.hero-eye--frame > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.hero-eye--frame pre {
+  height: calc(var(--rows, 24) * 1.12em);
+  margin: 0;
+  font: inherit;
+  white-space: pre;
+}
+
+.hero-eye--iris-layer {
+  will-change: transform;
+}
+
+.hero-eye--sclera {
+  color: var(--color-eye-sclera);
+}
+
+.hero-eye--iris {
+  color: var(--color-eye-iris);
+}
+
+.hero-eye--highlight {
+  color: var(--color-eye-highlight);
+  text-shadow: var(--eye-highlight-glow);
 }
 
 .hero-title {

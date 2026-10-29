@@ -12,6 +12,7 @@ final class DefaultController extends AppController
             'pageTitle' => 'Moja aplikacja',
             'models' => require dirname(__DIR__, 2) . '/config/models.php',
             'chatMessages' => require dirname(__DIR__, 2) . '/config/chat-messages.php',
+            'eyeFrames' => $this->loadEyeFrames(),
         ]);
     }
 
@@ -20,5 +21,17 @@ final class DefaultController extends AppController
         $this->render('not-found', [
             'pageTitle' => 'Nie znaleziono strony',
         ]);
+    }
+
+    private function loadEyeFrames(): array
+    {
+        $configPath = dirname(__DIR__, 2) . '/config';
+        $frames = require $configPath . '/eye.php';
+
+        return array_map(fn(array $frame): array => [
+            'duration' => $frame['duration'],
+            'closed' => $frame['closed'] ?? false,
+            'lines' => array_map('rtrim', file($configPath . '/eye/' . $frame['file'])),
+        ], $frames);
     }
 }
