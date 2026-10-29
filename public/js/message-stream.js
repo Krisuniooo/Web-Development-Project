@@ -71,6 +71,13 @@
         element.classList.add(message.category ? "is-blocked" : "is-allowed");
     };
 
+    const measureWithVerdict = (element, message) => {
+        judge(element, message);
+        const width = element.offsetWidth;
+        element.classList.remove("is-allowed", "is-blocked");
+        return width;
+    };
+
     const launch = (lane, startX = null) => {
         const width = hero.clientWidth;
         const message = nextMessage();
@@ -78,7 +85,7 @@
         element.style.top = `${lane.y}px`;
         stream.append(element);
 
-        const messageWidth = element.offsetWidth;
+        const messageWidth = measureWithVerdict(element, message);
         const fromX = startX ?? -messageWidth;
         const scanLine = width * random(0.4, 0.6);
 

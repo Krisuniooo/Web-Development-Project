@@ -41,7 +41,7 @@
   line-height: 1.35;
   white-space: nowrap;
   opacity: 0.6;
-  transition: border-color 0.35s, opacity 0.35s, box-shadow 0.35s;
+  transition: opacity 0.35s;
 }
 
 .hero-message--icon {
