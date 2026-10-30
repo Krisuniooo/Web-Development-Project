@@ -12,9 +12,9 @@
         { strokeDashoffset: 1, opacity: 1, offset: 0.2 },
         { strokeDashoffset: 0, opacity: 1 },
     ];
-    const LEVELS = { 0: "Not watching", 35: "Relaxed", 65: "Balanced", 100: "Strict" };
-    // [slider index, new value], the last step brings back the initial state
-    const LIMIT_STEPS = [[2, 35], [0, 65], [2, 100], [1, 65], [0, 100], [1, 100], [2, 0]];
+    // [highest value, level name]
+    const LEVELS = [[0, "Not watching"], [50, "Relaxed"], [80, "Balanced"], [Infinity, "Strict"]];
+    const LIMIT_SHIFT = 35;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // without animation the initial state rendered by the view stays on screen
@@ -24,6 +24,7 @@
     const arrow = section.querySelector(".how-it-works-platform--arrow path");
     const models = section.querySelectorAll(".how-it-works-models--item");
     const sliders = section.querySelectorAll(".how-it-works-limits--slider");
+    const initialLimits = [...sliders].map((slider) => Number(slider.style.getPropertyValue("--value")));
 
     let platformIdx = 0;
     let modelIdx = 0;
@@ -47,21 +48,32 @@
         });
     };
 
+    // sliders take turns moving away from their initial value, then back in the same order
     const nextLimit = () => {
-        const [sliderIdx, value] = LIMIT_STEPS[limitStep];
-        limitStep = (limitStep + 1) % LIMIT_STEPS.length;
+        if (sliders.length === 0) return;
+
+        const sliderIdx = limitStep % sliders.length;
+        const isLeaving = limitStep < sliders.length;
+        limitStep = (limitStep + 1) % (sliders.length * 2);
+
+        const initial = initialLimits[sliderIdx];
+        const shifted = initial < 50 ? initial + LIMIT_SHIFT : initial - LIMIT_SHIFT;
+        const value = isLeaving ? shifted : initial;
 
         const slider = sliders[sliderIdx];
         slider.style.setProperty("--value", value);
         slider.classList.toggle("is-off", value === 0);
-        slider.querySelector(".how-it-works-limits--level").textContent = LEVELS[value];
+        slider.querySelector(".how-it-works-limits--level").textContent = LEVELS.find(([max]) => value <= max)[1];
         sliders.forEach((other) => other.classList.toggle("is-dragging", other === slider));
     };
 
     const update = () => {
+        const isRunning = isVisible && !document.hidden;
+        section.classList.toggle("is-paused", !isRunning);
+
         timers.forEach(clearInterval);
         timers = [];
-        if (isVisible && !document.hidden) {
+        if (isRunning) {
             timers = [
                 setInterval(nextPlatform, PLATFORM_MS),
                 setInterval(nextModel, MODEL_MS),

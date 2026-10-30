@@ -766,26 +766,40 @@
 }
 
 .how-it-works-limits--status {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1.2cqw;
   color: var(--color-muted);
 }
-.how-it-works-limits--status::before {
+.how-it-works-limits--status::before,
+.how-it-works-limits--status::after {
   content: "";
   width: 2cqw;
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--color-success);
+}
+.how-it-works-limits--status::after {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  translate: 0 -50%;
+  opacity: 0;
   animation: how-it-works-pulse 2s ease-out infinite;
+}
+.how-it-works.is-paused .how-it-works-limits--status::after {
+  animation-play-state: paused;
 }
 
 @keyframes how-it-works-pulse {
   from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 60%, transparent);
+    scale: 1;
+    opacity: 0.6;
   }
   to {
-    box-shadow: 0 0 0 1.6cqw transparent;
+    scale: 2.6;
+    opacity: 0;
   }
 }
 
@@ -846,7 +860,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .how-it-works-limits--status::before {
+  .how-it-works-limits--status::after {
     animation: none;
   }
 }
