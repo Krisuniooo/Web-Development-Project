@@ -1,3 +1,4 @@
+<?php $stylesheets[] = '/css/home/hero.css'; ?>
 <?php $scripts[] = '/js/message-stream.js'; ?>
 <?php $scripts[] = '/js/eye.js'; ?>
 

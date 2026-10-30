@@ -1,5 +1,3 @@
-<?php $stylesheets[] = '/css/home.css'; ?>
-
 <?php include __DIR__ . '/components/header.html.php'; ?>
 <main>
     <?php include __DIR__ . '/home/hero.html.php'; ?>

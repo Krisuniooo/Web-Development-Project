@@ -1,3 +1,4 @@
+<?php $stylesheets[] = '/css/home/models.css'; ?>
 <?php $scripts[] = '/js/model-orbit.js'; ?>
 
 <section class="models">

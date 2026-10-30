@@ -12,8 +12,6 @@
         { strokeDashoffset: 1, opacity: 1, offset: 0.2 },
         { strokeDashoffset: 0, opacity: 1 },
     ];
-    // [highest value, level name]
-    const LEVELS = [[0, "Not watching"], [50, "Relaxed"], [80, "Balanced"], [Infinity, "Strict"]];
     const LIMIT_SHIFT = 35;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -24,6 +22,8 @@
     const arrow = section.querySelector(".how-it-works-platform--arrow path");
     const models = section.querySelectorAll(".how-it-works-models--item");
     const sliders = section.querySelectorAll(".how-it-works-limits--slider");
+    const levels = JSON.parse(section.dataset.levels || "[]");
+    const initialSlots = [...models].map((model) => model.dataset.slot);
     const initialLimits = [...sliders].map((slider) => Number(slider.style.getPropertyValue("--value")));
 
     let platformIdx = 0;
@@ -42,15 +42,15 @@
 
     const nextModel = () => {
         modelIdx = (modelIdx + 1) % models.length;
+        // each item takes over the slot the view gave to the item modelIdx places before it
         models.forEach((model, idx) => {
-            // items past the right end all wait off the card in slot 3
-            model.dataset.slot = Math.min((idx - modelIdx + models.length + 2) % models.length - 2, 3);
+            model.dataset.slot = initialSlots[(idx - modelIdx + models.length) % models.length];
         });
     };
 
     // sliders take turns moving away from their initial value, then back in the same order
     const nextLimit = () => {
-        if (sliders.length === 0) return;
+        if (sliders.length === 0 || levels.length === 0) return;
 
         const sliderIdx = limitStep % sliders.length;
         const isLeaving = limitStep < sliders.length;
@@ -63,7 +63,7 @@
         const slider = sliders[sliderIdx];
         slider.style.setProperty("--value", value);
         slider.classList.toggle("is-off", value === 0);
-        slider.querySelector(".how-it-works-limits--level").textContent = LEVELS.find(([max]) => value <= max)[1];
+        slider.querySelector(".how-it-works-limits--level").textContent = levels.find(({ max }) => value <= max).name;
         sliders.forEach((other) => other.classList.toggle("is-dragging", other === slider));
     };
 

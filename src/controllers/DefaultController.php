@@ -14,7 +14,7 @@ final class DefaultController extends AppController
             'chatMessages' => require dirname(__DIR__, 2) . '/config/chat-messages.php',
             'eyeFrames' => $this->loadEyeFrames(),
             'platforms' => require dirname(__DIR__, 2) . '/config/platforms.php',
-            'howItWorks' => require dirname(__DIR__, 2) . '/config/how-it-works.php',
+            'howItWorks' => $this->loadHowItWorks(),
         ]);
     }
 
@@ -23,6 +23,29 @@ final class DefaultController extends AppController
         $this->render('not-found', [
             'pageTitle' => 'Nie znaleziono strony',
         ]);
+    }
+
+    private function loadHowItWorks(): array
+    {
+        $howItWorks = require dirname(__DIR__, 2) . '/config/how-it-works.php';
+
+        $howItWorks['limits'] = array_map(fn(array $limit): array => [
+            ...$limit,
+            'level' => $this->findLevelName($howItWorks['levels'], $limit['value']),
+        ], $howItWorks['limits']);
+
+        return $howItWorks;
+    }
+
+    private function findLevelName(array $levels, int $value): string
+    {
+        foreach ($levels as $level) {
+            if ($value <= $level['max']) {
+                return $level['name'];
+            }
+        }
+
+        return '';
     }
 
     private function loadEyeFrames(): array

@@ -1,0 +1,145 @@
+.CTA {
+  padding: var(--space-section) var(--space-3);
+  text-align: center;
+  background: radial-gradient(ellipse 50% 60% at 50% 55%, color-mix(in srgb, var(--color-accent) 16%, transparent), transparent 70%);
+}
+
+.CTA-title {
+  max-width: 20ch;
+  margin: 0 auto;
+  font-size: clamp(2rem, 5vw, 3.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.CTA-composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 780px;
+  margin: var(--space-4) auto 0;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) * 1.5);
+  background: var(--color-surface);
+  text-align: left;
+  box-shadow: 0 30px 70px -30px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  transition: border-color 0.25s;
+}
+.CTA-composer:hover {
+  border-color: var(--color-accent);
+}
+
+.CTA-composer--icons {
+  flex: none;
+  display: grid;
+}
+
+.CTA-composer--icon {
+  grid-area: 1 / 1;
+  width: 24px;
+  height: 24px;
+  filter: var(--icon-filter);
+  opacity: 0;
+  scale: 0.6;
+  transition: opacity 0.25s, scale 0.25s;
+}
+.CTA-composer--icon.is-active {
+  opacity: 0.7;
+  scale: 1;
+}
+
+.CTA-composer--text {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  user-select: none;
+}
+.CTA-composer--text > * {
+  grid-area: 1 / 1;
+}
+
+/* Invisible: reserves height for the longest message and stays readable for screen readers */
+.CTA-composer--message {
+  opacity: 0;
+}
+
+.CTA-composer--typed::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  background: var(--color-accent);
+  vertical-align: -0.2em;
+  animation: CTA-caret-blink 1s step-end infinite;
+}
+.CTA-composer--typed.is-typing::after {
+  animation: none;
+}
+
+@keyframes CTA-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .CTA-composer--typed::after {
+    display: none;
+  }
+}
+
+.CTA-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: var(--color-background);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.CTA-button:hover {
+  background: var(--color-accent-strong);
+}
+.CTA-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+.CTA-button i {
+  transition: translate 0.25s;
+}
+.CTA-button:hover i {
+  translate: 3px -3px;
+}
+
+.CTA-description {
+  margin: var(--space-3) 0 0;
+  color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+  .CTA-composer {
+    flex-wrap: wrap;
+    padding: var(--space-2);
+  }
+  .CTA-composer--icons {
+    align-self: flex-start;
+  }
+  .CTA-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

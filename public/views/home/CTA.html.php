@@ -1,3 +1,4 @@
+<?php $stylesheets[] = '/css/home/CTA.css'; ?>
 <?php $scripts[] = '/js/cta-composer.js'; ?>
 
 <section class="CTA">

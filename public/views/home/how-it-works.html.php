@@ -1,7 +1,8 @@
+<?php $stylesheets[] = '/css/home/how-it-works.css'; ?>
 <?php $scripts[] = '/js/how-it-works.js'; ?>
 <?php $modelCarousel = array_merge($models, $models); ?>
 
-<section class="how-it-works">
+<section class="how-it-works" data-levels="<?= htmlspecialchars(json_encode($howItWorks['levels']), ENT_QUOTES, 'UTF-8') ?>">
     <h2>How it works</h2>
     <ol class="how-it-works-list">
         <li class="how-it-works--item">
@@ -33,6 +34,7 @@
         </li>
         <li class="how-it-works--item">
             <div class="how-it-works--scene" aria-hidden="true">
+                <?php // items past the right end all wait off the card in slot 3 ?>
                 <?php foreach ($modelCarousel as $index => $model): ?>
                     <div class="how-it-works-models--item<?= !empty($model['pro']) ? ' is-pro' : '' ?>" data-slot="<?= min(($index + 2) % count($modelCarousel) - 2, 3) ?>">
                         <span class="how-it-works-models--disc">
