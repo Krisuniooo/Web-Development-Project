@@ -26,14 +26,14 @@
     const sliders = section.querySelectorAll(".how-it-works-limits--slider");
     const initialLimits = [...sliders].map((slider) => Number(slider.style.getPropertyValue("--value")));
 
-    let platformIdx = [...platforms].findIndex((platform) => platform.classList.contains("is-active"));
+    let platformIdx = 0;
     let modelIdx = 0;
     let limitStep = 0;
     let isVisible = false;
     let timers = [];
 
     const nextPlatform = () => {
-        platforms[platformIdx]?.classList.remove("is-active");
+        platforms[platformIdx].classList.remove("is-active");
         platformIdx = (platformIdx + 1) % platforms.length;
         arrow.animate(ARROW_REDRAW, { duration: 900, easing: "ease-in-out" }).onfinish = () => {
             platforms[platformIdx].classList.add("is-active");

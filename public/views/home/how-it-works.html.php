@@ -17,8 +17,8 @@
                         <path pathLength="1" d="M2 16C18 7 40 5 60 11L52 5L60 11L53 18" />
                     </svg>
                     <div class="how-it-works-platform--targets">
-                        <?php foreach ($platforms as $platform): ?>
-                            <div class="how-it-works-platform--endpoint<?= $platform['slug'] === $howItWorks['startPlatform'] ? ' is-active' : '' ?>">
+                        <?php foreach ($platforms as $index => $platform): ?>
+                            <div class="how-it-works-platform--endpoint<?= $index === 0 ? ' is-active' : '' ?>">
                                 <span class="how-it-works-platform--tile is-<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>">
                                     <img src="/assets/icons/<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>.svg" alt="" width="24" height="24" />
                                 </span>
