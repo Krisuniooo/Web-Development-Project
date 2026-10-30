@@ -2,7 +2,7 @@
 <?php $scripts[] = '/js/eye.js'; ?>
 
 <section class="hero">
-    <div class="hero-message-stream" data-messages="<?= htmlspecialchars(json_encode($chatMessages), ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
+    <div class="hero-message-stream" data-messages="<?= htmlspecialchars(json_encode($chatMessages), ENT_QUOTES, 'UTF-8') ?>" data-platforms="<?= htmlspecialchars(json_encode(array_column($platforms, 'slug')), ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
     <div class="hero-content">
         <h1 class="hero-title">LOREM IPSUM</h1>
         <p class="hero-description">lorem ipsum dolor sit amet consectetur adipiscing elit</h1>

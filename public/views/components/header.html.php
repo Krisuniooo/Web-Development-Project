@@ -11,30 +11,14 @@
         <nav class="platforms" aria-label="Manage APPNAME">
             <div class="available-platforms-label">Manage APPNAME on</div>
             <ul class="available-platforms">
-                <li>
-                    <a href="#" class="available-platform discord">
-                        <img src="/assets/icons/discord.svg" alt="Discord" class="available-platform--img" width="16" height="16" />
-                        <div aria-hidden="true">Discord</div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="available-platform twitch">
-                        <img src="/assets/icons/twitch.svg" alt="Twitch" class="available-platform--img" width="16" height="16" />
-                        <div aria-hidden="true">Twitch</div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="available-platform kick">
-                        <img src="/assets/icons/kick.svg" alt="Kick" class="available-platform--img" width="16" height="16" />
-                        <div aria-hidden="true">Kick</div>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="available-platform telegram">
-                        <img src="/assets/icons/telegram.svg" alt="Telegram" class="available-platform--img" width="16" height="16" />
-                        <div aria-hidden="true">Telegram</div>
-                    </a>
-                </li>
+                <?php foreach ($platforms as $platform): ?>
+                    <li>
+                        <a href="#" class="available-platform <?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>">
+                            <img src="/assets/icons/<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>.svg" alt="<?= htmlspecialchars($platform['name'], ENT_QUOTES, 'UTF-8') ?>" class="available-platform--img" width="16" height="16" />
+                            <div aria-hidden="true"><?= htmlspecialchars($platform['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
             </ul>
         </nav>
         <div class="nav-settings">

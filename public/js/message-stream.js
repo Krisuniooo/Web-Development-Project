@@ -4,9 +4,9 @@
 
     const hero = stream.parentElement;
     const messages = JSON.parse(stream.dataset.messages || "[]");
-    if (messages.length === 0) return;
+    const platforms = JSON.parse(stream.dataset.platforms || "[]");
+    if (messages.length === 0 || platforms.length === 0) return;
 
-    const PLATFORMS = ["discord", "twitch", "kick", "telegram"];
     const NICKNAMES = [
         "mika_gg", "kubson", "nightowl", "tomek_92", "frostbyte", "ola.pl", "zeroLag",
         "vex", "pixelmarta", "sunny", "orbit", "hexa", "milkyway", "ghostie",
@@ -49,7 +49,7 @@
         const element = createElement("div", "hero-message");
 
         const icon = createElement("img", "hero-message--icon");
-        icon.src = `/assets/icons/${pick(PLATFORMS)}.svg`;
+        icon.src = `/assets/icons/${pick(platforms)}.svg`;
         icon.alt = "";
 
         const verdictIcon = createElement("span", "hero-message--verdict-icon");
