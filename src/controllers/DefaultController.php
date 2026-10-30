@@ -13,6 +13,7 @@ final class DefaultController extends AppController
             'models' => require dirname(__DIR__, 2) . '/config/models.php',
             'chatMessages' => require dirname(__DIR__, 2) . '/config/chat-messages.php',
             'eyeFrames' => $this->loadEyeFrames(),
+            'ctaPlatforms' => require dirname(__DIR__, 2) . '/config/cta-platforms.php',
         ]);
     }
 

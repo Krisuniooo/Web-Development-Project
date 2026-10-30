@@ -534,21 +534,67 @@
   border-color: var(--color-accent);
 }
 
-.CTA-composer--icon {
+.CTA-composer--icons {
   flex: none;
+  display: grid;
+}
+
+.CTA-composer--icon {
+  grid-area: 1 / 1;
   width: 24px;
   height: 24px;
   filter: var(--icon-filter);
+  opacity: 0;
+  scale: 0.6;
+  transition: opacity 0.25s, scale 0.25s;
+}
+.CTA-composer--icon.is-active {
   opacity: 0.7;
+  scale: 1;
 }
 
 .CTA-composer--text {
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-  overflow: hidden;
   color: var(--color-text-secondary);
   font-size: clamp(1rem, 2vw, 1.25rem);
-  white-space: nowrap;
+  user-select: none;
+}
+.CTA-composer--text > * {
+  grid-area: 1 / 1;
+}
+
+/* Invisible: reserves height for the longest message and stays readable for screen readers */
+.CTA-composer--message {
+  opacity: 0;
+}
+
+.CTA-composer--typed::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  background: var(--color-accent);
+  vertical-align: -0.2em;
+  animation: CTA-caret-blink 1s step-end infinite;
+}
+.CTA-composer--typed.is-typing::after {
+  animation: none;
+}
+
+@keyframes CTA-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .CTA-composer--typed::after {
+    display: none;
+  }
 }
 
 .CTA-button {
@@ -591,8 +637,8 @@
     flex-wrap: wrap;
     padding: var(--space-2);
   }
-  .CTA-composer--text {
-    white-space: normal;
+  .CTA-composer--icons {
+    align-self: flex-start;
   }
   .CTA-button {
     width: 100%;
