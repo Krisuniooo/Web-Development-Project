@@ -77,11 +77,15 @@
 }
 
 .models-orbit-item {
+  width: 150px;
+}
+
+.models-orbit-item--link {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-0);
-  width: 150px;
+  text-decoration: none;
 }
 
 .models-orbit-item--logo {

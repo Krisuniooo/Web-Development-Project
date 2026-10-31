@@ -7,8 +7,8 @@
     <div class="models-display">
         <ul class="models-orbit">
             <?php foreach($models as $model): ?>
-                <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">
-                    <li class="models-orbit-item<?= !empty($model['pro']) ? ' is-pro' : '' ?>">
+                <li class="models-orbit-item<?= !empty($model['pro']) ? ' is-pro' : '' ?>">
+                    <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" class="models-orbit-item--link" target="_blank" rel="noopener noreferrer">
                         <span class="models-orbit-item--media">
                             <img
                                 src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>"
@@ -33,8 +33,8 @@
                         <span class="models-orbit-item--size">
                             <?= htmlspecialchars($model['size'], ENT_QUOTES, 'UTF-8') ?>
                         </span>
-                    </li>
-                </a>
+                    </a>
+                </li>
             <?php endforeach; ?>
         </ul>
         <a href="https://github.com/Krisuniooo/Web-Development-Project" class="models-display--center" target="_blank" rel="noopener noreferrer">
