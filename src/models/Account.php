@@ -13,11 +13,9 @@ final class Account
         private string $platform,
         private string $platformUserId,
         private string $displayName,
-        private ?string $locale = null,
         private ?string $accessTokenEnc = null,
         private ?string $refreshTokenEnc = null,
         private ?DateTimeImmutable $tokenExpiresAt = null,
-        private ?DateTimeImmutable $lastLoginAt = null,
         private ?DateTimeImmutable $createdAt = null,
         private ?DateTimeImmutable $updatedAt = null,
     ) {
@@ -48,11 +46,6 @@ final class Account
         return $this->displayName;
     }
 
-    public function getLocale(): ?string
-    {
-        return $this->locale;
-    }
-
     public function getAccessTokenEnc(): ?string
     {
         return $this->accessTokenEnc;
@@ -66,11 +59,6 @@ final class Account
     public function getTokenExpiresAt(): ?DateTimeImmutable
     {
         return $this->tokenExpiresAt;
-    }
-
-    public function getLastLoginAt(): ?DateTimeImmutable
-    {
-        return $this->lastLoginAt;
     }
 
     public function getCreatedAt(): ?DateTimeImmutable

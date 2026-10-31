@@ -14,7 +14,6 @@ final class ChannelRule
         private bool $enabled,
         private string $action, // flag | delete | timeout | ban
         private ?float $threshold = null,
-        private ?DateTimeImmutable $createdAt = null,
         private ?DateTimeImmutable $updatedAt = null,
     ) {
     }
@@ -42,11 +41,6 @@ final class ChannelRule
     public function getThreshold(): ?float
     {
         return $this->threshold;
-    }
-
-    public function getCreatedAt(): ?DateTimeImmutable
-    {
-        return $this->createdAt;
     }
 
     public function getUpdatedAt(): ?DateTimeImmutable
