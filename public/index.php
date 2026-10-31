@@ -17,6 +17,7 @@ $routing->get('/app/models', PanelController::class, 'models');
 $routing->get('/app/limits', PanelController::class, 'limits');
 $routing->get('/app/logs', PanelController::class, 'logs');
 $routing->get('/app/settings', PanelController::class, 'settings');
+$routing->post('/app/account', PanelController::class, 'switchAccount');
 
 $routeFound = $routing->dispatch(
     $_SERVER['REQUEST_METHOD'],

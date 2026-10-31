@@ -1,10 +1,25 @@
 .panel {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar content"
+    "sidebar footer";
   min-height: 100dvh;
+}
+.panel .panel-header {
+  grid-area: header;
+}
+.panel .sidebar {
+  grid-area: sidebar;
+}
+.panel .footer {
+  grid-area: footer;
 }
 
 .panel-content {
+  grid-area: content;
   padding: var(--space-4) var(--space-3);
 }
 
@@ -24,6 +39,11 @@
 @media (max-width: 900px) {
   .panel {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      "header"
+      "sidebar"
+      "content"
+      "footer";
   }
 }

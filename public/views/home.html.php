@@ -5,6 +5,4 @@
     <?php include __DIR__ . '/home/how-it-works.html.php'; ?>
     <?php include __DIR__ . '/home/CTA.html.php'; ?>
 </main>
-<footer class="footer">
-    <span>FOOTER TODO</span>
-</footer>
+<?php include __DIR__ . '/components/footer.html.php'; ?>
