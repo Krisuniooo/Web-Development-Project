@@ -1,0 +1,29 @@
+.panel {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.panel-content {
+  padding: var(--space-4) var(--space-3);
+}
+
+.panel-content--title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.panel-content--description {
+  margin: var(--space-1) 0 0;
+  color: var(--color-muted);
+}
+
+@media (max-width: 900px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+}

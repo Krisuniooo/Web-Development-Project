@@ -10,10 +10,10 @@ const saveTheme = (mode) => {
 
 const updateLabel = (mode) => {
     const newLabel = mode === "light" ? "Switch to dark mode" : "Switch to light mode";
-    switchMode.setAttribute("aria-label", newLabel);
+    switchMode?.setAttribute("aria-label", newLabel);
 }
 
-switchMode.addEventListener("click", () => {
+switchMode?.addEventListener("click", () => {
     const newTheme = document.documentElement.dataset.theme === "light" ? "dark" : "light";
 
     document.documentElement.dataset.theme = newTheme;

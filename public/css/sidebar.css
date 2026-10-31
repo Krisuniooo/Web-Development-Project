@@ -1,0 +1,98 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: 100dvh;
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.sidebar-logo--img {
+  display: block;
+  width: auto;
+  height: 28px;
+}
+.sidebar-logo--name {
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.sidebar-nav {
+  flex: 1;
+}
+.sidebar-nav--list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Settings is the last item and sits at the bottom of the panel */
+.sidebar-nav--list li:last-child {
+  margin-top: auto;
+}
+
+.sidebar-nav--link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+.sidebar-nav--link:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+.sidebar-nav--link.is-active {
+  background: var(--color-surface-raised);
+  color: var(--color-accent-strong);
+  font-weight: 600;
+}
+.sidebar-nav--icon {
+  width: 1.25em;
+  text-align: center;
+}
+
+.sidebar-logo:focus-visible,
+.sidebar-nav--link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    gap: var(--space-2);
+    height: auto;
+    padding: var(--space-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .sidebar-nav--list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    height: auto;
+  }
+  .sidebar-nav--list li:last-child {
+    margin-top: 0;
+  }
+}
