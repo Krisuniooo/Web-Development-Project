@@ -108,6 +108,7 @@
   font: inherit;
   font-size: var(--font-size-lg);
   font-weight: 800;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color 0.2s;
 }

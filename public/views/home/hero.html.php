@@ -8,8 +8,8 @@
         <h1 class="hero-title"><?= $t('home.hero.title') ?></h1>
         <p class="hero-description"><?= $t('home.hero.description') ?></p>
         <div class="hero-actions">
-            <button type="button" class="hero-action-button--main"><?= $t('home.hero.primary') ?></button>
-            <button type="button" class="hero-action-button--secondary"><?= $t('home.hero.secondary') ?></button>
+            <a href="/app" class="hero-action-button--main"><?= $t('home.hero.primary') ?></a>
+            <a href="#how-it-works" class="hero-action-button--secondary"><?= $t('home.hero.secondary') ?></a>
         </div>
     </div>
     <div class="hero-eye" aria-hidden="true">

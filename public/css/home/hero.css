@@ -138,6 +138,7 @@
   inset: -30% -12%;
   z-index: -1;
   background: radial-gradient(closest-side, var(--color-background) 65%, transparent);
+  pointer-events: none;
 }
 
 .hero-eye--frame {
@@ -212,6 +213,7 @@
   border-radius: var(--radius);
   font: inherit;
   font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   transition: background-color 0.2s, border-color 0.2s;
 }

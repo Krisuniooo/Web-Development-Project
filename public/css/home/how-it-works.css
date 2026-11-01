@@ -1,4 +1,5 @@
 .how-it-works {
+  scroll-margin-top: 6rem;
   padding: var(--space-section) var(--space-3);
   text-align: center;
 }

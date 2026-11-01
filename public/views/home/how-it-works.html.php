@@ -2,7 +2,7 @@
 <?php $scripts[] = '/js/how-it-works.js'; ?>
 <?php $modelCarousel = array_merge($models, $models); ?>
 
-<section class="how-it-works" data-levels="<?= htmlspecialchars(json_encode($howItWorks['levels']), ENT_QUOTES, 'UTF-8') ?>">
+<section id="how-it-works" class="how-it-works" data-levels="<?= htmlspecialchars(json_encode($howItWorks['levels']), ENT_QUOTES, 'UTF-8') ?>">
     <h2><?= $t('home.how.title') ?></h2>
     <ol class="how-it-works-list">
         <li class="how-it-works--item">
