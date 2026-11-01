@@ -12,6 +12,7 @@ $routing = new Routing();
 
 $routing->get('/', DefaultController::class, 'index');
 $routing->post('/language', DefaultController::class, 'setLanguage');
+$routing->get('/status', DefaultController::class, 'status');
 $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->get('/app/models', PanelController::class, 'models');

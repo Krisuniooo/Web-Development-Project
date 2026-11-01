@@ -22,7 +22,9 @@ return [
     "theme.to_dark" => "Włącz ciemny motyw",
     "panel.back_home" => "Strona główna",
     "panel.not_ready" => "Ta sekcja nie jest jeszcze gotowa.",
-    "footer.note" => "FOOTER TODO",
+    "footer.note" => "Decyzje podejmują modele i mogą się mylić.",
+    "status.title" => "Status serwerów",
+    "status.not_ready" => "Ta strona nie jest jeszcze gotowa.",
 
     "notfound.title" => "Nie znaleziono strony",
     "notfound.text" => "Taka strona nie istnieje.",

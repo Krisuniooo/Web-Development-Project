@@ -22,7 +22,9 @@ return [
     "theme.to_dark" => "Switch to dark mode",
     "panel.back_home" => "Back to home",
     "panel.not_ready" => "This section is not ready yet.",
-    "footer.note" => "FOOTER TODO",
+    "footer.note" => "Decisions are made by models and can be wrong.",
+    "status.title" => "Server status",
+    "status.not_ready" => "This page is not ready yet.",
 
     "notfound.title" => "Page not found",
     "notfound.text" => "This page does not exist.",

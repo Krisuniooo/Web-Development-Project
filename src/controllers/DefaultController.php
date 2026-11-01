@@ -27,6 +27,14 @@ final class DefaultController extends AppController
         ]);
     }
 
+    public function status(): void
+    {
+        $this->render('status', [
+            'pageTitle' => $this->lang()->text('status.title'),
+            'platforms' => require dirname(__DIR__, 2) . '/config/platforms.php',
+        ]);
+    }
+
     public function setLanguage(): void
     {
         Lang::remember($_POST['lang'] ?? null);
