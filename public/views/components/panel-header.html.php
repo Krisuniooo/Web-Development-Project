@@ -7,7 +7,7 @@
     </a>
     <div class="panel-header--brand">
         <img src="/assets/icons/logo.svg" alt="" class="panel-header--logo" width="56" height="28" />
-        <span class="panel-header--name">APPNAME</span>
+        <span class="panel-header--name"><?= $t('app.name') ?></span>
     </div>
     <?php include __DIR__ . '/nav-settings.html.php'; ?>
 </header>

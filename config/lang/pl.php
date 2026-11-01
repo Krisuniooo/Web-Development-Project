@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+$appName = (require dirname(__DIR__) . '/app.php')['name'];
+
 return [
+    "app.name" => $appName,
     "language.label" => "Język",
 
     "nav.overview" => "Przegląd",
@@ -13,8 +16,8 @@ return [
     "nav.settings" => "Ustawienia",
     "nav.panel" => "Panel",
 
-    "header.manage" => "Zarządzaj APPNAME",
-    "header.manage_on" => "Zarządzaj APPNAME na",
+    "header.manage" => "Zarządzaj $appName",
+    "header.manage_on" => "Zarządzaj $appName na",
     "theme.to_light" => "Włącz jasny motyw",
     "theme.to_dark" => "Włącz ciemny motyw",
     "panel.back_home" => "Strona główna",
@@ -25,7 +28,7 @@ return [
     "notfound.text" => "Taka strona nie istnieje.",
     "notfound.back" => "Wróć na stronę główną",
 
-    "home.title" => "Moja aplikacja",
+    "home.title" => $appName,
     "home.hero.title" => "LOREM IPSUM",
     "home.hero.description" => "lorem ipsum dolor sit amet consectetur adipiscing elit",
     "home.hero.primary" => "Przycisk 1",
@@ -39,7 +42,7 @@ return [
     "home.models.description" => "lorem ipsum dolor sit amet consectetur adipiscing elit",
     "home.models.pro" => "Dostępne tylko w wersji PRO",
     "home.models.recommended" => "Polecany",
-    "home.models.github" => "APPNAME na GitHubie",
+    "home.models.github" => "$appName na GitHubie",
     "home.cta.title" => "Lorem ipsum dolor sit amet consectetur",
     "home.cta.button" => "Wypróbuj",
     "home.cta.description" => "Lorem ipsum dolor sit amet consectetur adipiscing elit",

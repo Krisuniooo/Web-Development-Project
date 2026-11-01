@@ -5,7 +5,7 @@
         <div class="logo-box">
             <img src="/assets/icons/logo.svg" alt="" class="logo-box-img" width="56" height="28" />
         </div>
-        <div class="logo-name">APPNAME</div>
+        <div class="logo-name"><?= $t('app.name') ?></div>
     </a>
     <div class="nav-right">
         <nav class="platforms" aria-label="<?= $t('header.manage') ?>">

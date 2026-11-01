@@ -12,7 +12,7 @@
                         <span class="how-it-works-platform--tile is-app">
                             <img src="/assets/icons/logo.svg" alt="" width="56" height="28" />
                         </span>
-                        <span class="how-it-works-platform--name">My-App</span>
+                        <span class="how-it-works-platform--name"><?= $t('app.name') ?></span>
                     </div>
                     <svg class="how-it-works-platform--arrow" viewBox="0 0 64 24" fill="none">
                         <path pathLength="1" d="M2 16C18 7 40 5 60 11L52 5L60 11L53 18" />

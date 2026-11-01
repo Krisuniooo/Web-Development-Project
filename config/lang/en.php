@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+$appName = (require dirname(__DIR__) . '/app.php')['name'];
+
 return [
+    "app.name" => $appName,
     "language.label" => "Language",
 
     "nav.overview" => "Overview",
@@ -13,8 +16,8 @@ return [
     "nav.settings" => "Settings",
     "nav.panel" => "Panel",
 
-    "header.manage" => "Manage APPNAME",
-    "header.manage_on" => "Manage APPNAME on",
+    "header.manage" => "Manage $appName",
+    "header.manage_on" => "Manage $appName on",
     "theme.to_light" => "Switch to light mode",
     "theme.to_dark" => "Switch to dark mode",
     "panel.back_home" => "Back to home",
@@ -25,7 +28,7 @@ return [
     "notfound.text" => "This page does not exist.",
     "notfound.back" => "Back to the home page",
 
-    "home.title" => "My app",
+    "home.title" => $appName,
     "home.hero.title" => "LOREM IPSUM",
     "home.hero.description" => "lorem ipsum dolor sit amet consectetur adipiscing elit",
     "home.hero.primary" => "Button 1",
@@ -39,7 +42,7 @@ return [
     "home.models.description" => "lorem ipsum dolor sit amet consectetur adipiscing elit",
     "home.models.pro" => "Available for PRO users only",
     "home.models.recommended" => "Recommended",
-    "home.models.github" => "APPNAME on GitHub",
+    "home.models.github" => "$appName on GitHub",
     "home.cta.title" => "Lorem ipsum dolor sit amet consectetur",
     "home.cta.button" => "Try Now",
     "home.cta.description" => "Lorem ipsum dolor sit amet consectetur adipiscing elit",

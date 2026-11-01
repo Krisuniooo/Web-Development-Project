@@ -82,7 +82,7 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1020px) {
+@media (max-width: 1060px) {
   .available-platforms-label {
     display: none;
   }
