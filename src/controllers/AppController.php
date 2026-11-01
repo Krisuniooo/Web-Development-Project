@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lang;
+
 abstract class AppController
 {
     protected function render(string $template, array $variables = []): void
@@ -15,6 +17,9 @@ abstract class AppController
         if (!is_file($templatePath)) {
             throw new \RuntimeException('View not found: ' . $template);
         }
+
+        $lang = Lang::fromRequest();
+        $t = $lang->html(...);
 
         extract($variables, EXTR_SKIP);
 
