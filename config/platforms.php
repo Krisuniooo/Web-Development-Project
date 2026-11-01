@@ -6,21 +6,21 @@ return [
     [
         "name" => "Discord",
         "slug" => "discord",
-        "ctaMessage" => "Keep my Discord server free of toxicity",
+        "ctaMessage" => "cta.discord",
     ],
     [
         "name" => "Twitch",
         "slug" => "twitch",
-        "ctaMessage" => "Keep my Twitch chat clean while I'm live",
+        "ctaMessage" => "cta.twitch",
     ],
     [
         "name" => "Kick",
         "slug" => "kick",
-        "ctaMessage" => "Block hate in my Kick chat in real time",
+        "ctaMessage" => "cta.kick",
     ],
     [
         "name" => "Telegram",
         "slug" => "telegram",
-        "ctaMessage" => "Protect my Telegram groups from harassment",
+        "ctaMessage" => "cta.telegram",
     ],
 ];

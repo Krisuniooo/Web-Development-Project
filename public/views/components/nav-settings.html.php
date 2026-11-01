@@ -8,7 +8,7 @@
         <?php endforeach; ?>
     </form>
     <div class="toggle-light-mode">
-        <button type="button" class="switch-mode" aria-label="Switch to light mode">
+        <button type="button" class="switch-mode" aria-label="<?= $t('theme.to_light') ?>" data-label-light="<?= $t('theme.to_light') ?>" data-label-dark="<?= $t('theme.to_dark') ?>">
             <i class="fa-regular fa-sun switch-mode-icon switch-mode-icon--sun" aria-hidden="true"></i>
             <i class="fa-regular fa-moon switch-mode-icon switch-mode-icon--moon" aria-hidden="true"></i>
         </button>

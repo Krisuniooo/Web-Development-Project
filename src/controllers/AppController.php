@@ -8,6 +8,13 @@ use App\Lang;
 
 abstract class AppController
 {
+    private ?Lang $lang = null;
+
+    protected function lang(): Lang
+    {
+        return $this->lang ??= Lang::fromRequest();
+    }
+
     protected function render(string $template, array $variables = []): void
     {
         $viewsPath = dirname(__DIR__, 2) . '/public/views';
@@ -18,7 +25,7 @@ abstract class AppController
             throw new \RuntimeException('View not found: ' . $template);
         }
 
-        $lang = Lang::fromRequest();
+        $lang = $this->lang();
         $t = $lang->html(...);
         $currentPath = $_SERVER['REQUEST_URI'];
 

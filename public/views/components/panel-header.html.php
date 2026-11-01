@@ -3,7 +3,7 @@
 <header class="panel-header">
     <a href="/" class="panel-header--back">
         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        Back to home
+        <?= $t('panel.back_home') ?>
     </a>
     <div class="panel-header--brand">
         <img src="/assets/icons/logo.svg" alt="" class="panel-header--logo" width="56" height="28" />

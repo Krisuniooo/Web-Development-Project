@@ -9,7 +9,7 @@ const saveTheme = (mode) => {
 }
 
 const updateLabel = (mode) => {
-    const newLabel = mode === "light" ? "Switch to dark mode" : "Switch to light mode";
+    const newLabel = mode === "light" ? switchMode?.dataset.labelDark : switchMode?.dataset.labelLight;
     switchMode?.setAttribute("aria-label", newLabel);
 }
 

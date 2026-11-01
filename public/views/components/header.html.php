@@ -8,8 +8,8 @@
         <div class="logo-name">APPNAME</div>
     </a>
     <div class="nav-right">
-        <nav class="platforms" aria-label="Manage APPNAME">
-            <div class="available-platforms-label">Manage APPNAME on</div>
+        <nav class="platforms" aria-label="<?= $t('header.manage') ?>">
+            <div class="available-platforms-label"><?= $t('header.manage_on') ?></div>
             <ul class="available-platforms">
                 <?php foreach ($platforms as $platform): ?>
                     <li>

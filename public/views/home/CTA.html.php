@@ -2,7 +2,7 @@
 <?php $scripts[] = '/js/cta-composer.js'; ?>
 
 <section class="CTA">
-    <h2 class="CTA-title">Lorem ipsum dolor sit amet consectetur</h2>
+    <h2 class="CTA-title"><?= $t('home.cta.title') ?></h2>
     <div class="CTA-composer">
         <span class="CTA-composer--icons">
             <?php foreach ($platforms as $index => $platform): ?>
@@ -17,14 +17,14 @@
         </span>
         <span class="CTA-composer--text">
             <?php foreach ($platforms as $platform): ?>
-                <span class="CTA-composer--message"><?= htmlspecialchars($platform['ctaMessage'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="CTA-composer--message"><?= $t($platform['ctaMessage']) ?></span>
             <?php endforeach; ?>
-            <span class="CTA-composer--typed" aria-hidden="true"><?= htmlspecialchars($platforms[0]['ctaMessage'], ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="CTA-composer--typed" aria-hidden="true"><?= $t($platforms[0]['ctaMessage']) ?></span>
         </span>
         <button type="button" class="CTA-button">
-            <span>Try Now</span>
+            <span><?= $t('home.cta.button') ?></span>
             <i class="fa-regular fa-paper-plane"></i>
         </button>
     </div>
-    <p class="CTA-description">Lorem ipsum dolor sit amet consectetur adipiscing elit</p>
+    <p class="CTA-description"><?= $t('home.cta.description') ?></p>
 </section>

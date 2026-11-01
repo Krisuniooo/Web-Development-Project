@@ -31,13 +31,13 @@
             </form>
         </details>
     <?php endif; ?>
-    <nav class="sidebar-nav" aria-label="Panel">
+    <nav class="sidebar-nav" aria-label="<?= $t('nav.panel') ?>">
         <ul class="sidebar-nav--list">
             <?php foreach ($navigation as $key => $item): ?>
                 <li>
                     <a href="<?= htmlspecialchars($item['path'], ENT_QUOTES, 'UTF-8') ?>" class="sidebar-nav--link<?= $key === $activeSection ? ' is-active' : '' ?>">
                         <i class="fa-solid <?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?> sidebar-nav--icon" aria-hidden="true"></i>
-                        <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>
+                        <?= $t($item['name']) ?>
                     </a>
                 </li>
             <?php endforeach; ?>

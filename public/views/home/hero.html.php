@@ -5,11 +5,11 @@
 <section class="hero">
     <div class="hero-message-stream" data-messages="<?= htmlspecialchars(json_encode($chatMessages), ENT_QUOTES, 'UTF-8') ?>" data-platforms="<?= htmlspecialchars(json_encode(array_column($platforms, 'slug')), ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
     <div class="hero-content">
-        <h1 class="hero-title">LOREM IPSUM</h1>
-        <p class="hero-description">lorem ipsum dolor sit amet consectetur adipiscing elit</p>
+        <h1 class="hero-title"><?= $t('home.hero.title') ?></h1>
+        <p class="hero-description"><?= $t('home.hero.description') ?></p>
         <div class="hero-actions">
-            <button type="button" class="hero-action-button--main">Button 1</button>
-            <button type="button" class="hero-action-button--secondary">Button 2</button>
+            <button type="button" class="hero-action-button--main"><?= $t('home.hero.primary') ?></button>
+            <button type="button" class="hero-action-button--secondary"><?= $t('home.hero.secondary') ?></button>
         </div>
     </div>
     <div class="hero-eye" aria-hidden="true">

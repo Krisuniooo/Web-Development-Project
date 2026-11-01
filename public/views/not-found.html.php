@@ -1,5 +1,5 @@
 <main>
     <h1>404</h1>
-    <p>Taka strona nie istnieje.</p>
-    <a href="/">Wróć na stronę główną</a>
+    <p><?= $t('notfound.text') ?></p>
+    <a href="/"><?= $t('notfound.back') ?></a>
 </main>

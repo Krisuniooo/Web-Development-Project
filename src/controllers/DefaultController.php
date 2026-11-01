@@ -11,9 +11,9 @@ final class DefaultController extends AppController
     public function index(): void
     {
         $this->render('home', [
-            'pageTitle' => 'Moja aplikacja',
+            'pageTitle' => $this->lang()->text('home.title'),
             'models' => require dirname(__DIR__, 2) . '/config/models.php',
-            'chatMessages' => require dirname(__DIR__, 2) . '/config/chat-messages.php',
+            'chatMessages' => $this->loadChatMessages(),
             'eyeFrames' => $this->loadEyeFrames(),
             'platforms' => require dirname(__DIR__, 2) . '/config/platforms.php',
             'howItWorks' => $this->loadHowItWorks(),
@@ -23,7 +23,7 @@ final class DefaultController extends AppController
     public function notFound(): void
     {
         $this->render('not-found', [
-            'pageTitle' => 'Nie znaleziono strony',
+            'pageTitle' => $this->lang()->text('notfound.title'),
         ]);
     }
 
@@ -42,12 +42,24 @@ final class DefaultController extends AppController
         return $isLocal ? $path : '/';
     }
 
+    private function loadChatMessages(): array
+    {
+        $messages = require dirname(__DIR__, 2) . '/config/chat-messages.php';
+
+        return array_map(fn(array $message): array => isset($message['category'])
+            ? [...$message, 'category' => $this->lang()->text($message['category'])]
+            : $message, $messages[$this->lang()->code()]);
+    }
+
     private function loadHowItWorks(): array
     {
         $howItWorks = require dirname(__DIR__, 2) . '/config/how-it-works.php';
 
+        $translateName = fn(array $item): array => [...$item, 'name' => $this->lang()->text($item['name'])];
+
+        $howItWorks['levels'] = array_map($translateName, $howItWorks['levels']);
         $howItWorks['limits'] = array_map(fn(array $limit): array => [
-            ...$limit,
+            ...$translateName($limit),
             'level' => $this->findLevelName($howItWorks['levels'], $limit['value']),
         ], $howItWorks['limits']);
 

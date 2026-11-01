@@ -41,7 +41,7 @@ final class PanelController extends AppController
         $navigation = require dirname(__DIR__, 2) . '/config/panel-navigation.php';
 
         $this->render('panel', [
-            'pageTitle' => $navigation[$section]['name'],
+            'pageTitle' => $this->lang()->text($navigation[$section]['name']),
             'navigation' => $navigation,
             'activeSection' => $section,
         ]);
