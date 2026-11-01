@@ -11,6 +11,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 $routing = new Routing();
 
 $routing->get('/', DefaultController::class, 'index');
+$routing->post('/language', DefaultController::class, 'setLanguage');
 $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->get('/app/models', PanelController::class, 'models');

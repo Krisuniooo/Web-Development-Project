@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lang;
+
 final class DefaultController extends AppController
 {
     public function index(): void
@@ -23,6 +25,21 @@ final class DefaultController extends AppController
         $this->render('not-found', [
             'pageTitle' => 'Nie znaleziono strony',
         ]);
+    }
+
+    public function setLanguage(): void
+    {
+        Lang::remember($_POST['lang'] ?? null);
+
+        header('Location: ' . $this->localPathOrHome($_POST['back'] ?? null), true, 303);
+    }
+
+    private function localPathOrHome(mixed $path): string
+    {
+        // browsers read /\ and a slash after a tab or newline as another host
+        $isLocal = is_string($path) && preg_match('~^/(?![/\\\\])[^\x00-\x1F\x7F]*\z~', $path) === 1;
+
+        return $isLocal ? $path : '/';
     }
 
     private function loadHowItWorks(): array

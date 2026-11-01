@@ -8,6 +8,7 @@ final class Lang
 {
     public const SUPPORTED = ['en', 'pl'];
     public const COOKIE = 'lang';
+    private const COOKIE_LIFETIME = 31536000; // a year
     private const FALLBACK = 'en';
 
     private function __construct(private string $code, private array $messages)
@@ -24,6 +25,19 @@ final class Lang
 
         // a text missing from the chosen language is shown in the fallback one
         return new self($code, array_replace(self::load(self::FALLBACK), self::load($code)));
+    }
+
+    public static function remember(mixed $code): void
+    {
+        if (in_array($code, self::SUPPORTED, true)) {
+            setcookie(self::COOKIE, $code, [
+                'expires' => time() + self::COOKIE_LIFETIME,
+                'path' => '/',
+                'secure' => !empty($_SERVER['HTTPS']),
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
     }
 
     public function code(): string

@@ -20,6 +20,7 @@ abstract class AppController
 
         $lang = Lang::fromRequest();
         $t = $lang->html(...);
+        $currentPath = $_SERVER['REQUEST_URI'];
 
         extract($variables, EXTR_SKIP);
 
