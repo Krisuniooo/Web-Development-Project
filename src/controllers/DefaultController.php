@@ -37,6 +37,10 @@ final class DefaultController extends AppController
 
     public function login(): void
     {
+        if ($this->isLoggedIn()) {
+            $this->redirect('/app');
+        }
+
         $this->render('login', [
             'pageTitle' => $this->lang()->text('login.title'),
             'loginError' => $this->loginErrorKey(),

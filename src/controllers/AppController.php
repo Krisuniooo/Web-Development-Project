@@ -15,6 +15,29 @@ abstract class AppController
         return $this->lang ??= Lang::fromRequest();
     }
 
+    protected function startSession(): void
+    {
+        session_start([
+            'use_strict_mode' => true,
+            'cookie_httponly' => true,
+            // Strict would drop the cookie when Discord sends the browser back
+            'cookie_samesite' => 'Lax',
+            'cookie_secure' => !empty($_SERVER['HTTPS']),
+        ]);
+    }
+
+    /** Looks at the session only if the browser already has one, so other visitors get no cookie. */
+    protected function isLoggedIn(): bool
+    {
+        if (!isset($_COOKIE[session_name()])) {
+            return false;
+        }
+
+        $this->startSession();
+
+        return isset($_SESSION['account_id']);
+    }
+
     protected function redirect(string $location): never
     {
         header('Location: ' . $location, true, 303);

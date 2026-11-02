@@ -29,6 +29,8 @@ final class AuthController extends AppController
             'response_type' => 'code',
             'client_id' => getenv('DISCORD_CLIENT_ID'),
             'scope' => 'identify',
+            // someone who already agreed goes straight back, without the consent screen
+            'prompt' => 'none',
             'redirect_uri' => $this->discordRedirectUri(),
             'state' => $_SESSION['oauth_state'],
         ]));
@@ -92,16 +94,5 @@ final class AuthController extends AppController
     private function discordRedirectUri(): string
     {
         return rtrim((string) getenv('APP_URL'), '/') . '/auth/discord/callback';
-    }
-
-    private function startSession(): void
-    {
-        session_start([
-            'use_strict_mode' => true,
-            'cookie_httponly' => true,
-            // Strict would drop the cookie when Discord sends the browser back
-            'cookie_samesite' => 'Lax',
-            'cookie_secure' => !empty($_SERVER['HTTPS']),
-        ]);
     }
 }
