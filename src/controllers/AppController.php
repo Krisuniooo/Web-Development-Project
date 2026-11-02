@@ -17,6 +17,10 @@ abstract class AppController
 
     protected function startSession(): void
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
         session_start([
             'use_strict_mode' => true,
             'cookie_httponly' => true,
@@ -27,15 +31,33 @@ abstract class AppController
     }
 
     /** Looks at the session only if the browser already has one, so other visitors get no cookie. */
-    protected function isLoggedIn(): bool
+    protected function loggedInAccountId(): ?int
     {
         if (!isset($_COOKIE[session_name()])) {
-            return false;
+            return null;
         }
 
         $this->startSession();
+        $accountId = $_SESSION['account_id'] ?? null;
 
-        return isset($_SESSION['account_id']);
+        return is_int($accountId) ? $accountId : null;
+    }
+
+    protected function endSession(): void
+    {
+        $this->startSession();
+        $_SESSION = [];
+
+        $cookie = session_get_cookie_params();
+        setcookie(session_name(), '', [
+            'expires' => 1,
+            'path' => $cookie['path'],
+            'secure' => $cookie['secure'],
+            'httponly' => $cookie['httponly'],
+            'samesite' => $cookie['samesite'],
+        ]);
+
+        session_destroy();
     }
 
     protected function redirect(string $location): never

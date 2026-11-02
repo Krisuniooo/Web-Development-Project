@@ -37,7 +37,7 @@ final class DefaultController extends AppController
 
     public function login(): void
     {
-        if ($this->isLoggedIn()) {
+        if ($this->loggedInAccountId() !== null) {
             $this->redirect('/app');
         }
 

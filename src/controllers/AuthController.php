@@ -75,6 +75,36 @@ final class AuthController extends AppController
         $this->redirect('/app');
     }
 
+    public function logout(): void
+    {
+        // checked before the session starts: a cross-site POST arrives without the Lax cookie,
+        // so PHP would create a new session and overwrite the visitor's real one
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        if (isset($_COOKIE[session_name()])) {
+            $this->endSession();
+        }
+
+        $this->redirect('/');
+    }
+
+    private function isSameOriginRequest(): bool
+    {
+        $fetchSite = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
+
+        if ($fetchSite !== null) {
+            return $fetchSite === 'same-origin';
+        }
+
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+
+        // browsers send one of these two headers on a form, and a request with neither carries no visitor's cookies
+        return $origin === null || preg_replace('~^https?://~', '', $origin) === ($_SERVER['HTTP_HOST'] ?? '');
+    }
+
     private function saveDiscordAccount(string $code): int
     {
         $discord = new DiscordClient(

@@ -4,12 +4,26 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Model\Account;
 use PDO;
 
 final class AccountRepository
 {
     public function __construct(private PDO $pdo)
     {
+    }
+
+    public function find(int $id): ?Account
+    {
+        $statement = $this->pdo->prepare('SELECT id, platform, platform_user_id, display_name FROM accounts WHERE id = :id');
+        $statement->execute(['id' => $id]);
+        $row = $statement->fetch();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return new Account((int) $row['id'], $row['platform'], $row['platform_user_id'], $row['display_name']);
     }
 
     /** Adds the account, or updates its name if it logged in before, and returns its id. */

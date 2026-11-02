@@ -23,6 +23,7 @@ return [
     "panel.back_home" => "Strona główna",
     "panel.not_ready" => "Ta sekcja nie jest jeszcze gotowa.",
     "footer.note" => "Decyzje podejmują modele i mogą się mylić.",
+    "account.logout" => "Wyloguj",
     "login.title" => "Logowanie",
     "login.description" => "Użyj konta, którym moderujesz swoją społeczność. Nie ma osobnego hasła.",
     "login.discord" => "Kontynuuj przez Discorda",

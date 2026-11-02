@@ -23,6 +23,7 @@ return [
     "panel.back_home" => "Back to home",
     "panel.not_ready" => "This section is not ready yet.",
     "footer.note" => "Decisions are made by models and can be wrong.",
+    "account.logout" => "Log out",
     "login.title" => "Log in",
     "login.description" => "Use the account you moderate your community with. There is no separate password.",
     "login.discord" => "Continue with Discord",
