@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controller\AuthController;
 use App\Controller\DefaultController;
 use App\Controller\PanelController;
 use App\Routing;
@@ -14,6 +15,8 @@ $routing->get('/', DefaultController::class, 'index');
 $routing->post('/language', DefaultController::class, 'setLanguage');
 $routing->get('/status', DefaultController::class, 'status');
 $routing->get('/login', DefaultController::class, 'login');
+$routing->get('/auth/discord', AuthController::class, 'discord');
+$routing->get('/auth/discord/callback', AuthController::class, 'discordCallback');
 $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->get('/app/models', PanelController::class, 'models');

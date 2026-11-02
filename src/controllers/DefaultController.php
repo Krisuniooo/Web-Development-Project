@@ -39,6 +39,7 @@ final class DefaultController extends AppController
     {
         $this->render('login', [
             'pageTitle' => $this->lang()->text('login.title'),
+            'loginError' => $this->loginErrorKey(),
         ]);
     }
 
@@ -46,7 +47,19 @@ final class DefaultController extends AppController
     {
         Lang::remember($_POST['lang'] ?? null);
 
-        header('Location: ' . $this->localPathOrHome($_POST['back'] ?? null), true, 303);
+        $this->redirect($this->localPathOrHome($_POST['back'] ?? null));
+    }
+
+    private function loginErrorKey(): ?string
+    {
+        $errors = [
+            'cancelled' => 'login.error.cancelled',
+            'failed' => 'login.error.failed',
+            'not_configured' => 'login.error.not_configured',
+        ];
+        $error = $_GET['error'] ?? null;
+
+        return is_string($error) ? ($errors[$error] ?? null) : null;
     }
 
     private function localPathOrHome(mixed $path): string

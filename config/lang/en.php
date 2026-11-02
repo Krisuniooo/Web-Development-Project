@@ -26,6 +26,9 @@ return [
     "login.title" => "Log in",
     "login.description" => "Use the account you moderate your community with. There is no separate password.",
     "login.discord" => "Continue with Discord",
+    "login.error.cancelled" => "Login was cancelled.",
+    "login.error.failed" => "Login failed. Please try again.",
+    "login.error.not_configured" => "Discord login is not set up on this server yet.",
     "status.title" => "Server status",
     "status.not_ready" => "This page is not ready yet.",
 

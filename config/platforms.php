@@ -6,6 +6,7 @@ return [
     [
         "name" => "Discord",
         "slug" => "discord",
+        "loginPath" => "/login",
         "ctaMessage" => "cta.discord",
     ],
     [

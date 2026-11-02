@@ -26,6 +26,9 @@ return [
     "login.title" => "Logowanie",
     "login.description" => "Użyj konta, którym moderujesz swoją społeczność. Nie ma osobnego hasła.",
     "login.discord" => "Kontynuuj przez Discorda",
+    "login.error.cancelled" => "Logowanie zostało anulowane.",
+    "login.error.failed" => "Logowanie się nie udało. Spróbuj ponownie.",
+    "login.error.not_configured" => "Logowanie przez Discorda nie jest jeszcze skonfigurowane na tym serwerze.",
     "status.title" => "Status serwerów",
     "status.not_ready" => "Ta strona nie jest jeszcze gotowa.",
 

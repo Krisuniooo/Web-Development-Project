@@ -15,6 +15,12 @@ abstract class AppController
         return $this->lang ??= Lang::fromRequest();
     }
 
+    protected function redirect(string $location): never
+    {
+        header('Location: ' . $location, true, 303);
+        exit;
+    }
+
     protected function render(string $template, array $variables = []): void
     {
         $viewsPath = dirname(__DIR__, 2) . '/public/views';
