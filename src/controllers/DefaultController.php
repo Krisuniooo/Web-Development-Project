@@ -35,6 +35,13 @@ final class DefaultController extends AppController
         ]);
     }
 
+    public function login(): void
+    {
+        $this->render('login', [
+            'pageTitle' => $this->lang()->text('login.title'),
+        ]);
+    }
+
     public function setLanguage(): void
     {
         Lang::remember($_POST['lang'] ?? null);

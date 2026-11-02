@@ -23,6 +23,9 @@ return [
     "panel.back_home" => "Strona główna",
     "panel.not_ready" => "Ta sekcja nie jest jeszcze gotowa.",
     "footer.note" => "Decyzje podejmują modele i mogą się mylić.",
+    "login.title" => "Logowanie",
+    "login.description" => "Użyj konta, którym moderujesz swoją społeczność. Nie ma osobnego hasła.",
+    "login.discord" => "Kontynuuj przez Discorda",
     "status.title" => "Status serwerów",
     "status.not_ready" => "Ta strona nie jest jeszcze gotowa.",
 

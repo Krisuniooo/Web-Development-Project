@@ -21,7 +21,7 @@
             <?php endforeach; ?>
             <span class="CTA-composer--typed" aria-hidden="true"><?= $t($platforms[0]['ctaMessage']) ?></span>
         </span>
-        <a href="/app" class="CTA-button">
+        <a href="/login" class="CTA-button">
             <span><?= $t('home.cta.button') ?></span>
             <i class="fa-regular fa-paper-plane"></i>
         </a>
