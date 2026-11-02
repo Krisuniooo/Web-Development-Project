@@ -8,7 +8,7 @@
         <ul class="models-orbit">
             <?php foreach($models as $model): ?>
                 <li class="models-orbit-item<?= !empty($model['pro']) ? ' is-pro' : '' ?>">
-                    <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" class="models-orbit-item--link" target="_blank" rel="noopener noreferrer">
+                    <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" class="models-orbit-item--link" title="<?= $t($model['hint']) ?>" target="_blank" rel="noopener noreferrer">
                         <span class="models-orbit-item--media">
                             <img
                                 src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>"
@@ -18,9 +18,9 @@
                                 height="64"
                             />
                             <?php if (!empty($model['pro'])): ?>
-                                <span class="models-orbit-item--pro" title="<?= $t('home.models.pro') ?>">PRO</span>
+                                <span class="models-orbit-item--pro">PRO</span>
                             <?php elseif (!empty($model['recommended'])): ?>
-                                <span class="models-orbit-item--recommended" role="img" aria-label="<?= $t('home.models.recommended') ?>" title="<?= $t('home.models.recommended') ?>">
+                                <span class="models-orbit-item--recommended" role="img" aria-label="<?= $t('home.models.recommended') ?>">
                                     <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">
                                         <path fill="currentColor" d="M12 2.5l2.94 5.96 6.56.95-4.75 4.63 1.12 6.54L12 17.5l-5.87 3.08 1.12-6.54L2.5 9.41l6.56-.95z" />
                                     </svg>

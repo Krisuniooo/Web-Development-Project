@@ -62,6 +62,12 @@
         frameId = null;
     };
 
+    // an item has to stay under the cursor long enough for its hint to appear
+    modelScene.forEach((item) => {
+        item.addEventListener("mouseenter", stop);
+        item.addEventListener("mouseleave", start);
+    });
+
     new ResizeObserver(updateRadius).observe(display);
 
     new IntersectionObserver(([entry]) => {
