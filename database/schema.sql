@@ -1,7 +1,12 @@
 BEGIN;
 
-CREATE TYPE channel_status AS ENUM ('active', 'paused', 'disconnected');
+-- nothing about the people who log in is stored: their platform account lives only in the session
+CREATE TYPE server_status AS ENUM ('active', 'removed');
+CREATE TYPE channel_status AS ENUM ('active', 'paused');
+CREATE TYPE moderation_model AS ENUM ('basal-mini', 'basal-pico');
+CREATE TYPE chat_language AS ENUM ('en', 'pl');
 CREATE TYPE moderation_category AS ENUM ('racism', 'harassment', 'profanity');
+CREATE TYPE moderation_level AS ENUM ('off', 'relaxed', 'balanced', 'strict');
 CREATE TYPE moderation_action AS ENUM ('flag', 'delete', 'timeout', 'ban');
 
 CREATE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
@@ -11,40 +16,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TABLE accounts (
+-- a server the bot was invited to, by anyone, through the site or not
+CREATE TABLE servers (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     platform TEXT NOT NULL,
-    platform_user_id TEXT NOT NULL,
-    display_name TEXT NOT NULL,
-    access_token_enc TEXT,
-    refresh_token_enc TEXT,
-    token_expires_at TIMESTAMPTZ,
+    platform_server_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status server_status NOT NULL DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (platform, platform_user_id)
+    UNIQUE (platform, platform_server_id)
 );
 
+-- a channel the bot moderates, with its own model, language and rules; a server has at most two, one per slot
 CREATE TABLE channels (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    platform TEXT NOT NULL,
+    server_id BIGINT NOT NULL REFERENCES servers (id) ON DELETE CASCADE,
+    slot SMALLINT NOT NULL CHECK (slot IN (1, 2)),
     platform_channel_id TEXT NOT NULL,
     name TEXT NOT NULL,
-    model_slug TEXT NOT NULL,
+    model moderation_model NOT NULL,
+    language chat_language NOT NULL,
     status channel_status NOT NULL DEFAULT 'active',
-    connected_by_account_id BIGINT REFERENCES accounts (id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (platform, platform_channel_id)
+    UNIQUE (server_id, slot),
+    UNIQUE (server_id, platform_channel_id),
+    -- pico misses too much in Polish
+    CHECK (model <> 'basal-pico' OR language = 'en')
 );
-
-CREATE INDEX channels_connected_by_account_id_idx ON channels (connected_by_account_id);
 
 CREATE TABLE channel_rules (
     channel_id BIGINT NOT NULL REFERENCES channels (id) ON DELETE CASCADE,
     category moderation_category NOT NULL,
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    level moderation_level NOT NULL,
     action moderation_action NOT NULL,
-    threshold DOUBLE PRECISION,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (channel_id, category)
 );
@@ -56,7 +62,8 @@ CREATE TABLE moderation_events (
     author_platform_id TEXT NOT NULL,
     author_name TEXT NOT NULL,
     category moderation_category NOT NULL,
-    model_slug TEXT NOT NULL,
+    -- text, so an event keeps the name of a model that is later removed
+    model TEXT NOT NULL,
     action moderation_action NOT NULL,
     content TEXT,
     score DOUBLE PRECISION,
@@ -65,7 +72,7 @@ CREATE TABLE moderation_events (
 
 CREATE INDEX moderation_events_channel_id_created_at_idx ON moderation_events (channel_id, created_at DESC);
 
-CREATE TRIGGER accounts_set_updated_at BEFORE UPDATE ON accounts
+CREATE TRIGGER servers_set_updated_at BEFORE UPDATE ON servers
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER channels_set_updated_at BEFORE UPDATE ON channels
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();

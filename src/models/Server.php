@@ -6,16 +6,14 @@ namespace App\Model;
 
 use DateTimeImmutable;
 
-final class Account
+final class Server
 {
     public function __construct(
         private ?int $id,
         private string $platform,
-        private string $platformUserId,
-        private string $displayName,
-        private ?string $accessTokenEnc = null,
-        private ?string $refreshTokenEnc = null,
-        private ?DateTimeImmutable $tokenExpiresAt = null,
+        private string $platformServerId,
+        private string $name,
+        private string $status, // active | removed
         private ?DateTimeImmutable $createdAt = null,
         private ?DateTimeImmutable $updatedAt = null,
     ) {
@@ -36,29 +34,19 @@ final class Account
         return $this->platform;
     }
 
-    public function getPlatformUserId(): string
+    public function getPlatformServerId(): string
     {
-        return $this->platformUserId;
+        return $this->platformServerId;
     }
 
-    public function getDisplayName(): string
+    public function getName(): string
     {
-        return $this->displayName;
+        return $this->name;
     }
 
-    public function getAccessTokenEnc(): ?string
+    public function getStatus(): string
     {
-        return $this->accessTokenEnc;
-    }
-
-    public function getRefreshTokenEnc(): ?string
-    {
-        return $this->refreshTokenEnc;
-    }
-
-    public function getTokenExpiresAt(): ?DateTimeImmutable
-    {
-        return $this->tokenExpiresAt;
+        return $this->status;
     }
 
     public function getCreatedAt(): ?DateTimeImmutable

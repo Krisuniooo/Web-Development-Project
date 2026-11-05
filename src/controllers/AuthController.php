@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\AccountRepository;
-use App\Database;
 use App\DiscordClient;
 use RuntimeException;
 
@@ -62,7 +60,7 @@ final class AuthController extends AppController
         }
 
         try {
-            $accountId = $this->saveDiscordAccount($code);
+            $user = $this->fetchDiscordUser($code);
         } catch (RuntimeException $exception) {
             error_log('Discord login failed: ' . $exception->getMessage());
             $this->redirect('/login?error=failed');
@@ -70,7 +68,8 @@ final class AuthController extends AppController
 
         // a new session id, so a session prepared by someone else cannot become a logged-in one
         session_regenerate_id(true);
-        $_SESSION['account_id'] = $accountId;
+        // the account is kept only here, not in the database
+        $_SESSION['user'] = ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name']];
 
         $this->redirect('/app');
     }
@@ -105,7 +104,8 @@ final class AuthController extends AppController
         return $origin === null || preg_replace('~^https?://~', '', $origin) === ($_SERVER['HTTP_HOST'] ?? '');
     }
 
-    private function saveDiscordAccount(string $code): int
+    /** @return array{id: string, name: string} */
+    private function fetchDiscordUser(string $code): array
     {
         $discord = new DiscordClient(
             (string) getenv('DISCORD_CLIENT_ID'),
@@ -115,10 +115,7 @@ final class AuthController extends AppController
         );
 
         // the token is used for this one question and then forgotten
-        $user = $discord->fetchUser($discord->exchangeCode($code));
-
-        return (new AccountRepository((new Database())->connect()))
-            ->saveFromLogin('discord', $user['id'], $user['name']);
+        return $discord->fetchUser($discord->exchangeCode($code));
     }
 
     private function discordRedirectUri(): string

@@ -11,9 +11,8 @@ final class ChannelRule
     public function __construct(
         private int $channelId,
         private string $category, // racism | harassment | profanity
-        private bool $enabled,
+        private string $level, // off | relaxed | balanced | strict
         private string $action, // flag | delete | timeout | ban
-        private ?float $threshold = null,
         private ?DateTimeImmutable $updatedAt = null,
     ) {
     }
@@ -28,19 +27,14 @@ final class ChannelRule
         return $this->category;
     }
 
-    public function isEnabled(): bool
+    public function getLevel(): string
     {
-        return $this->enabled;
+        return $this->level;
     }
 
     public function getAction(): string
     {
         return $this->action;
-    }
-
-    public function getThreshold(): ?float
-    {
-        return $this->threshold;
     }
 
     public function getUpdatedAt(): ?DateTimeImmutable

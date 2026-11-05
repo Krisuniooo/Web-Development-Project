@@ -10,12 +10,13 @@ final class Channel
 {
     public function __construct(
         private ?int $id,
-        private string $platform,
+        private int $serverId,
+        private int $slot, // 1 | 2
         private string $platformChannelId,
         private string $name,
-        private string $modelSlug,
-        private string $status, // active | paused | disconnected
-        private ?int $connectedByAccountId = null,
+        private string $model, // basal-mini | basal-pico
+        private string $language, // en | pl
+        private string $status, // active | paused
         private ?DateTimeImmutable $createdAt = null,
         private ?DateTimeImmutable $updatedAt = null,
     ) {
@@ -31,9 +32,14 @@ final class Channel
         $this->id = $id;
     }
 
-    public function getPlatform(): string
+    public function getServerId(): int
     {
-        return $this->platform;
+        return $this->serverId;
+    }
+
+    public function getSlot(): int
+    {
+        return $this->slot;
     }
 
     public function getPlatformChannelId(): string
@@ -46,19 +52,19 @@ final class Channel
         return $this->name;
     }
 
-    public function getModelSlug(): string
+    public function getModel(): string
     {
-        return $this->modelSlug;
+        return $this->model;
+    }
+
+    public function getLanguage(): string
+    {
+        return $this->language;
     }
 
     public function getStatus(): string
     {
         return $this->status;
-    }
-
-    public function getConnectedByAccountId(): ?int
-    {
-        return $this->connectedByAccountId;
     }
 
     public function getCreatedAt(): ?DateTimeImmutable

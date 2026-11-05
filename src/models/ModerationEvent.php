@@ -15,7 +15,7 @@ final class ModerationEvent
         private string $authorPlatformId,
         private string $authorName,
         private string $category, // racism | harassment | profanity
-        private string $modelSlug,
+        private string $model,
         private string $action, // flag | delete | timeout | ban
         private ?string $content = null,
         private ?float $score = null,
@@ -58,9 +58,9 @@ final class ModerationEvent
         return $this->category;
     }
 
-    public function getModelSlug(): string
+    public function getModel(): string
     {
-        return $this->modelSlug;
+        return $this->model;
     }
 
     public function getAction(): string

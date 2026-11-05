@@ -3,9 +3,9 @@
 <aside class="sidebar">
     <div class="sidebar-account">
         <div class="sidebar-account--current">
-            <img src="/assets/icons/<?= htmlspecialchars($currentAccount->getPlatform(), ENT_QUOTES, 'UTF-8') ?>.svg" alt="" class="sidebar-account--icon" width="20" height="20" />
+            <img src="/assets/icons/<?= htmlspecialchars($currentAccount['platform'], ENT_QUOTES, 'UTF-8') ?>.svg" alt="" class="sidebar-account--icon" width="20" height="20" />
             <span class="sidebar-account--text">
-                <span class="sidebar-account--name" title="<?= htmlspecialchars($currentAccount->getDisplayName(), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($currentAccount->getDisplayName(), ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="sidebar-account--name" title="<?= htmlspecialchars($currentAccount['name'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($currentAccount['name'], ENT_QUOTES, 'UTF-8') ?></span>
                 <span class="sidebar-account--platform"><?= htmlspecialchars($currentPlatformName, ENT_QUOTES, 'UTF-8') ?></span>
             </span>
         </div>

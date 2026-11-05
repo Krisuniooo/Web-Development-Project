@@ -31,16 +31,22 @@ abstract class AppController
     }
 
     /** Looks at the session only if the browser already has one, so other visitors get no cookie. */
-    protected function loggedInAccountId(): ?int
+    /** @return array{platform: string, id: string, name: string}|null the platform account the session holds */
+    protected function loggedInUser(): ?array
     {
         if (!isset($_COOKIE[session_name()])) {
             return null;
         }
 
         $this->startSession();
-        $accountId = $_SESSION['account_id'] ?? null;
+        $user = $_SESSION['user'] ?? null;
 
-        return is_int($accountId) ? $accountId : null;
+        $isValid = is_array($user)
+            && is_string($user['platform'] ?? null)
+            && is_string($user['id'] ?? null)
+            && is_string($user['name'] ?? null);
+
+        return $isValid ? $user : null;
     }
 
     protected function endSession(): void
