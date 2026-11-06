@@ -89,7 +89,9 @@
   -webkit-line-clamp: 2;
 }
 
-.servers-card--invite {
+/* the button and the status take the same place, so the cards in a row stay level */
+.servers-card--invite,
+.servers-card--status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -98,15 +100,26 @@
   margin-top: auto;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
-  background: var(--color-accent);
-  color: var(--color-background);
   font-size: var(--font-size-sm);
   font-weight: 600;
+}
+
+.servers-card--invite {
+  background: var(--color-accent);
+  color: var(--color-background);
   text-decoration: none;
   transition: background-color 0.2s;
 }
 .servers-card--invite:hover {
   background: var(--color-accent-strong);
+}
+
+.servers-card--status {
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+}
+.servers-card--status i {
+  color: var(--color-success);
 }
 
 .servers-refresh:focus-visible,
@@ -129,7 +142,8 @@
     height: 48px;
     font-size: 1rem;
   }
-  .servers-card--invite {
+  .servers-card--invite,
+  .servers-card--status {
     grid-column: 1 / -1;
   }
 }

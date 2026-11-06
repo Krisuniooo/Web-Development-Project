@@ -12,6 +12,26 @@ final class ServerRepository
     {
     }
 
+    /**
+     * The servers from the list that have the bot on them.
+     *
+     * @param list<string> $platformServerIds digits only, as they go into a Postgres array
+     * @return list<string>
+     */
+    public function findActiveIds(string $platform, array $platformServerIds): array
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT platform_server_id FROM servers
+             WHERE platform = :platform AND status = 'active' AND platform_server_id = ANY (CAST(:ids AS TEXT[]))",
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'ids' => '{' . implode(',', $platformServerIds) . '}',
+        ]);
+
+        return $statement->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     /** Adds the server as active, or brings it back and updates its name if it was there before. */
     public function saveActive(string $platform, string $platformServerId, string $name): void
     {

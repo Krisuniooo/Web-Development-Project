@@ -28,6 +28,7 @@ return [
     "servers.lead" => "Choose the server whose chat $appName should watch over.",
     "servers.empty" => "We can't see any server you manage. Only servers you own or where you can manage the server are shown.",
     "servers.add_bot" => "Add bot",
+    "servers.bot_present" => "Bot is on this server",
     "servers.refresh" => "Refresh the list",
     "login.title" => "Log in",
     "login.description" => "Use the account you moderate your community with. There is no separate password.",

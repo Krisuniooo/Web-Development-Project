@@ -28,6 +28,7 @@ return [
     "servers.lead" => "Wybierz serwer, którego czat ma pilnować $appName.",
     "servers.empty" => "Nie widzimy żadnego serwera, którym zarządzasz. Pokazujemy tylko serwery, których jesteś właścicielem albo na których możesz zarządzać serwerem.",
     "servers.add_bot" => "Dodaj bota",
+    "servers.bot_present" => "Bot jest na serwerze",
     "servers.refresh" => "Odśwież listę",
     "login.title" => "Logowanie",
     "login.description" => "Użyj konta, którym moderujesz swoją społeczność. Nie ma osobnego hasła.",
