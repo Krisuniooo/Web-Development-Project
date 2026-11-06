@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+use App\DiscordGateway;
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+// Exit code 0 means the bot stopped on purpose, so Docker does not start it again.
+// A crash ends with another code, and then Docker does.
+
+$token = trim((string) getenv('DISCORD_BOT_TOKEN'));
+
+if ($token === '') {
+    fwrite(STDERR, "The bot is off: DISCORD_BOT_TOKEN is empty. Copy the token from the Discord Developer Portal (Bot > Reset Token) into .env\n");
+    exit(0);
+}
+
+$gateway = new DiscordGateway($token, getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json');
+
+try {
+    $gateway->run();
+} catch (RuntimeException $error) {
+    fwrite(STDERR, 'The bot stopped: ' . $error->getMessage() . "\n");
+    exit(0);
+}

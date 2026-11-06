@@ -38,6 +38,21 @@ services:
     networks:
       - pg-network
 
+  discord-bot:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: php bin/discord-bot.php
+    env_file: .env
+    # passes the stop signal on to PHP, so the container stops at once
+    init: true
+    # starts again after a crash, but not when the bot stops on purpose
+    restart: on-failure
+    volumes:
+      - .:/app
+    networks:
+      - pg-network
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
