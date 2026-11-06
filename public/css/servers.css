@@ -89,8 +89,21 @@
   -webkit-line-clamp: 2;
 }
 
-/* the button and the status take the same place, so the cards in a row stay level */
+/* the chosen server */
+.servers-card.is-managed {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+/* the form holds the button, so it takes the place the button would */
+.servers-card--form {
+  width: 100%;
+  margin: auto 0 0;
+}
+
+/* the buttons and the status take the same place, so the cards in a row stay level */
 .servers-card--invite,
+.servers-card--manage,
 .servers-card--status {
   display: inline-flex;
   align-items: center;
@@ -104,13 +117,19 @@
   font-weight: 600;
 }
 
-.servers-card--invite {
+.servers-card--invite,
+.servers-card--manage {
+  border: 0;
   background: var(--color-accent);
   color: var(--color-background);
+  font-family: inherit;
+  line-height: inherit;
   text-decoration: none;
+  cursor: pointer;
   transition: background-color 0.2s;
 }
-.servers-card--invite:hover {
+.servers-card--invite:hover,
+.servers-card--manage:hover {
   background: var(--color-accent-strong);
 }
 
@@ -123,7 +142,8 @@
 }
 
 .servers-refresh:focus-visible,
-.servers-card--invite:focus-visible {
+.servers-card--invite:focus-visible,
+.servers-card--manage:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 3px;
 }
@@ -143,6 +163,7 @@
     font-size: 1rem;
   }
   .servers-card--invite,
+  .servers-card--form,
   .servers-card--status {
     grid-column: 1 / -1;
   }

@@ -41,7 +41,7 @@ final class DiscordClient
         return $response['access_token'];
     }
 
-    /** @return array{id: string, name: string} */
+    /** @return array{id: string, name: string, avatarUrl: string} */
     public function fetchUser(string $accessToken): array
     {
         $user = $this->request('/users/@me', [
@@ -50,12 +50,31 @@ final class DiscordClient
 
         $id = $user['id'] ?? null;
         $name = $user['global_name'] ?? $user['username'] ?? null;
+        $avatar = $user['avatar'] ?? null;
 
-        if (!is_string($id) || $id === '' || !is_string($name) || $name === '') {
+        // the id becomes part of an image address, so it must be a real Discord id
+        if (!is_string($id) || !preg_match('/^\d{1,20}$/', $id) || !is_string($name) || $name === '') {
             throw new RuntimeException('Discord user response has no id or name');
         }
 
-        return ['id' => $id, 'name' => $name];
+        return [
+            'id' => $id,
+            'name' => $name,
+            // the picture the user chose, or else the default one Discord shows for them
+            'avatarUrl' => is_string($avatar) && preg_match('/^(a_)?[0-9a-f]{32}$/', $avatar)
+                ? "https://cdn.discordapp.com/avatars/$id/$avatar.png?size=64"
+                : 'https://cdn.discordapp.com/embed/avatars/' . self::defaultAvatar($id, $user['discriminator'] ?? '0') . '.png',
+        ];
+    }
+
+    /** Which of Discord's default pictures the user has: by the id for new names, by the old #1234 tag for the rest. */
+    private static function defaultAvatar(string $id, mixed $discriminator): int
+    {
+        if (is_string($discriminator) && preg_match('/^\d{4}$/', $discriminator) && $discriminator !== '0000') {
+            return (int) $discriminator % 5;
+        }
+
+        return ((int) $id >> 22) % 6;
     }
 
     /**

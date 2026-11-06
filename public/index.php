@@ -19,6 +19,7 @@ $routing->get('/auth/discord', AuthController::class, 'discord');
 $routing->get('/auth/discord/callback', AuthController::class, 'discordCallback');
 $routing->post('/logout', AuthController::class, 'logout');
 $routing->get('/app', PanelController::class, 'overview');
+$routing->post('/app/manage', PanelController::class, 'manage');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->get('/app/models', PanelController::class, 'models');
 $routing->get('/app/limits', PanelController::class, 'limits');

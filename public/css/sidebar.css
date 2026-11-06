@@ -29,6 +29,12 @@
   flex-shrink: 0;
   filter: var(--icon-filter);
 }
+.sidebar-account--avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-surface);
+  object-fit: cover;
+}
 .sidebar-account--text {
   display: grid;
   flex: 1;
@@ -42,9 +48,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* two lines at most, so a narrow sidebar still shows the start of the server name */
 .sidebar-account--platform {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--color-muted);
   font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.sidebar-account--server {
+  color: var(--color-text-secondary);
+  font-weight: 600;
 }
 .sidebar-account--logout {
   width: 100%;
@@ -100,6 +116,15 @@
   background: var(--color-surface-raised);
   color: var(--color-accent-strong);
   font-weight: 600;
+}
+/* waits until a server is chosen in the overview */
+.sidebar-nav--link.is-locked {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+.sidebar-nav--link.is-locked:hover {
+  background: none;
+  color: var(--color-disabled);
 }
 .sidebar-nav--icon {
   width: 1.25em;

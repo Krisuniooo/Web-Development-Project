@@ -19,36 +19,55 @@ final class PanelController extends AppController
 
     public function overview(): void
     {
-        $user = $this->requireLogin();
-        $this->renderSection($user, 'overview', ['servers' => $this->serverCards($user['platform'])]);
+        $this->renderSection('overview');
     }
 
     public function channels(): void
     {
-        $this->renderSection($this->requireLogin(), 'channels');
+        $this->renderSection('channels');
     }
 
     public function models(): void
     {
-        $this->renderSection($this->requireLogin(), 'models');
+        $this->renderSection('models');
     }
 
     public function limits(): void
     {
-        $this->renderSection($this->requireLogin(), 'limits');
+        $this->renderSection('limits');
     }
 
     public function logs(): void
     {
-        $this->renderSection($this->requireLogin(), 'logs');
+        $this->renderSection('logs');
     }
 
     public function settings(): void
     {
-        $this->renderSection($this->requireLogin(), 'settings');
+        $this->renderSection('settings');
     }
 
-    /** @return array{platform: string, id: string, name: string} */
+    /** Chooses the server the other sections are about. */
+    public function manage(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $serverId = $_POST['server'] ?? null;
+        $isOwnServer = is_string($serverId) && in_array($serverId, array_column($this->sessionServers(), 'id'), true);
+
+        // only a server the user manages, and only with the bot on it, since the settings are for the bot
+        if ($isOwnServer && $this->serverIdsWithBot($user['platform'], [$serverId]) === [$serverId]) {
+            $_SESSION['managedServerId'] = $serverId;
+        }
+
+        $this->redirect('/app');
+    }
+
+    /** @return array{platform: string, id: string, name: string, avatarUrl: ?string} */
     private function requireLogin(): array
     {
         $user = $this->loggedInUser();
@@ -60,17 +79,41 @@ final class PanelController extends AppController
         return $user;
     }
 
-    /**
-     * The servers saved at login, each with a link that invites the bot to that server
-     * and whether the bot is already there.
-     *
-     * @return list<array{name: string, initials: string, iconUrl: ?string, inviteUrl: string, hasBot: bool}>
-     */
-    private function serverCards(string $platform): array
+    /** @return list<array{id: string, name: string, icon: ?string}> the servers saved at login */
+    private function sessionServers(): array
     {
         $servers = $_SESSION['servers'] ?? [];
-        $servers = is_array($servers) ? $servers : [];
-        $idsWithBot = $this->serverIdsWithBot($platform, array_column($servers, 'id'));
+
+        return is_array($servers) ? $servers : [];
+    }
+
+    /**
+     * The chosen server, checked again on every page: it must still be on the user's list and still have the bot.
+     *
+     * @param list<string> $idsWithBot
+     * @return array{id: string, name: string}|null
+     */
+    private function managedServer(array $servers, array $idsWithBot): ?array
+    {
+        $id = $_SESSION['managedServerId'] ?? null;
+
+        foreach ($servers as $server) {
+            if ($server['id'] === $id && in_array($id, $idsWithBot, true)) {
+                return ['id' => $server['id'], 'name' => $server['name']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Each server with a link that invites the bot, whether the bot is already there and whether it is the chosen one.
+     *
+     * @param list<string> $idsWithBot
+     * @return list<array{id: string, name: string, initials: string, iconUrl: ?string, inviteUrl: string, hasBot: bool, isManaged: bool}>
+     */
+    private function serverCards(array $servers, array $idsWithBot, ?array $managedServer): array
+    {
         $list = [];
 
         foreach ($servers as $server) {
@@ -78,6 +121,7 @@ final class PanelController extends AppController
             $words = array_slice(preg_split('/\s+/u', trim($server['name']), -1, PREG_SPLIT_NO_EMPTY), 0, 2);
 
             $list[] = [
+                'id' => $server['id'],
                 'name' => $server['name'],
                 'initials' => mb_strtoupper(implode('', array_map(fn(string $word): string => mb_substr($word, 0, 1), $words))),
                 'iconUrl' => $server['icon'] === null
@@ -92,6 +136,7 @@ final class PanelController extends AppController
                     'disable_guild_select' => 'true',
                 ]),
                 'hasBot' => in_array($server['id'], $idsWithBot, true),
+                'isManaged' => $server['id'] === ($managedServer['id'] ?? null),
             ];
         }
 
@@ -120,17 +165,33 @@ final class PanelController extends AppController
         }
     }
 
-    private function renderSection(array $user, string $section, array $variables = []): void
+    private function renderSection(string $section): void
     {
+        $user = $this->requireLogin();
+        $servers = $this->sessionServers();
+        $idsWithBot = $this->serverIdsWithBot($user['platform'], array_column($servers, 'id'));
+        $managedServer = $this->managedServer($servers, $idsWithBot);
+
+        // every section but the overview is about one server, so it waits until one is chosen
+        if ($section !== 'overview' && $managedServer === null) {
+            $this->redirect('/app');
+        }
+
         $navigation = require dirname(__DIR__, 2) . '/config/panel-navigation.php';
         $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
 
-        $this->render('panel', $variables + [
+        foreach ($navigation as $key => $item) {
+            $navigation[$key]['locked'] = $key !== 'overview' && $managedServer === null;
+        }
+
+        $this->render('panel', [
             'pageTitle' => $this->lang()->text($navigation[$section]['name']),
             'navigation' => $navigation,
             'activeSection' => $section,
             'currentAccount' => $user,
             'currentPlatformName' => array_column($platforms, 'name', 'slug')[$user['platform']] ?? $user['platform'],
+            'managedServer' => $managedServer,
+            'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
         ]);
     }
 }

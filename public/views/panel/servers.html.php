@@ -19,18 +19,23 @@
     <?php else: ?>
         <ul class="servers-grid">
             <?php foreach ($servers as $server): ?>
-                <li class="servers-card">
+                <li class="servers-card<?= $server['isManaged'] ? ' is-managed' : '' ?>">
                     <?php if ($server['iconUrl'] !== null): ?>
                         <img src="<?= htmlspecialchars($server['iconUrl'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="servers-card--icon" width="64" height="64" loading="lazy" />
                     <?php else: ?>
                         <span class="servers-card--icon" aria-hidden="true"><?= htmlspecialchars($server['initials'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                     <span class="servers-card--name" title="<?= htmlspecialchars($server['name'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($server['name'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <?php if ($server['hasBot']): ?>
+                    <?php if ($server['isManaged']): ?>
                         <span class="servers-card--status">
                             <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                            <?= $t('servers.bot_present') ?>
+                            <?= $t('servers.managed') ?>
                         </span>
+                    <?php elseif ($server['hasBot']): ?>
+                        <form method="post" action="/app/manage" class="servers-card--form">
+                            <input type="hidden" name="server" value="<?= htmlspecialchars($server['id'], ENT_QUOTES, 'UTF-8') ?>" />
+                            <button type="submit" class="servers-card--manage"><?= $t('servers.manage') ?></button>
+                        </form>
                     <?php else: ?>
                         <a href="<?= htmlspecialchars($server['inviteUrl'], ENT_QUOTES, 'UTF-8') ?>" class="servers-card--invite" target="_blank" rel="noopener noreferrer">
                             <?= $t('servers.add_bot') ?>

@@ -31,7 +31,7 @@ abstract class AppController
     }
 
     /** Looks at the session only if the browser already has one, so other visitors get no cookie. */
-    /** @return array{platform: string, id: string, name: string}|null the platform account the session holds */
+    /** @return array{platform: string, id: string, name: string, avatarUrl: ?string}|null the platform account the session holds */
     protected function loggedInUser(): ?array
     {
         if (!isset($_COOKIE[session_name()])) {
@@ -46,7 +46,32 @@ abstract class AppController
             && is_string($user['id'] ?? null)
             && is_string($user['name'] ?? null);
 
-        return $isValid ? $user : null;
+        if (!$isValid) {
+            return null;
+        }
+
+        return [
+            'platform' => $user['platform'],
+            'id' => $user['id'],
+            'name' => $user['name'],
+            // a session from before profile pictures has none
+            'avatarUrl' => is_string($user['avatarUrl'] ?? null) ? $user['avatarUrl'] : null,
+        ];
+    }
+
+    /** Whether a form came from this site. Every change sent by POST is checked with it. */
+    protected function isSameOriginRequest(): bool
+    {
+        $fetchSite = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
+
+        if ($fetchSite !== null) {
+            return $fetchSite === 'same-origin';
+        }
+
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+
+        // browsers send one of these two headers on a form, and a request with neither carries no visitor's cookies
+        return $origin === null || preg_replace('~^https?://~', '', $origin) === ($_SERVER['HTTP_HOST'] ?? '');
     }
 
     protected function endSession(): void

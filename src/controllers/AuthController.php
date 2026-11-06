@@ -74,7 +74,7 @@ final class AuthController extends AppController
         // a new session id, so a session prepared by someone else cannot become a logged-in one
         session_regenerate_id(true);
         // the account is kept only here, not in the database
-        $_SESSION['user'] = ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name']];
+        $_SESSION['user'] = ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name'], 'avatarUrl' => $user['avatarUrl']];
         // a snapshot from this login, only for showing the list: access is checked again before any change
         $_SESSION['servers'] = $servers;
 
@@ -95,20 +95,6 @@ final class AuthController extends AppController
         }
 
         $this->redirect('/');
-    }
-
-    private function isSameOriginRequest(): bool
-    {
-        $fetchSite = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? null;
-
-        if ($fetchSite !== null) {
-            return $fetchSite === 'same-origin';
-        }
-
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
-
-        // browsers send one of these two headers on a form, and a request with neither carries no visitor's cookies
-        return $origin === null || preg_replace('~^https?://~', '', $origin) === ($_SERVER['HTTP_HOST'] ?? '');
     }
 
     private function discordClient(): DiscordClient
