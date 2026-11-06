@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Database;
+use App\DiscordEvents;
 use App\DiscordGateway;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
@@ -16,9 +18,14 @@ if ($token === '') {
     exit(0);
 }
 
-$gateway = new DiscordGateway($token, getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json');
-
 try {
+    // the database settings are checked here, the connection opens after logging in to Discord
+    $events = new DiscordEvents(new Database());
+    $gateway = new DiscordGateway(
+        $token,
+        getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json',
+        $events->handle(...),
+    );
     $gateway->run();
 } catch (RuntimeException $error) {
     fwrite(STDERR, 'The bot stopped: ' . $error->getMessage() . "\n");

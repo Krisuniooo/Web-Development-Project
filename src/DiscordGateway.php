@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App;
 
+use Closure;
 use RuntimeException;
 
 /**
  * Keeps the bot connected to the Discord Gateway: logs in, sends heartbeats and connects again after a drop.
+ * Every event, such as a new server, goes to $onEvent; an error thrown there ends the connection like any other.
  */
 final class DiscordGateway
 {
@@ -39,9 +41,11 @@ final class DiscordGateway
         4014 => 'The bot asked for a privileged intent that is turned off. Turn it on in the Developer Portal (Bot > Privileged Gateway Intents)',
     ];
 
+    /** @param Closure(string, array): void $onEvent gets the event type, such as GUILD_CREATE, and its data */
     public function __construct(
         private string $token,
         private string $url,
+        private Closure $onEvent,
     ) {
     }
 
@@ -69,7 +73,8 @@ final class DiscordGateway
                 $pauseSeconds = 1;
             }
 
-            self::log("Disconnected: $reason. Connecting again in $pauseSeconds s");
+            // one line, even when the reason has several, such as some database errors
+            self::log("Disconnected, connecting again in $pauseSeconds s: " . preg_replace('/\s+/', ' ', $reason));
             sleep($pauseSeconds);
             $pauseSeconds = min($pauseSeconds * 2, self::MAX_PAUSE_SECONDS);
         }
@@ -136,15 +141,26 @@ final class DiscordGateway
                     return 'Discord asked the bot to connect again';
                 } elseif ($event['op'] === self::OP_INVALID_SESSION) {
                     return 'Discord ended the session';
-                } elseif ($event['op'] === self::OP_DISPATCH && ($event['t'] ?? null) === 'READY') {
-                    $name = $event['d']['user']['username'] ?? null;
-                    // READY lists every server the bot is on, their details come in later events
-                    $servers = $event['d']['guilds'] ?? null;
-                    self::log(sprintf(
-                        'Logged in as %s, servers: %d',
-                        is_string($name) ? $name : 'an unknown name',
-                        is_array($servers) ? count($servers) : 0,
-                    ));
+                } elseif ($event['op'] === self::OP_DISPATCH) {
+                    $type = $event['t'] ?? null;
+                    $data = $event['d'] ?? null;
+
+                    if (!is_string($type) || !is_array($data)) {
+                        continue;
+                    }
+
+                    if ($type === 'READY') {
+                        $name = $data['user']['username'] ?? null;
+                        // READY lists every server the bot is on, their details come in later events
+                        $servers = $data['guilds'] ?? null;
+                        self::log(sprintf(
+                            'Logged in as %s, servers: %d',
+                            is_string($name) ? $name : 'an unknown name',
+                            is_array($servers) ? count($servers) : 0,
+                        ));
+                    }
+
+                    ($this->onEvent)($type, $data);
                 }
             }
         } finally {

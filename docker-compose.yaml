@@ -44,6 +44,8 @@ services:
       dockerfile: docker/php/Dockerfile
     command: php bin/discord-bot.php
     env_file: .env
+    depends_on:
+      - db
     # passes the stop signal on to PHP, so the container stops at once
     init: true
     # starts again after a crash, but not when the bot stops on purpose
