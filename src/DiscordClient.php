@@ -9,6 +9,8 @@ use RuntimeException;
 final class DiscordClient
 {
     private const TIMEOUT_SECONDS = 10;
+    // ADMINISTRATOR or MANAGE_GUILD: the same rule Discord uses for adding a bot to a server
+    private const CAN_MANAGE_SERVER = (1 << 3) | (1 << 5);
 
     public function __construct(
         private string $clientId,
@@ -54,6 +56,43 @@ final class DiscordClient
         }
 
         return ['id' => $id, 'name' => $name];
+    }
+
+    /**
+     * The servers the user owns or can manage, sorted by name.
+     *
+     * @return list<array{id: string, name: string, icon: ?string}>
+     */
+    public function fetchManagedServers(string $accessToken): array
+    {
+        $guilds = $this->request('/users/@me/guilds', [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $accessToken],
+        ]);
+
+        $servers = [];
+
+        foreach ($guilds as $guild) {
+            $id = $guild['id'] ?? null;
+            $name = $guild['name'] ?? null;
+            $icon = $guild['icon'] ?? null;
+            $canManage = ($guild['owner'] ?? false) === true
+                || ((int) ($guild['permissions'] ?? 0) & self::CAN_MANAGE_SERVER) !== 0;
+
+            if (!$canManage || !is_string($id) || !preg_match('/^\d{1,20}$/', $id) || !is_string($name) || $name === '') {
+                continue;
+            }
+
+            $servers[] = [
+                'id' => $id,
+                'name' => $name,
+                // the icon becomes part of an image address, so only a real icon hash is kept
+                'icon' => is_string($icon) && preg_match('/^(a_)?[0-9a-f]{32}$/', $icon) ? $icon : null,
+            ];
+        }
+
+        usort($servers, fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+
+        return $servers;
     }
 
     private function request(string $path, array $options): array

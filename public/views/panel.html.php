@@ -5,7 +5,11 @@
     <?php include __DIR__ . '/components/sidebar.html.php'; ?>
     <main class="panel-content">
         <h1 class="panel-content--title"><?= $t($navigation[$activeSection]['name']) ?></h1>
-        <p class="panel-content--description"><?= $t('panel.not_ready') ?></p>
+        <?php if ($activeSection === 'overview'): ?>
+            <?php include __DIR__ . '/panel/servers.html.php'; ?>
+        <?php else: ?>
+            <p class="panel-content--description"><?= $t('panel.not_ready') ?></p>
+        <?php endif; ?>
     </main>
     <?php include __DIR__ . '/components/footer.html.php'; ?>
 </div>

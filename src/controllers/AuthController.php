@@ -26,7 +26,8 @@ final class AuthController extends AppController
         $this->redirect(self::DISCORD_AUTHORIZE_URL . '?' . http_build_query([
             'response_type' => 'code',
             'client_id' => getenv('DISCORD_CLIENT_ID'),
-            'scope' => 'identify',
+            // guilds: the servers the user is on, so the panel can offer to add the bot to them
+            'scope' => 'identify guilds',
             // someone who already agreed goes straight back, without the consent screen
             'prompt' => 'none',
             'redirect_uri' => $this->discordRedirectUri(),
@@ -60,7 +61,11 @@ final class AuthController extends AppController
         }
 
         try {
-            $user = $this->fetchDiscordUser($code);
+            $discord = $this->discordClient();
+            // the token is used for these two questions and then forgotten
+            $accessToken = $discord->exchangeCode($code);
+            $user = $discord->fetchUser($accessToken);
+            $servers = $discord->fetchManagedServers($accessToken);
         } catch (RuntimeException $exception) {
             error_log('Discord login failed: ' . $exception->getMessage());
             $this->redirect('/login?error=failed');
@@ -70,6 +75,8 @@ final class AuthController extends AppController
         session_regenerate_id(true);
         // the account is kept only here, not in the database
         $_SESSION['user'] = ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name']];
+        // a snapshot from this login, only for showing the list: access is checked again before any change
+        $_SESSION['servers'] = $servers;
 
         $this->redirect('/app');
     }
@@ -104,18 +111,14 @@ final class AuthController extends AppController
         return $origin === null || preg_replace('~^https?://~', '', $origin) === ($_SERVER['HTTP_HOST'] ?? '');
     }
 
-    /** @return array{id: string, name: string} */
-    private function fetchDiscordUser(string $code): array
+    private function discordClient(): DiscordClient
     {
-        $discord = new DiscordClient(
+        return new DiscordClient(
             (string) getenv('DISCORD_CLIENT_ID'),
             (string) getenv('DISCORD_CLIENT_SECRET'),
             $this->discordRedirectUri(),
             getenv('DISCORD_API_URL') ?: self::DISCORD_API_URL,
         );
-
-        // the token is used for this one question and then forgotten
-        return $discord->fetchUser($discord->exchangeCode($code));
     }
 
     private function discordRedirectUri(): string

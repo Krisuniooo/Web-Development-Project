@@ -6,37 +6,46 @@ namespace App\Controller;
 
 final class PanelController extends AppController
 {
+    private const DISCORD_INVITE_URL = 'https://discord.com/oauth2/authorize';
+    // asked for all at once, so turning on timeouts or bans later needs no new invite
+    private const DISCORD_BOT_PERMISSIONS = (1 << 10) // VIEW_CHANNEL: see the moderated channels
+        | (1 << 13) // MANAGE_MESSAGES: delete messages
+        | (1 << 40) // MODERATE_MEMBERS: time out authors
+        | (1 << 2); // BAN_MEMBERS: ban authors
+
     public function overview(): void
     {
-        $this->renderSection('overview');
+        $user = $this->requireLogin();
+        $this->renderSection($user, 'overview', ['servers' => $this->serversWithInvites()]);
     }
 
     public function channels(): void
     {
-        $this->renderSection('channels');
+        $this->renderSection($this->requireLogin(), 'channels');
     }
 
     public function models(): void
     {
-        $this->renderSection('models');
+        $this->renderSection($this->requireLogin(), 'models');
     }
 
     public function limits(): void
     {
-        $this->renderSection('limits');
+        $this->renderSection($this->requireLogin(), 'limits');
     }
 
     public function logs(): void
     {
-        $this->renderSection('logs');
+        $this->renderSection($this->requireLogin(), 'logs');
     }
 
     public function settings(): void
     {
-        $this->renderSection('settings');
+        $this->renderSection($this->requireLogin(), 'settings');
     }
 
-    private function renderSection(string $section): void
+    /** @return array{platform: string, id: string, name: string} */
+    private function requireLogin(): array
     {
         $user = $this->loggedInUser();
 
@@ -44,10 +53,49 @@ final class PanelController extends AppController
             $this->redirect('/login');
         }
 
+        return $user;
+    }
+
+    /**
+     * The servers saved at login, each with a link that invites the bot to that server.
+     *
+     * @return list<array{name: string, initials: string, iconUrl: ?string, inviteUrl: string}>
+     */
+    private function serversWithInvites(): array
+    {
+        $servers = $_SESSION['servers'] ?? [];
+        $list = [];
+
+        foreach (is_array($servers) ? $servers : [] as $server) {
+            // shown instead of a missing icon: the first letters of the first two words, as on Discord
+            $words = array_slice(preg_split('/\s+/u', trim($server['name']), -1, PREG_SPLIT_NO_EMPTY), 0, 2);
+
+            $list[] = [
+                'name' => $server['name'],
+                'initials' => mb_strtoupper(implode('', array_map(fn(string $word): string => mb_substr($word, 0, 1), $words))),
+                'iconUrl' => $server['icon'] === null
+                    ? null
+                    : "https://cdn.discordapp.com/icons/{$server['id']}/{$server['icon']}.png?size=64",
+                'inviteUrl' => self::DISCORD_INVITE_URL . '?' . http_build_query([
+                    'client_id' => getenv('DISCORD_CLIENT_ID'),
+                    'scope' => 'bot',
+                    'permissions' => self::DISCORD_BOT_PERMISSIONS,
+                    // the server is already chosen on Discord's page
+                    'guild_id' => $server['id'],
+                    'disable_guild_select' => 'true',
+                ]),
+            ];
+        }
+
+        return $list;
+    }
+
+    private function renderSection(array $user, string $section, array $variables = []): void
+    {
         $navigation = require dirname(__DIR__, 2) . '/config/panel-navigation.php';
         $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
 
-        $this->render('panel', [
+        $this->render('panel', $variables + [
             'pageTitle' => $this->lang()->text($navigation[$section]['name']),
             'navigation' => $navigation,
             'activeSection' => $section,
