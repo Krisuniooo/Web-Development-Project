@@ -79,4 +79,12 @@ return [
     "level.relaxed" => "Luźno",
     "level.balanced" => "Średnio",
     "level.strict" => "Surowo",
+
+    "check.error.forbidden" => "Brak dostępu.",
+    "check.error.login" => "Sesja wygasła. Zaloguj się ponownie.",
+    "check.error.server" => "Najpierw wybierz serwer z botem w Przeglądzie.",
+    "check.error.text" => "Wpisz wiadomość, najwyżej %d znaków.",
+    "check.error.language" => "Wybierz język z listy.",
+    "check.error.limit" => "Za dużo sprawdzeń. Spróbuj ponownie za minutę.",
+    "check.error.model" => "Model jest niedostępny albo się uruchamia. Spróbuj ponownie za chwilę.",
 ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Database;
+use App\MessageClassifier;
 use App\ServerRepository;
 use RuntimeException;
 
@@ -16,6 +17,12 @@ final class PanelController extends AppController
         | (1 << 13) // MANAGE_MESSAGES: delete messages
         | (1 << 40) // MODERATE_MEMBERS: time out authors
         | (1 << 2); // BAN_MEMBERS: ban authors
+    // the model of the test box, until a channel can choose its own
+    private const TEST_MODEL = 'basal-mini';
+    // the longest message Discord allows without Nitro
+    private const TEST_MAX_LENGTH = 2000;
+    // for one login, because the bot uses the same model
+    private const TEST_CHECKS_PER_MINUTE = 10;
 
     public function overview(): void
     {
@@ -65,6 +72,110 @@ final class PanelController extends AppController
         }
 
         $this->redirect('/app');
+    }
+
+    /** For the test box: whether the model can check a message now. */
+    public function modelStatus(): void
+    {
+        if ($this->loggedInUser() === null) {
+            $this->json(['error' => $this->lang()->text('check.error.login')], 401);
+            return;
+        }
+
+        // the session is only read here, so the user's other tabs need not wait for the model
+        session_write_close();
+
+        if (!(new MessageClassifier(self::TEST_MODEL))->isReady()) {
+            $this->json(['ready' => false, 'error' => $this->lang()->text('check.error.model')], 503);
+            return;
+        }
+
+        $this->json(['ready' => true]);
+    }
+
+    /** For the test box: what the model says about a message, and what each level would decide. */
+    public function checkMessage(): void
+    {
+        $lang = $this->lang();
+
+        if (!$this->isSameOriginRequest()) {
+            $this->json(['error' => $lang->text('check.error.forbidden')], 403);
+            return;
+        }
+
+        $user = $this->loggedInUser();
+
+        if ($user === null) {
+            $this->json(['error' => $lang->text('check.error.login')], 401);
+            return;
+        }
+
+        $servers = $this->sessionServers();
+
+        // the same rule as the sections: a chosen server that still has the bot
+        if ($this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id'))) === null) {
+            $this->json(['error' => $lang->text('check.error.server')], 403);
+            return;
+        }
+
+        $classifier = new MessageClassifier(self::TEST_MODEL);
+        $request = json_decode((string) file_get_contents('php://input'), true);
+        $text = is_array($request) ? ($request['text'] ?? null) : null;
+        $language = is_array($request) ? ($request['language'] ?? null) : null;
+
+        if (!is_string($text) || trim($text) === '' || mb_strlen($text) > self::TEST_MAX_LENGTH) {
+            $this->json(['error' => sprintf($lang->text('check.error.text'), self::TEST_MAX_LENGTH)], 400);
+            return;
+        }
+
+        if (!in_array($language, $classifier->languages(), true)) {
+            $this->json(['error' => $lang->text('check.error.language')], 400);
+            return;
+        }
+
+        // the checks of the last minute; a request turned down above does not count
+        $now = time();
+        $times = is_array($_SESSION['messageChecks'] ?? null) ? $_SESSION['messageChecks'] : [];
+        $recent = array_values(array_filter($times, fn(mixed $time): bool => is_int($time) && $time > $now - 60));
+
+        if (count($recent) >= self::TEST_CHECKS_PER_MINUTE) {
+            // seconds until the oldest of them is a minute old
+            header('Retry-After: ' . ($recent[0] + 60 - $now));
+            $this->json(['error' => $lang->text('check.error.limit')], 429);
+            return;
+        }
+
+        $_SESSION['messageChecks'] = [...$recent, $now];
+        // the model takes seconds, and an open session would make the user's other tabs wait
+        session_write_close();
+
+        try {
+            $scores = $classifier->scores($text, $language);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not check a message: ' . $exception->getMessage());
+            $this->json(['error' => $lang->text('check.error.model')], 503);
+            return;
+        }
+
+        $categories = [];
+
+        foreach ($scores as $category => $score) {
+            $categories[] = ['key' => $category, 'name' => $lang->text('category.' . $category), 'score' => round($score, 4)];
+        }
+
+        $levels = [];
+
+        foreach (MessageClassifier::LEVELS as $level) {
+            // every rule at this level, as if the channel had them all set the same
+            $broken = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
+            $levels[] = [
+                'key' => $level,
+                'name' => $lang->text('level.' . $level),
+                'broken' => array_map(fn(string $category): string => $lang->text('category.' . $category), $broken),
+            ];
+        }
+
+        $this->json(['categories' => $categories, 'levels' => $levels]);
     }
 
     /** @return array{platform: string, id: string, name: string, avatarUrl: ?string} */

@@ -79,4 +79,12 @@ return [
     "level.relaxed" => "Relaxed",
     "level.balanced" => "Balanced",
     "level.strict" => "Strict",
+
+    "check.error.forbidden" => "Access denied.",
+    "check.error.login" => "Your session has expired. Log in again.",
+    "check.error.server" => "Choose a server with the bot in the Overview first.",
+    "check.error.text" => "Type a message of at most %d characters.",
+    "check.error.language" => "Choose a language from the list.",
+    "check.error.limit" => "Too many checks. Try again in a minute.",
+    "check.error.model" => "The model is unavailable or starting. Try again in a moment.",
 ];

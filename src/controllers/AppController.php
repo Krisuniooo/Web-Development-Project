@@ -91,6 +91,14 @@ abstract class AppController
         session_destroy();
     }
 
+    /** Answers a request sent by the page's script; an error answer has its text in "error". */
+    protected function json(array $data, int $status = 200): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    }
+
     protected function redirect(string $location): never
     {
         header('Location: ' . $location, true, 303);

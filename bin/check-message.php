@@ -29,7 +29,7 @@ foreach ($scores as $category => $score) {
     printf("%-11s %.4f\n", $category, $score);
 }
 
-foreach (['relaxed', 'balanced', 'strict'] as $level) {
+foreach (MessageClassifier::LEVELS as $level) {
     // every rule at this level, as if the channel had them all set the same
     $broken = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
     printf("%-9s %s\n", $level . ':', $broken === [] ? 'allowed' : 'breaks ' . implode(', ', $broken));

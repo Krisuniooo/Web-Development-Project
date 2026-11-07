@@ -23,6 +23,8 @@ $routing->post('/app/manage', PanelController::class, 'manage');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->get('/app/models', PanelController::class, 'models');
 $routing->get('/app/limits', PanelController::class, 'limits');
+$routing->get('/app/model-status', PanelController::class, 'modelStatus');
+$routing->post('/app/check-message', PanelController::class, 'checkMessage');
 $routing->get('/app/logs', PanelController::class, 'logs');
 $routing->get('/app/settings', PanelController::class, 'settings');
 
