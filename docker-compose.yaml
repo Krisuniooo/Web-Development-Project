@@ -55,6 +55,22 @@ services:
     networks:
       - pg-network
 
+  # the moderation model for Polish and English; it has no port, so only the other containers reach it
+  basal-mini:
+    build:
+      context: .
+      dockerfile: docker/basal/Dockerfile
+    environment:
+      # the version measured in docs/models.md, so an update on Hugging Face does not change the results
+      BASAL_REPO: Remek/basal-2.0-mini-GGUF
+      BASAL_REVISION: 162d336b27b29939ea0978c925492752f8d1b7c7
+      BASAL_FILE: basal-2.0-mini-Q8_0.gguf
+    restart: on-failure
+    volumes:
+      - basal-models:/root/.cache/huggingface
+    networks:
+      - pg-network
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
@@ -78,3 +94,5 @@ networks:
   
 volumes:
   pg-data:
+  # model files from Hugging Face, downloaded once
+  basal-models:
