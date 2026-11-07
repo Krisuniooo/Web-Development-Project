@@ -1,0 +1,9 @@
+/* the place of the level settings until they are built */
+.limits-placeholder {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  text-align: center;
+}

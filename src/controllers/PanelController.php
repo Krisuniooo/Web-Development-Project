@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\ChannelRepository;
 use App\Database;
 use App\MessageClassifier;
 use App\ServerRepository;
@@ -157,25 +158,26 @@ final class PanelController extends AppController
             return;
         }
 
-        $categories = [];
-
-        foreach ($scores as $category => $score) {
-            $categories[] = ['key' => $category, 'name' => $lang->text('category.' . $category), 'score' => round($score, 4)];
-        }
-
-        $levels = [];
+        $brokenByLevel = [];
 
         foreach (MessageClassifier::LEVELS as $level) {
             // every rule at this level, as if the channel had them all set the same
-            $broken = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
-            $levels[] = [
-                'key' => $level,
-                'name' => $lang->text('level.' . $level),
-                'broken' => array_map(fn(string $category): string => $lang->text('category.' . $category), $broken),
+            $brokenByLevel[$level] = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
+        }
+
+        $categories = [];
+
+        foreach ($scores as $category => $score) {
+            $categories[] = [
+                'key' => $category,
+                'name' => $lang->text('category.' . $category),
+                'score' => round($score, 4),
+                // by level: whether the message breaks this rule there
+                'breaks' => array_map(fn(array $broken): bool => in_array($category, $broken, true), $brokenByLevel),
             ];
         }
 
-        $this->json(['categories' => $categories, 'levels' => $levels]);
+        $this->json(['categories' => $categories]);
     }
 
     /** @return array{platform: string, id: string, name: string, avatarUrl: ?string} */
@@ -303,6 +305,31 @@ final class PanelController extends AppController
             'currentPlatformName' => array_column($platforms, 'name', 'slug')[$user['platform']] ?? $user['platform'],
             'managedServer' => $managedServer,
             'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
+            'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
+    }
+
+    /**
+     * The test box: the languages to choose from, with the first channel's language chosen at the start,
+     * and the levels for the columns of the result.
+     *
+     * @return array{languages: list<string>, language: string, levels: list<string>, maxLength: int}
+     */
+    private function messageCheck(string $platform, string $serverId): array
+    {
+        try {
+            $language = (new ChannelRepository((new Database())->connect()))->firstLanguage($platform, $serverId);
+        } catch (RuntimeException $exception) {
+            // the box still works, only with the page's language chosen
+            error_log('Panel could not read the channel language: ' . $exception->getMessage());
+            $language = null;
+        }
+
+        return [
+            'languages' => (new MessageClassifier(self::TEST_MODEL))->languages(),
+            'language' => $language ?? $this->lang()->code(),
+            'levels' => MessageClassifier::LEVELS,
+            'maxLength' => self::TEST_MAX_LENGTH,
+        ];
     }
 }

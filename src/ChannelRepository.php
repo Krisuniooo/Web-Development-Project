@@ -30,6 +30,23 @@ final class ChannelRepository
         return $statement->fetchColumn() !== false;
     }
 
+    /** The language of the server's first channel, or null while the server has no channel. */
+    public function firstLanguage(string $platform, string $platformServerId): ?string
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT channels.language FROM channels JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+             ORDER BY channels.slot LIMIT 1',
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'platform_server_id' => $platformServerId,
+        ]);
+        $language = $statement->fetchColumn();
+
+        return is_string($language) ? $language : null;
+    }
+
     /**
      * Adds the first channel of a server with its rules, unless the server already has a channel.
      * Returns whether it added one.

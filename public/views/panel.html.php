@@ -7,6 +7,8 @@
         <h1 class="panel-content--title"><?= $t($navigation[$activeSection]['name']) ?></h1>
         <?php if ($activeSection === 'overview'): ?>
             <?php include __DIR__ . '/panel/servers.html.php'; ?>
+        <?php elseif ($activeSection === 'limits'): ?>
+            <?php include __DIR__ . '/panel/limits.html.php'; ?>
         <?php else: ?>
             <p class="panel-content--description"><?= $t('panel.not_ready') ?></p>
         <?php endif; ?>
