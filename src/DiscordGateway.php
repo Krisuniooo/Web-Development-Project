@@ -13,8 +13,12 @@ use RuntimeException;
  */
 final class DiscordGateway
 {
-    // only server events, such as joining or leaving a server; reading messages comes later
+    // server events, such as joining or leaving a server
     private const INTENT_GUILDS = 1 << 0;
+    // new messages on those servers; direct messages need another intent, which the bot does not ask for
+    private const INTENT_GUILD_MESSAGES = 1 << 9;
+    // the text of the messages; privileged, so Discord allows it only when it is turned on in the Developer Portal
+    private const INTENT_MESSAGE_CONTENT = 1 << 15;
 
     private const OP_DISPATCH = 0;
     private const OP_HEARTBEAT = 1;
@@ -38,7 +42,7 @@ final class DiscordGateway
         4011 => 'The bot is on too many servers for one connection and needs sharding',
         4012 => 'Discord no longer supports this Gateway version',
         4013 => 'Discord rejected the intents the bot asked for',
-        4014 => 'The bot asked for a privileged intent that is turned off. Turn it on in the Developer Portal (Bot > Privileged Gateway Intents)',
+        4014 => 'Message Content Intent is turned off. Turn it on in the Developer Portal (Bot > Privileged Gateway Intents)',
     ];
 
     /** @param Closure(string, array): void $onEvent gets the event type, such as GUILD_CREATE, and its data */
@@ -97,7 +101,7 @@ final class DiscordGateway
 
             self::send($socket, self::OP_IDENTIFY, [
                 'token' => $this->token,
-                'intents' => self::INTENT_GUILDS,
+                'intents' => self::INTENT_GUILDS | self::INTENT_GUILD_MESSAGES | self::INTENT_MESSAGE_CONTENT,
                 'properties' => ['os' => 'linux', 'browser' => 'ChatWarden', 'device' => 'ChatWarden'],
             ]);
 
@@ -184,7 +188,8 @@ final class DiscordGateway
         $socket->send(json_encode(['op' => $op, 'd' => $data], JSON_THROW_ON_ERROR));
     }
 
-    private static function log(string $message): void
+    /** One line in the bot log, with the time. */
+    public static function log(string $message): void
     {
         echo date('Y-m-d H:i:s') . " $message\n";
     }

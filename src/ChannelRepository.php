@@ -13,6 +13,23 @@ final class ChannelRepository
     {
     }
 
+    /** Whether the bot moderates this channel: it is saved for this server and not paused. */
+    public function isModerated(string $platform, string $platformServerId, string $platformChannelId): bool
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT 1 FROM channels JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+               AND channels.platform_channel_id = :platform_channel_id AND channels.status = 'active'",
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'platform_server_id' => $platformServerId,
+            'platform_channel_id' => $platformChannelId,
+        ]);
+
+        return $statement->fetchColumn() !== false;
+    }
+
     /**
      * Adds the first channel of a server with its rules, unless the server already has a channel.
      * Returns whether it added one.

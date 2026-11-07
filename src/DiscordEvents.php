@@ -9,6 +9,7 @@ use RuntimeException;
 /**
  * Turns Gateway events into changes in the database: which servers the bot is on,
  * and the first channel with the default settings when a server has none yet.
+ * It also picks out the messages from the channels the bot moderates.
  */
 final class DiscordEvents
 {
@@ -39,14 +40,14 @@ final class DiscordEvents
             // READY lists every server the bot is on; one missing here was left while the bot was offline
             $kept = array_filter(
                 array_column(is_array($data['guilds'] ?? null) ? $data['guilds'] : [], 'id'),
-                self::isServerId(...),
+                self::isDiscordId(...),
             );
             $this->servers()->markRemovedExcept(self::PLATFORM, array_values($kept));
         } elseif ($type === 'GUILD_CREATE' || $type === 'GUILD_UPDATE') {
             $id = $data['id'] ?? null;
             $name = $data['name'] ?? null;
 
-            if (self::isServerId($id) && is_string($name) && $name !== '' && !self::isOutage($data)) {
+            if (self::isDiscordId($id) && is_string($name) && $name !== '' && !self::isOutage($data)) {
                 $this->servers()->saveActive(self::PLATFORM, $id, $name);
 
                 // GUILD_UPDATE has no channels in it
@@ -57,10 +58,42 @@ final class DiscordEvents
         } elseif ($type === 'GUILD_DELETE') {
             $id = $data['id'] ?? null;
 
-            if (self::isServerId($id) && !self::isOutage($data)) {
+            if (self::isDiscordId($id) && !self::isOutage($data)) {
                 $this->servers()->markRemoved(self::PLATFORM, $id);
             }
+        } elseif ($type === 'MESSAGE_CREATE') {
+            $this->checkMessage($data);
         }
+    }
+
+    /** For now only notes in the log that a message is one to moderate; checking it with the model comes next. */
+    private function checkMessage(array $message): void
+    {
+        $text = $message['content'] ?? null;
+        $serverId = $message['guild_id'] ?? null;
+        $channelId = $message['channel_id'] ?? null;
+        $messageId = $message['id'] ?? null;
+
+        // other bots and webhooks are not people
+        if (($message['author']['bot'] ?? false) === true || isset($message['webhook_id'])) {
+            return;
+        }
+
+        // a message without text, such as a picture alone or "X joined the server", has nothing to check
+        if (!is_string($text) || $text === '') {
+            return;
+        }
+
+        if (!self::isDiscordId($serverId) || !self::isDiscordId($channelId) || !self::isDiscordId($messageId)) {
+            return;
+        }
+
+        if (!$this->channels()->isModerated(self::PLATFORM, $serverId, $channelId)) {
+            return;
+        }
+
+        // only the length, the text itself never goes to the log
+        DiscordGateway::log(sprintf('Message %s in moderated channel %s, characters: %d', $messageId, $channelId, mb_strlen($text)));
     }
 
     /**
@@ -158,7 +191,8 @@ final class DiscordEvents
         return ($data['unavailable'] ?? false) === true;
     }
 
-    private static function isServerId(mixed $id): bool
+    // ids of servers, channels and messages are all numbers of up to 20 digits
+    private static function isDiscordId(mixed $id): bool
     {
         return is_string($id) && preg_match('/^\d{1,20}$/', $id) === 1;
     }
