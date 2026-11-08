@@ -107,8 +107,17 @@ return [
     "channels.discord_error" => "Nie udało się pobrać kanałów z Discorda. Odśwież stronę za chwilę.",
     "channels.none_visible" => "Bot nie widzi żadnego innego kanału tekstowego. Daj mu na Discordzie dostęp do kanału i za pół minuty odśwież stronę.",
 
-    "limits.lead" => "Ustal, jak surowo bot pilnuje każdej kategorii na kanale.",
-    "limits.not_ready" => "Ustawianie poziomów dla kategorii pojawi się tutaj.",
+    "action.flag" => "Tylko oznacz",
+    "action.delete" => "Usuń",
+
+    "limits.lead" => "Ustal, jak surowo bot pilnuje każdej kategorii na kanale i co robi z wiadomością, która łamie zasadę.",
+    "limits.level" => "Poziom",
+    "limits.action" => "Akcja",
+    "limits.save" => "Zapisz",
+    "limits.saved" => "Zapisano zasady kanału.",
+    "limits.save_error" => "Nie udało się zapisać zasad. Spróbuj ponownie.",
+    "limits.empty" => "Bot nie ma jeszcze kanału na tym serwerze.",
+    "limits.empty_link" => "Podłącz kanał",
 
     "check.title" => "Sprawdź wiadomość",
     "check.hint" => "Zobacz, co bot zrobiłby z wiadomością na każdym poziomie.",

@@ -107,8 +107,17 @@ return [
     "channels.discord_error" => "The channels could not be loaded from Discord. Refresh the page in a moment.",
     "channels.none_visible" => "The bot cannot see any other text channel. Give it access to a channel on Discord and refresh the page in half a minute.",
 
-    "limits.lead" => "Decide how strictly the bot watches each category on the channel.",
-    "limits.not_ready" => "Setting the levels for each category will come here.",
+    "action.flag" => "Only flag",
+    "action.delete" => "Delete",
+
+    "limits.lead" => "Decide how strictly the bot watches each category on the channel, and what it does with a message that breaks the rule.",
+    "limits.level" => "Level",
+    "limits.action" => "Action",
+    "limits.save" => "Save",
+    "limits.saved" => "The channel rules are saved.",
+    "limits.save_error" => "The rules could not be saved. Try again.",
+    "limits.empty" => "The bot has no channel on this server yet.",
+    "limits.empty_link" => "Connect a channel",
 
     "check.title" => "Check a message",
     "check.hint" => "See what the bot would do with a message at each level.",

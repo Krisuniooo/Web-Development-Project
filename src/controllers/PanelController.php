@@ -10,6 +10,7 @@ use App\DiscordBotClient;
 use App\DiscordClient;
 use App\MessageClassifier;
 use App\Model\Channel;
+use App\Model\ChannelRule;
 use App\ServerRepository;
 use RuntimeException;
 
@@ -29,6 +30,8 @@ final class PanelController extends AppController
     private const TEST_CHECKS_PER_MINUTE = 10;
     // how long the channels from Discord are used before asking again: 2 times a minute of the 10 Discord allows
     private const VISIBLE_CHANNELS_SECONDS = 30;
+    // the actions the bot performs now; timeout and ban come later
+    private const RULE_ACTIONS = ['flag', 'delete'];
 
     public function overview(): void
     {
@@ -230,6 +233,64 @@ final class PanelController extends AppController
             : ['text' => 'channels.change_error', 'isError' => true];
 
         $this->redirect('/app/channels');
+    }
+
+    /** Saves the level and the action of every category on one channel of the chosen server. */
+    public function saveRules(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $servers = $this->sessionServers();
+        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
+
+        if ($managedServer === null) {
+            $this->redirect('/app');
+        }
+
+        $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
+        $posted = is_array($_POST['rules'] ?? null) ? $_POST['rules'] : [];
+        $rules = [];
+
+        // every category with a known level and an action the bot performs, or nothing is saved
+        foreach ($this->ruleCategories() as $category) {
+            $level = $posted[$category]['level'] ?? null;
+            $action = $posted[$category]['action'] ?? null;
+
+            if (!is_int($channelId) || !in_array($level, $this->ruleLevels(), true) || !in_array($action, self::RULE_ACTIONS, true)) {
+                $rules = null;
+                break;
+            }
+
+            $rules[] = new ChannelRule($channelId, $category, $level, $action);
+        }
+
+        $isSaved = false;
+
+        try {
+            $repository = new ChannelRepository((new Database())->connect());
+            $ownIds = array_map(fn(Channel $channel): ?int => $channel->getId(), $repository->findForServer($user['platform'], $managedServer['id']));
+
+            // only a channel of the chosen server
+            if ($rules !== null && in_array($channelId, $ownIds, true)) {
+                $repository->saveRules($rules);
+                $isSaved = true;
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save the rules: ' . $exception->getMessage());
+        }
+
+        if ($isSaved) {
+            // the channel's own button shows it, so no notice
+            $_SESSION['savedChannelId'] = $channelId;
+        } else {
+            $_SESSION['notice'] = ['text' => 'limits.save_error', 'isError' => true];
+        }
+
+        $this->redirect('/app/limits');
     }
 
     /** For the test box: whether the model can check a message now. */
@@ -480,8 +541,53 @@ final class PanelController extends AppController
             'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
                 ? $this->channelChoice($managedServer['id'], $channelSlots)
                 : null,
+            'limits' => $section === 'limits' ? $this->channelLimits($user['platform'], $managedServer['id']) : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
+    }
+
+    /**
+     * Each channel of the chosen server with its rule for every category, or null for the channels when the database
+     * does not answer; and the levels and actions to choose from.
+     *
+     * @return array{channels: list<array{channel: Channel, rules: array<string, ChannelRule>}>|null, levels: list<string>, actions: list<string>}
+     */
+    private function channelLimits(string $platform, string $serverId): array
+    {
+        $channels = [];
+
+        try {
+            $repository = new ChannelRepository((new Database())->connect());
+
+            foreach ($repository->findForServer($platform, $serverId) as $channel) {
+                $saved = $repository->findRules($channel->getId());
+                $rules = [];
+
+                foreach ($this->ruleCategories() as $category) {
+                    // a category the channel has no rule for yet shows as off; saving adds the rule
+                    $rules[$category] = $saved[$category] ?? new ChannelRule($channel->getId(), $category, 'off', 'delete');
+                }
+
+                $channels[] = ['channel' => $channel, 'rules' => $rules];
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the rules: ' . $exception->getMessage());
+            $channels = null;
+        }
+
+        return ['channels' => $channels, 'levels' => $this->ruleLevels(), 'actions' => self::RULE_ACTIONS];
+    }
+
+    /** @return list<string> the categories with a rule: those every new channel gets */
+    private function ruleCategories(): array
+    {
+        return array_keys($this->channelDefaults()['rules']);
+    }
+
+    /** @return list<string> off, and then from the fewest blocked messages to the most */
+    private function ruleLevels(): array
+    {
+        return ['off', ...MessageClassifier::LEVELS];
     }
 
     /**

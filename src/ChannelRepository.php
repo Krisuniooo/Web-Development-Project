@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use App\Model\Channel;
+use App\Model\ChannelRule;
 use DateTimeImmutable;
 use PDO;
 use Throwable;
@@ -52,6 +53,60 @@ final class ChannelRepository
             'language' => $language,
             'id' => $channelId,
         ]);
+    }
+
+    /** @return array<string, ChannelRule> the channel's rules by category */
+    public function findRules(int $channelId): array
+    {
+        $statement = $this->pdo->prepare('SELECT category, level, action, updated_at FROM channel_rules WHERE channel_id = :channel_id');
+        $statement->execute(['channel_id' => $channelId]);
+        $rules = [];
+
+        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $rules[$row['category']] = new ChannelRule(
+                $channelId,
+                $row['category'],
+                $row['level'],
+                $row['action'],
+                new DateTimeImmutable($row['updated_at']),
+            );
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Saves the given rules together or not at all, adding the ones a channel does not have yet.
+     *
+     * @param list<ChannelRule> $rules
+     */
+    public function saveRules(array $rules): void
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO channel_rules (channel_id, category, level, action) VALUES (:channel_id, :category, :level, :action)
+                 ON CONFLICT (channel_id, category) DO UPDATE SET level = EXCLUDED.level, action = EXCLUDED.action',
+            );
+
+            foreach ($rules as $rule) {
+                $statement->execute([
+                    'channel_id' => $rule->getChannelId(),
+                    'category' => $rule->getCategory(),
+                    'level' => $rule->getLevel(),
+                    'action' => $rule->getAction(),
+                ]);
+            }
+
+            $this->pdo->commit();
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+
+            throw $error;
+        }
     }
 
     /**
