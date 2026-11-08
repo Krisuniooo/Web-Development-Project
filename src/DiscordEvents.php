@@ -71,9 +71,11 @@ final class DiscordEvents
         $serverId = $message['guild_id'] ?? null;
         $channelId = $message['channel_id'] ?? null;
         $messageId = $message['id'] ?? null;
+        $author = is_array($message['author'] ?? null) ? $message['author'] : [];
+        $authorId = $author['id'] ?? null;
 
         // other bots and webhooks are not people
-        if (($message['author']['bot'] ?? false) === true || isset($message['webhook_id'])) {
+        if (($author['bot'] ?? false) === true || isset($message['webhook_id'])) {
             return;
         }
 
@@ -82,7 +84,8 @@ final class DiscordEvents
             return;
         }
 
-        if (!self::isDiscordId($serverId) || !self::isDiscordId($channelId) || !self::isDiscordId($messageId)) {
+        // without a real author there is nobody the event could be about
+        if (!self::isDiscordId($serverId) || !self::isDiscordId($channelId) || !self::isDiscordId($messageId) || !self::isDiscordId($authorId)) {
             return;
         }
 
@@ -92,7 +95,16 @@ final class DiscordEvents
             return;
         }
 
-        $this->queue->add($messageId, $channelId, $text, $settings);
+        // the name the server shows: the nickname there, or else the display name, or else the username
+        $authorName = $message['member']['nick'] ?? $author['global_name'] ?? $author['username'] ?? null;
+
+        $this->queue->add([
+            'id' => $messageId,
+            'channelId' => $channelId,
+            'authorId' => $authorId,
+            'authorName' => is_string($authorName) && $authorName !== '' ? $authorName : $authorId,
+            'text' => $text,
+        ], $settings);
     }
 
     /**

@@ -71,15 +71,17 @@ final class ChannelRepository
     }
 
     /**
-     * What the bot needs to check a message from this channel, or null when it does not moderate it:
+     * What the bot needs to check a message from this channel and act on it, or null when it does not moderate it:
      * the channel is not saved for this server, or it is paused.
      *
-     * @return array{model: string, language: string, levels: array<string, string>}|null levels by category
+     * @return array{channelId: int, name: string, model: string, language: string, rules: array<string, array{level: string, action: string}>}|null
+     *     rules by category
      */
     public function moderationSettings(string $platform, string $platformServerId, string $platformChannelId): ?array
     {
         $statement = $this->pdo->prepare(
-            "SELECT channels.model, channels.language, channel_rules.category, channel_rules.level
+            "SELECT channels.id, channels.name, channels.model, channels.language,
+                    channel_rules.category, channel_rules.level, channel_rules.action
              FROM channels JOIN servers ON servers.id = channels.server_id
              LEFT JOIN channel_rules ON channel_rules.channel_id = channels.id
              WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
@@ -97,16 +99,22 @@ final class ChannelRepository
             return null;
         }
 
-        $levels = [];
+        $rules = [];
 
         foreach ($rows as $row) {
             // a channel without rules still comes back once, with no category
             if ($row['category'] !== null) {
-                $levels[$row['category']] = $row['level'];
+                $rules[$row['category']] = ['level' => $row['level'], 'action' => $row['action']];
             }
         }
 
-        return ['model' => $rows[0]['model'], 'language' => $rows[0]['language'], 'levels' => $levels];
+        return [
+            'channelId' => (int) $rows[0]['id'],
+            'name' => $rows[0]['name'],
+            'model' => $rows[0]['model'],
+            'language' => $rows[0]['language'],
+            'rules' => $rules,
+        ];
     }
 
     /** The language of the server's first channel, or null while the server has no channel. */

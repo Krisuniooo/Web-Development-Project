@@ -3,9 +3,13 @@
 declare(strict_types=1);
 
 use App\Database;
+use App\DiscordBotClient;
+use App\DiscordClient;
 use App\DiscordEvents;
 use App\DiscordGateway;
+use App\DiscordModerator;
 use App\ModerationQueue;
+use App\PendingRequests;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -20,10 +24,17 @@ if ($token === '') {
 }
 
 try {
-    // messages wait for the model here, so the Gateway connection never waits for it
-    $queue = new ModerationQueue();
-    // the database settings are checked here, the connection opens after logging in to Discord
-    $events = new DiscordEvents(new Database(), $queue);
+    // the database settings are checked here, the connections open after logging in to Discord
+    $database = new Database();
+    // the questions to the model and the deletions on Discord, which the Gateway connection never waits for
+    $requests = new PendingRequests();
+    $moderator = new DiscordModerator(
+        $requests,
+        new DiscordBotClient($token, getenv('DISCORD_API_URL') ?: DiscordClient::API_URL),
+        $database,
+    );
+    $queue = new ModerationQueue($requests, $moderator->act(...));
+    $events = new DiscordEvents($database, $queue);
     $gateway = new DiscordGateway(
         $token,
         getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json',

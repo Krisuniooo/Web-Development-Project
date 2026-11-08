@@ -58,10 +58,14 @@ CREATE TABLE channel_rules (
 CREATE TABLE moderation_events (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     channel_id BIGINT NOT NULL REFERENCES channels (id) ON DELETE CASCADE,
+    -- the channel as it was then, since its slot can later point at another channel
+    platform_channel_id TEXT NOT NULL,
+    channel_name TEXT NOT NULL,
     platform_message_id TEXT NOT NULL,
     author_platform_id TEXT NOT NULL,
     author_name TEXT NOT NULL,
     category moderation_category NOT NULL,
+    level moderation_level NOT NULL,
     -- text, so an event keeps the name of a model that is later removed
     model TEXT NOT NULL,
     action moderation_action NOT NULL,
