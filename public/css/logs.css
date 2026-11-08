@@ -1,0 +1,205 @@
+/* what the bot did, newest first: one row for each event, all in one card */
+.logs {
+  /* the list's own width decides its layout, not the screen's */
+  container-type: inline-size;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+/* the icon of the action, then what and why with who and where under it, and the time on the right */
+.logs-event {
+  --event-color: var(--color-accent);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.logs-event + .logs-event {
+  border-top: 1px solid var(--color-border);
+}
+/* the actions that remove something are red; flagging stays in the accent colour */
+.logs-event.is-delete,
+.logs-event.is-timeout,
+.logs-event.is-ban {
+  --event-color: var(--color-danger);
+}
+
+.logs-event--icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--event-color) 14%, transparent);
+  color: var(--event-color);
+  font-size: 0.9375rem;
+}
+
+.logs-event--main {
+  min-width: 0;
+}
+
+.logs-event--title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-0) var(--space-1);
+  margin: 0;
+  line-height: 2.25rem;
+}
+.logs-event--action {
+  font-weight: 700;
+}
+.logs-event--reason {
+  color: var(--color-text-secondary);
+}
+.logs-event--level {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* who, where and how sure the model was, kept apart by space and their icons */
+.logs-event--meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+.logs-event--meta i {
+  margin-right: 0.25rem;
+  font-size: 0.85em;
+}
+
+.logs-event--time {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: 2.25rem;
+  white-space: nowrap;
+}
+
+.logs-event--content {
+  margin-top: var(--space-1);
+}
+.logs-event--content summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.25rem;
+  color: var(--color-accent-strong);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.logs-event--content summary::-webkit-details-marker {
+  display: none;
+}
+/* a small arrow that turns down when the text is open */
+.logs-event--content summary::before {
+  content: "▸";
+  transition: transform 0.2s;
+}
+.logs-event--content[open] summary::before {
+  transform: rotate(90deg);
+}
+.logs-event--content summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+/* no wider than a comfortable line of text, even on a wide screen */
+.logs-event--content p {
+  max-width: 75ch;
+  margin: var(--space-1) 0 0;
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid var(--event-color);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: var(--color-background);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.logs-event--gone {
+  margin: var(--space-1) 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
+.logs-empty,
+.logs-error {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+}
+.logs-empty {
+  padding: var(--space-4) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  justify-content: center;
+  text-align: center;
+}
+.logs-error {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* newer on the left, older on the right, like turning pages */
+.logs-pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.logs-pages--link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.logs-pages--link:last-child {
+  margin-left: auto;
+}
+.logs-pages--link:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+.logs-pages--link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* a narrow list, as on a phone: the time goes under the rest, so the reason has the whole width */
+@container (max-width: 30rem) {
+  .logs-event {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-2);
+  }
+  .logs-event--time {
+    grid-column: 2;
+    margin-top: calc(-1 * var(--space-1));
+    line-height: 1.4;
+  }
+}

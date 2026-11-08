@@ -11,6 +11,8 @@
             <?php include __DIR__ . '/panel/channels.html.php'; ?>
         <?php elseif ($activeSection === 'limits'): ?>
             <?php include __DIR__ . '/panel/limits.html.php'; ?>
+        <?php elseif ($activeSection === 'logs'): ?>
+            <?php include __DIR__ . '/panel/logs.html.php'; ?>
         <?php else: ?>
             <p class="panel-content--description"><?= $t('panel.not_ready') ?></p>
         <?php endif; ?>

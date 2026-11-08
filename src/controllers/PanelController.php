@@ -11,6 +11,8 @@ use App\DiscordClient;
 use App\MessageClassifier;
 use App\Model\Channel;
 use App\Model\ChannelRule;
+use App\Model\ModerationEvent;
+use App\ModerationEventRepository;
 use App\ServerRepository;
 use RuntimeException;
 
@@ -32,6 +34,8 @@ final class PanelController extends AppController
     private const VISIBLE_CHANNELS_SECONDS = 30;
     // the actions the bot performs now; timeout and ban come later
     private const RULE_ACTIONS = ['flag', 'delete'];
+    // events on one page of the logs
+    private const LOG_PAGE_SIZE = 50;
 
     public function overview(): void
     {
@@ -542,6 +546,7 @@ final class PanelController extends AppController
                 ? $this->channelChoice($managedServer['id'], $channelSlots)
                 : null,
             'limits' => $section === 'limits' ? $this->channelLimits($user['platform'], $managedServer['id']) : null,
+            'log' => $section === 'logs' ? $this->moderationLog($user['platform'], $managedServer['id']) : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
     }
@@ -576,6 +581,37 @@ final class PanelController extends AppController
         }
 
         return ['channels' => $channels, 'levels' => $this->ruleLevels(), 'actions' => self::RULE_ACTIONS];
+    }
+
+    /**
+     * One page of what the bot did on the chosen server, newest first, or null for the events when the database
+     * does not answer. ?before=<id> shows the events older than that one.
+     *
+     * @return array{events: list<ModerationEvent>|null, isNewest: bool, olderBefore: ?int}
+     *     olderBefore: the id to ask for the next older page with, or null when there is none
+     */
+    private function moderationLog(string $platform, string $serverId): array
+    {
+        $before = filter_var($_GET['before'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $before = is_int($before) ? $before : null;
+
+        try {
+            // one more than a page tells whether there are older events
+            $events = (new ModerationEventRepository((new Database())->connect()))
+                ->findForServer($platform, $serverId, $before, self::LOG_PAGE_SIZE + 1);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the events: ' . $exception->getMessage());
+
+            return ['events' => null, 'isNewest' => $before === null, 'olderBefore' => null];
+        }
+
+        $page = array_slice($events, 0, self::LOG_PAGE_SIZE);
+
+        return [
+            'events' => $page,
+            'isNewest' => $before === null,
+            'olderBefore' => count($events) > self::LOG_PAGE_SIZE ? end($page)->getId() : null,
+        ];
     }
 
     /** @return list<string> the categories with a rule: those every new channel gets */
