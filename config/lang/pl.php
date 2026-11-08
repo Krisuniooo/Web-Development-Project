@@ -83,7 +83,7 @@ return [
     "language.pl" => "Polski",
     "language.en" => "Angielski",
 
-    "channels.lead" => "Kanały, które bot moderuje na tym serwerze. Na każdym ustaw język, w którym się na nim pisze, bo od niego zależą pytania do modelu i progi.",
+    "channels.lead" => "Bot moderuje na tym serwerze najwyżej dwa kanały. Na każdym ustaw język, w którym się na nim pisze, bo od niego zależą pytania do modelu i progi.",
     "channels.slot" => "Kanał %d",
     "channels.status.active" => "Moderowany",
     "channels.status.paused" => "Wstrzymany",
@@ -93,7 +93,12 @@ return [
     "channels.save_error" => "Nie udało się zapisać języka. Spróbuj ponownie.",
     "channels.load_error" => "Nie udało się wczytać kanałów. Odśwież stronę.",
     "channels.free" => "Wolne miejsce",
-    "channels.free_hint" => "Podłączanie kanału pojawi się tutaj.",
+    "channels.choose" => "Który kanał bot ma moderować?",
+    "channels.connect" => "Podłącz",
+    "channels.connected" => "Podłączono kanał.",
+    "channels.connect_error" => "Nie udało się podłączyć kanału. Odśwież stronę i spróbuj ponownie.",
+    "channels.discord_error" => "Nie udało się pobrać kanałów z Discorda. Odśwież stronę za chwilę.",
+    "channels.none_visible" => "Bot nie widzi żadnego innego kanału tekstowego. Daj mu na Discordzie dostęp do kanału i za pół minuty odśwież stronę.",
     "channels.hint" => "Na start kanał dostaje język serwera z Discorda, a wiele polskich serwerów ma tam ustawiony angielski. Warto to sprawdzić.",
 
     "limits.lead" => "Ustal, jak surowo bot pilnuje każdej kategorii na kanale.",

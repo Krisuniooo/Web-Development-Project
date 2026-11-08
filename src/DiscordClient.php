@@ -8,6 +8,8 @@ use RuntimeException;
 
 final class DiscordClient
 {
+    // the version of the API, the same for the user's requests and the bot's
+    public const API_URL = 'https://discord.com/api/v10';
     private const TIMEOUT_SECONDS = 10;
     // ADMINISTRATOR or MANAGE_GUILD: the same rule Discord uses for adding a bot to a server
     private const CAN_MANAGE_SERVER = (1 << 3) | (1 << 5);

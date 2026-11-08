@@ -6,6 +6,8 @@ namespace App\Controller;
 
 use App\ChannelRepository;
 use App\Database;
+use App\DiscordBotClient;
+use App\DiscordClient;
 use App\MessageClassifier;
 use App\Model\Channel;
 use App\ServerRepository;
@@ -25,6 +27,8 @@ final class PanelController extends AppController
     private const TEST_MAX_LENGTH = 2000;
     // for one login, because the bot uses the same model
     private const TEST_CHECKS_PER_MINUTE = 10;
+    // how long the channels from Discord are used before asking again: 2 times a minute of the 10 Discord allows
+    private const VISIBLE_CHANNELS_SECONDS = 30;
 
     public function overview(): void
     {
@@ -113,6 +117,66 @@ final class PanelController extends AppController
         $_SESSION['notice'] = $isSaved
             ? ['text' => 'channels.saved', 'isError' => false]
             : ['text' => 'channels.save_error', 'isError' => true];
+
+        $this->redirect('/app/channels');
+    }
+
+    /** Connects a channel the bot can see to a free slot of the chosen server, with the default rules. */
+    public function connectChannel(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $servers = $this->sessionServers();
+        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
+
+        if ($managedServer === null) {
+            $this->redirect('/app');
+        }
+
+        $slot = filter_var($_POST['slot'] ?? null, FILTER_VALIDATE_INT);
+        $platformChannelId = $_POST['channel'] ?? null;
+        $language = $_POST['language'] ?? null;
+        $defaults = $this->channelDefaults();
+        $isConnected = false;
+
+        try {
+            $repository = new ChannelRepository((new Database())->connect());
+            $connected = $repository->findForServer($user['platform'], $managedServer['id']);
+            $takenSlots = array_map(fn(Channel $channel): int => $channel->getSlot(), $connected);
+
+            // a free slot, and a language the model of a new channel has questions in
+            if (
+                in_array($slot, ChannelRepository::SLOTS, true)
+                && !in_array($slot, $takenSlots, true)
+                && in_array($language, $this->modelLanguages($defaults['model']), true)
+            ) {
+                // only a channel the bot can see and that is not connected yet; its name comes from Discord, not from the form
+                foreach ($this->availableChannels($managedServer['id'], $connected) as $channel) {
+                    if ($channel['id'] === $platformChannelId) {
+                        $isConnected = $repository->add(
+                            $user['platform'],
+                            $managedServer['id'],
+                            $slot,
+                            $channel['id'],
+                            $channel['name'],
+                            $defaults['model'],
+                            $language,
+                            $defaults['rules'],
+                        );
+                    }
+                }
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not connect a channel: ' . $exception->getMessage());
+        }
+
+        $_SESSION['notice'] = $isConnected
+            ? ['text' => 'channels.connected', 'isError' => false]
+            : ['text' => 'channels.connect_error', 'isError' => true];
 
         $this->redirect('/app/channels');
     }
@@ -343,6 +407,8 @@ final class PanelController extends AppController
         $notice = $_SESSION['notice'] ?? null;
         unset($_SESSION['notice']);
 
+        $channelSlots = $section === 'channels' ? $this->channelSlots($user['platform'], $managedServer['id']) : null;
+
         $this->render('panel', [
             'pageTitle' => $this->lang()->text($navigation[$section]['name']),
             'navigation' => $navigation,
@@ -352,7 +418,11 @@ final class PanelController extends AppController
             'managedServer' => $managedServer,
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
-            'channelSlots' => $section === 'channels' ? $this->channelSlots($user['platform'], $managedServer['id']) : null,
+            'channelSlots' => $channelSlots,
+            // Discord is asked only when there is a free slot to fill
+            'channelChoice' => $channelSlots !== null && in_array(null, $channelSlots, true)
+                ? $this->channelChoice($managedServer['id'], $channelSlots)
+                : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
     }
@@ -380,6 +450,83 @@ final class PanelController extends AppController
         }
 
         return $slots;
+    }
+
+    /**
+     * What a free slot offers: the channels to choose from, or null when Discord does not answer,
+     * the languages of the default model, and the language chosen at the start: that of a connected channel, or else the page's.
+     *
+     * @param array<int, array{channel: Channel, languages: list<string>}|null> $slots
+     * @return array{channels: list<array{id: string, name: string}>|null, languages: list<string>, language: string}
+     */
+    private function channelChoice(string $serverId, array $slots): array
+    {
+        $connected = array_column(array_filter($slots), 'channel');
+        $languages = $this->modelLanguages($this->channelDefaults()['model']);
+        $language = $connected === [] ? $this->lang()->code() : $connected[0]->getLanguage();
+
+        try {
+            $channels = $this->availableChannels($serverId, $connected);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the channels from Discord: ' . $exception->getMessage());
+            $channels = null;
+        }
+
+        return [
+            'channels' => $channels,
+            'languages' => $languages,
+            'language' => in_array($language, $languages, true) ? $language : ($languages[0] ?? ''),
+        ];
+    }
+
+    /**
+     * The server's text channels the bot can see, without those already connected.
+     *
+     * @param list<Channel> $connected
+     * @return list<array{id: string, name: string}>
+     */
+    private function availableChannels(string $serverId, array $connected): array
+    {
+        $connectedIds = array_map(fn(Channel $channel): string => $channel->getPlatformChannelId(), $connected);
+
+        return array_values(array_filter(
+            $this->visibleChannels($serverId),
+            fn(array $channel): bool => !in_array($channel['id'], $connectedIds, true),
+        ));
+    }
+
+    /**
+     * The server's text channels the bot can see. Discord lets the bot ask only 10 times a minute for each server,
+     * so the list is kept in the session for a while.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    private function visibleChannels(string $serverId): array
+    {
+        $saved = $_SESSION['visibleChannels'] ?? null;
+
+        if (
+            is_array($saved)
+            && ($saved['serverId'] ?? null) === $serverId
+            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::VISIBLE_CHANNELS_SECONDS
+            && is_array($saved['channels'] ?? null)
+        ) {
+            return $saved['channels'];
+        }
+
+        $channels = (new DiscordBotClient(
+            trim((string) getenv('DISCORD_BOT_TOKEN')),
+            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
+        ))->fetchVisibleTextChannels($serverId);
+        $_SESSION['visibleChannels'] = ['serverId' => $serverId, 'time' => time(), 'channels' => $channels];
+
+        return $channels;
+    }
+
+    /** @return array{model: string, rules: array<string, array{level: string, action: string}>} the settings of a new channel */
+    private function channelDefaults(): array
+    {
+        return require dirname(__DIR__, 2) . '/config/channel-defaults.php';
     }
 
     /** @return list<string> the languages a model has questions in; none for a model without settings in config/moderation.php */

@@ -18,21 +18,22 @@
   background: var(--color-surface);
 }
 
-/* a free place: only a frame, so it does not look like a channel */
+/* a free place: a dashed frame, so it does not look like a connected channel */
 .channels-card.is-free {
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-1);
   border-style: dashed;
   background: none;
-  text-align: center;
+}
+.channels-card.is-free .channels-card--name {
+  color: var(--color-muted);
 }
 
+/* as high as the status, so a free place without one lines up with the channel next to it */
 .channels-card--header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
+  min-height: 1.75rem;
 }
 
 .channels-card--slot {
@@ -94,6 +95,10 @@
   flex-direction: column;
   gap: var(--space-0);
 }
+/* the channel takes a row of its own, the language and the button share the next one */
+.channels-card--field.is-wide {
+  flex-basis: 100%;
+}
 
 .channels-card--label {
   color: var(--color-text-secondary);
@@ -136,14 +141,14 @@
   color: var(--color-text-secondary);
 }
 
-.channels-card--free {
-  font-weight: 700;
-}
-
 .channels-card--hint,
 .channels-hint {
   color: var(--color-muted);
   font-size: var(--font-size-sm);
+}
+
+.channels-card--hint {
+  margin: 0;
 }
 
 .channels-hint {

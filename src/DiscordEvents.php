@@ -14,8 +14,6 @@ use RuntimeException;
 final class DiscordEvents
 {
     private const PLATFORM = 'discord';
-    private const CHANNEL_TEXT = 0;
-    private const CHANNEL_CATEGORY = 4;
 
     private ?ServerRepository $servers = null;
     private ?ChannelRepository $channels = null;
@@ -128,38 +126,19 @@ final class DiscordEvents
      */
     private function defaultChannel(array $guild): ?array
     {
-        $channels = array_filter(is_array($guild['channels'] ?? null) ? $guild['channels'] : [], 'is_array');
-        $categoryPositions = [];
-        $textChannels = [];
+        $channels = DiscordChannels::visibleText(
+            $guild,
+            $this->botMember($guild),
+            is_array($guild['channels'] ?? null) ? $guild['channels'] : [],
+        );
 
         foreach ($channels as $channel) {
-            if (($channel['type'] ?? null) === self::CHANNEL_CATEGORY) {
-                $categoryPositions[$channel['id'] ?? ''] = (int) ($channel['position'] ?? 0);
-            } elseif (($channel['type'] ?? null) === self::CHANNEL_TEXT && is_string($channel['id'] ?? null) && is_string($channel['name'] ?? null)) {
-                $textChannels[] = $channel;
+            if ($channel['id'] === ($guild['system_channel_id'] ?? null)) {
+                return $channel;
             }
         }
 
-        $systemChannelId = $guild['system_channel_id'] ?? null;
-
-        // the system channel first, then the sidebar: channels outside a category on top, then each category in turn
-        $sortKey = fn(array $channel): array => [
-            $channel['id'] === $systemChannelId ? 0 : 1,
-            $categoryPositions[$channel['parent_id'] ?? ''] ?? -1,
-            (int) ($channel['position'] ?? 0),
-            (int) $channel['id'],
-        ];
-        usort($textChannels, fn(array $a, array $b): int => $sortKey($a) <=> $sortKey($b));
-
-        $bot = $this->botMember($guild);
-
-        foreach ($textChannels as $channel) {
-            if ((DiscordPermissions::inChannel($guild, $bot, $channel) & DiscordPermissions::VIEW_CHANNEL) !== 0) {
-                return ['id' => $channel['id'], 'name' => $channel['name']];
-            }
-        }
-
-        return null;
+        return $channels[0] ?? null;
     }
 
     /** The bot as a member of the server, with its roles. GUILD_CREATE always includes it. */

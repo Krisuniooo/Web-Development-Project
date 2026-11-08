@@ -103,25 +103,72 @@ final class ChannelRepository
         string $language,
         array $rules,
     ): bool {
-        // the channel and its rules are saved together or not at all
-        $this->pdo->beginTransaction();
-
-        try {
-            $statement = $this->pdo->prepare(
-                'INSERT INTO channels (server_id, slot, platform_channel_id, name, model, language)
-                 SELECT id, 1, :platform_channel_id, :name, :model, :language FROM servers
-                 WHERE platform = :platform AND platform_server_id = :platform_server_id
-                   AND NOT EXISTS (SELECT 1 FROM channels WHERE channels.server_id = servers.id)
-                 RETURNING id',
-            );
-            $statement->execute([
+        return $this->insertWithRules(
+            'INSERT INTO channels (server_id, slot, platform_channel_id, name, model, language)
+             SELECT id, 1, :platform_channel_id, :name, :model, :language FROM servers
+             WHERE platform = :platform AND platform_server_id = :platform_server_id
+               AND NOT EXISTS (SELECT 1 FROM channels WHERE channels.server_id = servers.id)
+             RETURNING id',
+            [
                 'platform_channel_id' => $platformChannelId,
                 'name' => $name,
                 'model' => $model,
                 'language' => $language,
                 'platform' => $platform,
                 'platform_server_id' => $platformServerId,
-            ]);
+            ],
+            $rules,
+        );
+    }
+
+    /**
+     * Adds a channel of a server with its rules in the given slot. Returns whether it added one.
+     * The database turns it down when the slot or the channel is already taken.
+     *
+     * @param array<string, array{level: string, action: string}> $rules by category
+     */
+    public function add(
+        string $platform,
+        string $platformServerId,
+        int $slot,
+        string $platformChannelId,
+        string $name,
+        string $model,
+        string $language,
+        array $rules,
+    ): bool {
+        return $this->insertWithRules(
+            'INSERT INTO channels (server_id, slot, platform_channel_id, name, model, language)
+             SELECT id, :slot, :platform_channel_id, :name, :model, :language FROM servers
+             WHERE platform = :platform AND platform_server_id = :platform_server_id
+             RETURNING id',
+            [
+                'slot' => $slot,
+                'platform_channel_id' => $platformChannelId,
+                'name' => $name,
+                'model' => $model,
+                'language' => $language,
+                'platform' => $platform,
+                'platform_server_id' => $platformServerId,
+            ],
+            $rules,
+        );
+    }
+
+    /**
+     * Runs an INSERT of one channel that returns its id, then adds the channel's rules.
+     * Returns whether the INSERT added a channel.
+     *
+     * @param array<string, array{level: string, action: string}> $rules by category
+     */
+    private function insertWithRules(string $insert, array $parameters, array $rules): bool
+    {
+        // the channel and its rules are saved together or not at all
+        $this->pdo->beginTransaction();
+
+        try {
+            $statement = $this->pdo->prepare($insert);
+            $statement->execute($parameters);
             $channelId = $statement->fetchColumn();
 
             if ($channelId !== false) {

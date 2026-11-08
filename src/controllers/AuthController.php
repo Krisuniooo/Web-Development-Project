@@ -10,7 +10,6 @@ use RuntimeException;
 final class AuthController extends AppController
 {
     private const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
-    private const DISCORD_API_URL = 'https://discord.com/api/v10';
 
     /** Sends the browser to Discord, which asks the user for consent. */
     public function discord(): void
@@ -103,7 +102,7 @@ final class AuthController extends AppController
             (string) getenv('DISCORD_CLIENT_ID'),
             (string) getenv('DISCORD_CLIENT_SECRET'),
             $this->discordRedirectUri(),
-            getenv('DISCORD_API_URL') ?: self::DISCORD_API_URL,
+            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
         );
     }
 

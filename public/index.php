@@ -22,6 +22,7 @@ $routing->get('/app', PanelController::class, 'overview');
 $routing->post('/app/manage', PanelController::class, 'manage');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->post('/app/channels/language', PanelController::class, 'setChannelLanguage');
+$routing->post('/app/channels/connect', PanelController::class, 'connectChannel');
 $routing->get('/app/models', PanelController::class, 'models');
 $routing->get('/app/limits', PanelController::class, 'limits');
 $routing->get('/app/model-status', PanelController::class, 'modelStatus');

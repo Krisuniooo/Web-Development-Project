@@ -8,11 +8,37 @@
     <ul class="channels">
         <?php foreach ($channelSlots as $slot => $item): ?>
             <?php if ($item === null): ?>
-                <?php // connecting a channel comes in a later step ?>
                 <li class="channels-card is-free">
-                    <span class="channels-card--slot"><?= sprintf($t('channels.slot'), $slot) ?></span>
-                    <span class="channels-card--free"><?= $t('channels.free') ?></span>
-                    <span class="channels-card--hint"><?= $t('channels.free_hint') ?></span>
+                    <div class="channels-card--header">
+                        <span class="channels-card--slot"><?= sprintf($t('channels.slot'), $slot) ?></span>
+                    </div>
+                    <h2 class="channels-card--name"><?= $t('channels.free') ?></h2>
+                    <?php if ($channelChoice['channels'] === null): ?>
+                        <p class="channels-card--hint"><?= $t('channels.discord_error') ?></p>
+                    <?php elseif ($channelChoice['channels'] === []): ?>
+                        <p class="channels-card--hint"><?= $t('channels.none_visible') ?></p>
+                    <?php else: ?>
+                        <form method="post" action="/app/channels/connect" class="channels-card--form">
+                            <input type="hidden" name="slot" value="<?= (int) $slot ?>" />
+                            <label class="channels-card--field is-wide">
+                                <span class="channels-card--label"><?= $t('channels.choose') ?></span>
+                                <select name="channel" class="channels-card--select">
+                                    <?php foreach ($channelChoice['channels'] as $choice): ?>
+                                        <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>">#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                            <label class="channels-card--field">
+                                <span class="channels-card--label"><?= $t('channels.language') ?></span>
+                                <select name="language" class="channels-card--select">
+                                    <?php foreach ($channelChoice['languages'] as $code): ?>
+                                        <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"<?= $code === $channelChoice['language'] ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </label>
+                            <button type="submit" class="channels-card--save"><?= $t('channels.connect') ?></button>
+                        </form>
+                    <?php endif; ?>
                 </li>
             <?php else: ?>
                 <?php $channel = $item['channel']; ?>
