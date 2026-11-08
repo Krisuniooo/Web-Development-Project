@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Database;
 use App\DiscordEvents;
 use App\DiscordGateway;
+use App\ModerationQueue;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -19,12 +20,15 @@ if ($token === '') {
 }
 
 try {
+    // messages wait for the model here, so the Gateway connection never waits for it
+    $queue = new ModerationQueue();
     // the database settings are checked here, the connection opens after logging in to Discord
-    $events = new DiscordEvents(new Database());
+    $events = new DiscordEvents(new Database(), $queue);
     $gateway = new DiscordGateway(
         $token,
         getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json',
         $events->handle(...),
+        $queue->tick(...),
     );
     $gateway->run();
 } catch (RuntimeException $error) {

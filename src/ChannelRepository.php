@@ -70,11 +70,18 @@ final class ChannelRepository
         ]);
     }
 
-    /** Whether the bot moderates this channel: it is saved for this server and not paused. */
-    public function isModerated(string $platform, string $platformServerId, string $platformChannelId): bool
+    /**
+     * What the bot needs to check a message from this channel, or null when it does not moderate it:
+     * the channel is not saved for this server, or it is paused.
+     *
+     * @return array{model: string, language: string, levels: array<string, string>}|null levels by category
+     */
+    public function moderationSettings(string $platform, string $platformServerId, string $platformChannelId): ?array
     {
         $statement = $this->pdo->prepare(
-            "SELECT 1 FROM channels JOIN servers ON servers.id = channels.server_id
+            "SELECT channels.model, channels.language, channel_rules.category, channel_rules.level
+             FROM channels JOIN servers ON servers.id = channels.server_id
+             LEFT JOIN channel_rules ON channel_rules.channel_id = channels.id
              WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
                AND channels.platform_channel_id = :platform_channel_id AND channels.status = 'active'",
         );
@@ -83,8 +90,23 @@ final class ChannelRepository
             'platform_server_id' => $platformServerId,
             'platform_channel_id' => $platformChannelId,
         ]);
+        // one row for each rule of the channel
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
-        return $statement->fetchColumn() !== false;
+        if ($rows === []) {
+            return null;
+        }
+
+        $levels = [];
+
+        foreach ($rows as $row) {
+            // a channel without rules still comes back once, with no category
+            if ($row['category'] !== null) {
+                $levels[$row['category']] = $row['level'];
+            }
+        }
+
+        return ['model' => $rows[0]['model'], 'language' => $rows[0]['language'], 'levels' => $levels];
     }
 
     /** The language of the server's first channel, or null while the server has no channel. */

@@ -45,11 +45,16 @@ final class DiscordGateway
         4014 => 'Message Content Intent is turned off. Turn it on in the Developer Portal (Bot > Privileged Gateway Intents)',
     ];
 
-    /** @param Closure(string, array): void $onEvent gets the event type, such as GUILD_CREATE, and its data */
+    /**
+     * @param Closure(string, array): void $onEvent gets the event type, such as GUILD_CREATE, and its data
+     * @param (Closure(): ?float)|null $betweenEvents runs between events, such as the moderation queue, and must not wait;
+     *     returns how many seconds may pass before it runs again, or null when it has nothing to do
+     */
     public function __construct(
         private string $token,
         private string $url,
         private Closure $onEvent,
+        private ?Closure $betweenEvents = null,
     ) {
     }
 
@@ -123,8 +128,15 @@ final class DiscordGateway
                     $nextHeartbeat = microtime(true) + $interval / 1000;
                 }
 
-                // waits for an event, but never past the time of the next heartbeat
-                $message = $socket->receive($nextHeartbeat - microtime(true));
+                // waits for an event, but never past the time of the next heartbeat, nor past what the other work asks for
+                $waitSeconds = $nextHeartbeat - microtime(true);
+                $nextRun = $this->betweenEvents === null ? null : ($this->betweenEvents)();
+
+                if ($nextRun !== null) {
+                    $waitSeconds = min($waitSeconds, $nextRun);
+                }
+
+                $message = $socket->receive($waitSeconds);
 
                 if ($message === null) {
                     continue;

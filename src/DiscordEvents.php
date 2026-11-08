@@ -9,7 +9,7 @@ use RuntimeException;
 /**
  * Turns Gateway events into changes in the database: which servers the bot is on,
  * and the first channel with the default settings when a server has none yet.
- * It also picks out the messages from the channels the bot moderates.
+ * It also puts the messages from the channels the bot moderates in the queue for the model.
  */
 final class DiscordEvents
 {
@@ -20,7 +20,7 @@ final class DiscordEvents
     private ?string $botUserId = null;
     private array $defaults;
 
-    public function __construct(private Database $database)
+    public function __construct(private Database $database, private ModerationQueue $queue)
     {
         $this->defaults = require dirname(__DIR__) . '/config/channel-defaults.php';
     }
@@ -64,7 +64,7 @@ final class DiscordEvents
         }
     }
 
-    /** For now only notes in the log that a message is one to moderate; checking it with the model comes next. */
+    /** Puts a message from a moderated channel in the queue for the model, with the settings its channel has now. */
     private function checkMessage(array $message): void
     {
         $text = $message['content'] ?? null;
@@ -86,12 +86,13 @@ final class DiscordEvents
             return;
         }
 
-        if (!$this->channels()->isModerated(self::PLATFORM, $serverId, $channelId)) {
+        $settings = $this->channels()->moderationSettings(self::PLATFORM, $serverId, $channelId);
+
+        if ($settings === null) {
             return;
         }
 
-        // only the length, the text itself never goes to the log
-        DiscordGateway::log(sprintf('Message %s in moderated channel %s, characters: %d', $messageId, $channelId, mb_strlen($text)));
+        $this->queue->add($messageId, $channelId, $text, $settings);
     }
 
     /**

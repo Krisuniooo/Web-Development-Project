@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App;
 
+use CurlHandle;
 use RuntimeException;
 
 /** Asks a moderation model how strongly a message breaks each rule, and compares the answers with the thresholds. */
@@ -41,38 +42,55 @@ final class MessageClassifier
     public function isReady(): bool
     {
         try {
-            return ($this->request('/health', null, self::STATUS_TIMEOUT_SECONDS)['status'] ?? null) === 'ok';
+            $request = $this->prepare('/health', null, self::STATUS_TIMEOUT_SECONDS);
+
+            return ($this->answer($request, curl_exec($request))['status'] ?? null) === 'ok';
         } catch (RuntimeException) {
             return false;
         }
     }
 
     /**
-     * The model's answer for each category, from 0 (no) to 1 (yes).
+     * The model's answer for each category, from 0 (no) to 1 (yes). Waits for it.
      *
      * @return array<string, float>
      */
     public function scores(string $text, string $language): array
     {
-        $questions = $this->model['questions'][$language] ?? null;
+        $request = $this->scoresRequest($text, $language);
 
-        if ($questions === null) {
-            throw new RuntimeException("The model $this->modelName has no questions in the language $language");
-        }
+        return $this->readScores($request, curl_exec($request), $language);
+    }
 
-        $response = $this->request('/v1/systemone', [
+    /**
+     * The question about a message, ready to send. The bot sends it alongside others without waiting,
+     * and gives the finished request to readScores().
+     */
+    public function scoresRequest(string $text, string $language): CurlHandle
+    {
+        return $this->prepare('/v1/systemone', [
             'state' => $text,
             // one question per category, each answered with a number
             'questions' => array_map(
                 fn(string $question): array => ['type' => 'noul', 'instructions' => $question],
-                $questions,
+                $this->questions($language),
             ),
         ], self::TIMEOUT_SECONDS);
+    }
 
+    /**
+     * The scores from a finished request of scoresRequest().
+     *
+     * @param string|false|null $response what the request returned, false or null when it got nothing
+     * @return array<string, float>
+     */
+    public function readScores(CurlHandle $request, string|false|null $response, string $language): array
+    {
+        $answer = $this->answer($request, $response);
         $scores = [];
 
-        foreach (array_keys($questions) as $category) {
-            $score = $response['answers'][$category]['noul'] ?? null;
+        foreach (array_keys($this->questions($language)) as $category) {
+            $score = $answer['answers'][$category]['noul'] ?? null;
 
             if (!is_int($score) && !is_float($score)) {
                 throw new RuntimeException("The model $this->modelName gave no answer for $category");
@@ -116,18 +134,25 @@ final class MessageClassifier
         return $broken;
     }
 
-    /** Sends the body as JSON by POST, or asks by GET when there is no body. */
-    private function request(string $path, ?array $body, int $timeoutSeconds): array
+    /** @return array<string, string> the questions in this language, by category */
+    private function questions(string $language): array
     {
-        $curl = curl_init($this->model['url'] . $path);
-        curl_setopt_array($curl, [
+        return $this->model['questions'][$language]
+            ?? throw new RuntimeException("The model $this->modelName has no questions in the language $language");
+    }
+
+    /** A request that sends the body as JSON by POST, or asks by GET when there is no body. */
+    private function prepare(string $path, ?array $body, int $timeoutSeconds): CurlHandle
+    {
+        $request = curl_init($this->model['url'] . $path);
+        curl_setopt_array($request, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT_SECONDS,
             CURLOPT_TIMEOUT => $timeoutSeconds,
         ]);
 
         if ($body !== null) {
-            curl_setopt_array($curl, [
+            curl_setopt_array($request, [
                 CURLOPT_POST => true,
                 // broken bytes become a replacement character, so the rest of the text is still checked
                 CURLOPT_POSTFIELDS => json_encode($body, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
@@ -135,14 +160,17 @@ final class MessageClassifier
             ]);
         }
 
-        $response = curl_exec($curl);
-        $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        return $request;
+    }
 
-        // the errors name only the model and the status, never the text of the message
-        if ($response === false) {
-            throw new RuntimeException("The model $this->modelName did not answer: " . curl_error($curl));
+    /** The decoded answer of a finished request; the errors name only the model and the status, never the text of the message. */
+    private function answer(CurlHandle $request, string|false|null $response): array
+    {
+        if (!is_string($response) || curl_errno($request) !== 0) {
+            throw new RuntimeException("The model $this->modelName did not answer: " . curl_error($request));
         }
 
+        $status = curl_getinfo($request, CURLINFO_RESPONSE_CODE);
         $data = json_decode($response, true);
 
         if ($status !== 200 || !is_array($data)) {
