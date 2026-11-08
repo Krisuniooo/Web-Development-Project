@@ -181,6 +181,54 @@ final class PanelController extends AppController
         $this->redirect('/app/channels');
     }
 
+    /** Moves a slot of the chosen server to another channel the bot can see; the language, model, rules and status stay. */
+    public function changeChannel(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $servers = $this->sessionServers();
+        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
+
+        if ($managedServer === null) {
+            $this->redirect('/app');
+        }
+
+        $slot = filter_var($_POST['slot'] ?? null, FILTER_VALIDATE_INT);
+        $platformChannelId = $_POST['channel'] ?? null;
+        $isChanged = false;
+
+        try {
+            $repository = new ChannelRepository((new Database())->connect());
+            $connected = $repository->findForServer($user['platform'], $managedServer['id']);
+
+            foreach ($connected as $current) {
+                if ($current->getSlot() !== $slot) {
+                    continue;
+                }
+
+                // only a channel the bot can see and that is not connected yet; its name comes from Discord, not from the form
+                foreach ($this->availableChannels($managedServer['id'], $connected) as $channel) {
+                    if ($channel['id'] === $platformChannelId) {
+                        $repository->setPlatformChannel($current->getId(), $channel['id'], $channel['name']);
+                        $isChanged = true;
+                    }
+                }
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not change a channel: ' . $exception->getMessage());
+        }
+
+        $_SESSION['notice'] = $isChanged
+            ? ['text' => 'channels.changed', 'isError' => false]
+            : ['text' => 'channels.change_error', 'isError' => true];
+
+        $this->redirect('/app/channels');
+    }
+
     /** For the test box: whether the model can check a message now. */
     public function modelStatus(): void
     {
@@ -408,6 +456,9 @@ final class PanelController extends AppController
         unset($_SESSION['notice']);
 
         $channelSlots = $section === 'channels' ? $this->channelSlots($user['platform'], $managedServer['id']) : null;
+        // the slot whose channel is being changed, after "Change channel"; only a slot with a channel counts
+        $changingSlot = filter_var($_GET['change'] ?? null, FILTER_VALIDATE_INT);
+        $changingSlot = is_int($changingSlot) && isset($channelSlots[$changingSlot]) ? $changingSlot : null;
 
         $this->render('panel', [
             'pageTitle' => $this->lang()->text($navigation[$section]['name']),
@@ -419,8 +470,9 @@ final class PanelController extends AppController
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
             'channelSlots' => $channelSlots,
-            // Discord is asked only when there is a free slot to fill
-            'channelChoice' => $channelSlots !== null && in_array(null, $channelSlots, true)
+            'changingSlot' => $changingSlot,
+            // Discord is asked only when there is a channel to choose: for a free slot or a change
+            'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
                 ? $this->channelChoice($managedServer['id'], $channelSlots)
                 : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
@@ -453,7 +505,7 @@ final class PanelController extends AppController
     }
 
     /**
-     * What a free slot offers: the channels to choose from, or null when Discord does not answer,
+     * What a free slot or a change offers: the channels to choose from, or null when Discord does not answer,
      * the languages of the default model, and the language chosen at the start: that of a connected channel, or else the page's.
      *
      * @param array<int, array{channel: Channel, languages: list<string>}|null> $slots

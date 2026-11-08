@@ -54,6 +54,22 @@ final class ChannelRepository
         ]);
     }
 
+    /**
+     * Points a slot at another channel of the same server; the language, model, rules and status stay.
+     * The database turns it down when the other channel is already connected.
+     */
+    public function setPlatformChannel(int $channelId, string $platformChannelId, string $name): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE channels SET platform_channel_id = :platform_channel_id, name = :name WHERE id = :id',
+        );
+        $statement->execute([
+            'platform_channel_id' => $platformChannelId,
+            'name' => $name,
+            'id' => $channelId,
+        ]);
+    }
+
     /** Whether the bot moderates this channel: it is saved for this server and not paused. */
     public function isModerated(string $platform, string $platformServerId, string $platformChannelId): bool
     {

@@ -42,16 +42,49 @@
                 </li>
             <?php else: ?>
                 <?php $channel = $item['channel']; ?>
-                <li class="channels-card">
+                <?php $isChanging = $slot === $changingSlot; ?>
+                <li class="channels-card<?= $isChanging ? ' is-changing' : '' ?>">
                     <div class="channels-card--header">
                         <span class="channels-card--slot"><?= sprintf($t('channels.slot'), $slot) ?></span>
                         <span class="channels-card--status is-<?= htmlspecialchars($channel->getStatus(), ENT_QUOTES, 'UTF-8') ?>"><?= $t('channels.status.' . $channel->getStatus()) ?></span>
                     </div>
-                    <h2 class="channels-card--name">
-                        <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
-                        <?= htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8') ?>
-                    </h2>
-                    <?php if ($item['languages'] === []): ?>
+                    <div class="channels-card--title">
+                        <h2 class="channels-card--name">
+                            <i class="fa-solid fa-hashtag" aria-hidden="true"></i>
+                            <?= htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8') ?>
+                        </h2>
+                        <?php if (!$isChanging): ?>
+                            <a href="/app/channels?change=<?= (int) $slot ?>" class="channels-card--change">
+                                <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+                                <?= $t('channels.change') ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($isChanging): ?>
+                        <?php // while changing, the card only asks for the new channel; the language stays as it is ?>
+                        <?php if ($channelChoice['channels'] === null || $channelChoice['channels'] === []): ?>
+                            <p class="channels-card--hint"><?= $t($channelChoice['channels'] === null ? 'channels.discord_error' : 'channels.none_visible') ?></p>
+                            <div class="channels-card--actions">
+                                <a href="/app/channels" class="channels-card--cancel"><?= $t('channels.cancel') ?></a>
+                            </div>
+                        <?php else: ?>
+                            <form method="post" action="/app/channels/change" class="channels-card--form">
+                                <input type="hidden" name="slot" value="<?= (int) $slot ?>" />
+                                <label class="channels-card--field is-wide">
+                                    <span class="channels-card--label"><?= $t('channels.change_choose') ?></span>
+                                    <select name="channel" class="channels-card--select">
+                                        <?php foreach ($channelChoice['channels'] as $choice): ?>
+                                            <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>">#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
+                                <div class="channels-card--actions">
+                                    <a href="/app/channels" class="channels-card--cancel"><?= $t('channels.cancel') ?></a>
+                                    <button type="submit" class="channels-card--save"><?= $t('channels.change_submit') ?></button>
+                                </div>
+                            </form>
+                        <?php endif; ?>
+                    <?php elseif ($item['languages'] === []): ?>
                         <?php // a model without settings has nothing to choose from, so only the saved language is shown ?>
                         <p class="channels-card--language"><?= $t('language.' . $channel->getLanguage()) ?></p>
                     <?php else: ?>
