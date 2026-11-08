@@ -36,19 +36,27 @@
   color: var(--color-muted);
 }
 
-/* what the last form did, such as a saved setting */
+/* what the last form did, such as a saved setting: the icon in the colour of the outcome, the text easy to read */
 .panel-notice {
+  --notice-color: var(--color-success);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
   width: fit-content;
+  max-width: 100%;
   margin: var(--space-2) 0 0;
   padding: var(--space-1) var(--space-2);
-  border-radius: calc(var(--radius) / 2);
-  background: color-mix(in srgb, var(--color-success) 12%, transparent);
-  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--notice-color) 35%, transparent);
+  border-radius: calc(var(--radius) / 1.5);
+  background: color-mix(in srgb, var(--notice-color) 10%, transparent);
+  color: var(--color-text);
   font-weight: 600;
 }
+.panel-notice i {
+  color: var(--notice-color);
+}
 .panel-notice.is-error {
-  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  color: var(--color-danger);
+  --notice-color: var(--color-danger);
 }
 
 @media (max-width: 900px) {

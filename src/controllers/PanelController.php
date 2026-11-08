@@ -114,9 +114,12 @@ final class PanelController extends AppController
             error_log('Panel could not save the channel language: ' . $exception->getMessage());
         }
 
-        $_SESSION['notice'] = $isSaved
-            ? ['text' => 'channels.saved', 'isError' => false]
-            : ['text' => 'channels.save_error', 'isError' => true];
+        if ($isSaved) {
+            // the channel's own button shows it, so no notice
+            $_SESSION['savedChannelId'] = $channelId;
+        } else {
+            $_SESSION['notice'] = ['text' => 'channels.save_error', 'isError' => true];
+        }
 
         $this->redirect('/app/channels');
     }
@@ -453,7 +456,8 @@ final class PanelController extends AppController
 
         // what the last form did, shown once
         $notice = $_SESSION['notice'] ?? null;
-        unset($_SESSION['notice']);
+        $savedChannelId = $_SESSION['savedChannelId'] ?? null;
+        unset($_SESSION['notice'], $_SESSION['savedChannelId']);
 
         $channelSlots = $section === 'channels' ? $this->channelSlots($user['platform'], $managedServer['id']) : null;
         // the slot whose channel is being changed, after "Change channel"; only a slot with a channel counts
@@ -470,6 +474,7 @@ final class PanelController extends AppController
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
             'channelSlots' => $channelSlots,
+            'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
             'changingSlot' => $changingSlot,
             // Discord is asked only when there is a channel to choose: for a free slot or a change
             'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
