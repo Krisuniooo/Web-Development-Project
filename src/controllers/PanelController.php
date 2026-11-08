@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\ChannelRepository;
 use App\Database;
-use App\DiscordBotClient;
-use App\DiscordClient;
-use App\MessageClassifier;
+use App\Discord\DiscordBotClient;
+use App\Discord\DiscordClient;
 use App\Model\Channel;
 use App\Model\ChannelRule;
 use App\Model\ModerationEvent;
-use App\ModerationEventRepository;
-use App\ServerRepository;
+use App\Moderation\MessageClassifier;
+use App\Repository\ChannelRepository;
+use App\Repository\ModerationEventRepository;
+use App\Repository\ServerRepository;
 use RuntimeException;
 
 final class PanelController extends AppController

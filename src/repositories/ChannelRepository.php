@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Repository;
 
 use App\Model\Channel;
 use App\Model\ChannelRule;

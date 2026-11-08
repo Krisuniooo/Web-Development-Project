@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Discord;
 
+use App\Database;
+use App\Moderation\ModerationQueue;
+use App\Repository\ChannelRepository;
+use App\Repository\ServerRepository;
 use RuntimeException;
 
 /**
@@ -22,7 +26,7 @@ final class DiscordEvents
 
     public function __construct(private Database $database, private ModerationQueue $queue)
     {
-        $this->defaults = require dirname(__DIR__) . '/config/channel-defaults.php';
+        $this->defaults = require dirname(__DIR__, 2) . '/config/channel-defaults.php';
     }
 
     public function handle(string $type, array $data): void

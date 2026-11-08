@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use App\Database;
-use App\DiscordBotClient;
-use App\DiscordClient;
-use App\DiscordEvents;
-use App\DiscordGateway;
-use App\DiscordModerator;
-use App\ModerationQueue;
-use App\PendingRequests;
+use App\Discord\DiscordBotClient;
+use App\Discord\DiscordClient;
+use App\Discord\DiscordEvents;
+use App\Discord\DiscordGateway;
+use App\Discord\DiscordModerator;
+use App\Moderation\ModerationQueue;
+use App\Moderation\PendingRequests;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 

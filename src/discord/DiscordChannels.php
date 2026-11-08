@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Discord;
 
 /** Which of a server's channels someone can moderate: the bot from GUILD_CREATE, the panel from the REST API. */
 final class DiscordChannels

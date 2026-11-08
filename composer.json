@@ -2,7 +2,10 @@
   "autoload": {
     "psr-4": {
       "App\\Controller\\": "src/controllers/",
+      "App\\Discord\\": "src/discord/",
       "App\\Model\\": "src/models/",
+      "App\\Moderation\\": "src/moderation/",
+      "App\\Repository\\": "src/repositories/",
       "App\\": "src/"
     }
   }

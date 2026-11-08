@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Discord;
 
 /**
  * Discord's permission rules, in the order its documentation gives:

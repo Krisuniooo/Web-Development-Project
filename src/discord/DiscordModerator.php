@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Discord;
 
+use App\Database;
 use App\Model\ModerationEvent;
+use App\Moderation\PendingRequests;
+use App\Repository\ModerationEventRepository;
 use CurlHandle;
 use Throwable;
 

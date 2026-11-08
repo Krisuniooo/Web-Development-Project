@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace App\Discord;
 
+use App\WebSocketClient;
 use Closure;
 use RuntimeException;
 

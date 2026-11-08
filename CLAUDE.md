@@ -10,6 +10,10 @@ Prosta aplikacja edukacyjna w PHP 8.3 pokazująca routing i MVC. Na razie to gł
 - `config/` — dane dla widoków.
 - `src/Routing.php` — dopasowanie tras i uruchamianie kontrolerów.
 - `src/controllers/` — kontrolery w namespace `App\Controller`.
+- `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
+- `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
+- `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).
+- `bin/` — procesy CLI: bot Discorda i sprawdzanie wiadomości.
 
 ## Zasady pracy
 - Zachowuj `declare(strict_types=1)` w plikach PHP.
@@ -22,6 +26,7 @@ Prosta aplikacja edukacyjna w PHP 8.3 pokazująca routing i MVC. Na razie to gł
 ## Uruchamianie i weryfikacja
 - Start: `docker compose up --build -d`, a po świeżym klonie także `docker compose exec -T php composer install`.
 - Składnia: `docker compose exec -T php php -l ścieżka/do/pliku.php`
+- Nowy folder z namespace dopisz do `autoload.psr-4` w `composer.json` i uruchom `docker compose exec -T php composer dump-autoload`.
 - Po zmianie trasy sprawdź poprawny adres i odpowiedź 404.
 - Przed zakończeniem pokaż `git diff` i podsumuj zmienione pliki.
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\DiscordClient;
+use App\Discord\DiscordClient;
 use RuntimeException;
 
 final class AuthController extends AppController
