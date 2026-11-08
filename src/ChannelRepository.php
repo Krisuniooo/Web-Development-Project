@@ -4,13 +4,54 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Model\Channel;
+use DateTimeImmutable;
 use PDO;
 use Throwable;
 
 final class ChannelRepository
 {
+    // the places for channels on one server, as the CHECK on channels.slot in schema.sql allows
+    public const SLOTS = [1, 2];
+
     public function __construct(private PDO $pdo)
     {
+    }
+
+    /** @return list<Channel> the server's channels, in the order of their slots */
+    public function findForServer(string $platform, string $platformServerId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT channels.* FROM channels JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+             ORDER BY channels.slot',
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'platform_server_id' => $platformServerId,
+        ]);
+
+        return array_map(fn(array $row): Channel => new Channel(
+            (int) $row['id'],
+            (int) $row['server_id'],
+            (int) $row['slot'],
+            $row['platform_channel_id'],
+            $row['name'],
+            $row['model'],
+            $row['language'],
+            $row['status'],
+            new DateTimeImmutable($row['created_at']),
+            new DateTimeImmutable($row['updated_at']),
+        ), $statement->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    public function setLanguage(int $channelId, string $language): void
+    {
+        $statement = $this->pdo->prepare('UPDATE channels SET language = :language WHERE id = :id');
+        $statement->execute([
+            'language' => $language,
+            'id' => $channelId,
+        ]);
     }
 
     /** Whether the bot moderates this channel: it is saved for this server and not paused. */

@@ -36,6 +36,21 @@
   color: var(--color-muted);
 }
 
+/* what the last form did, such as a saved setting */
+.panel-notice {
+  width: fit-content;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: calc(var(--radius) / 2);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
+  font-weight: 600;
+}
+.panel-notice.is-error {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
 @media (max-width: 900px) {
   .panel {
     grid-template-columns: minmax(0, 1fr);

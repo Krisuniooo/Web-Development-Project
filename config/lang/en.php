@@ -83,6 +83,19 @@ return [
     "language.pl" => "Polish",
     "language.en" => "English",
 
+    "channels.lead" => "The channels the bot moderates on this server. Set the language people write in on each one, because the questions to the model and the thresholds depend on it.",
+    "channels.slot" => "Channel %d",
+    "channels.status.active" => "Moderated",
+    "channels.status.paused" => "Paused",
+    "channels.language" => "What language do people write in on this channel?",
+    "channels.save" => "Save",
+    "channels.saved" => "The channel language is saved.",
+    "channels.save_error" => "The language could not be saved. Try again.",
+    "channels.load_error" => "The channels could not be loaded. Refresh the page.",
+    "channels.free" => "Free place",
+    "channels.free_hint" => "Connecting a channel will come here.",
+    "channels.hint" => "At the start a channel gets the server language from Discord, and many Polish servers leave it at English. It is worth checking.",
+
     "limits.lead" => "Decide how strictly the bot watches each category on the channel.",
     "limits.not_ready" => "Setting the levels for each category will come here.",
 

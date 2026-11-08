@@ -83,6 +83,19 @@ return [
     "language.pl" => "Polski",
     "language.en" => "Angielski",
 
+    "channels.lead" => "Kanały, które bot moderuje na tym serwerze. Na każdym ustaw język, w którym się na nim pisze, bo od niego zależą pytania do modelu i progi.",
+    "channels.slot" => "Kanał %d",
+    "channels.status.active" => "Moderowany",
+    "channels.status.paused" => "Wstrzymany",
+    "channels.language" => "W jakim języku piszecie na tym kanale?",
+    "channels.save" => "Zapisz",
+    "channels.saved" => "Zapisano język kanału.",
+    "channels.save_error" => "Nie udało się zapisać języka. Spróbuj ponownie.",
+    "channels.load_error" => "Nie udało się wczytać kanałów. Odśwież stronę.",
+    "channels.free" => "Wolne miejsce",
+    "channels.free_hint" => "Podłączanie kanału pojawi się tutaj.",
+    "channels.hint" => "Na start kanał dostaje język serwera z Discorda, a wiele polskich serwerów ma tam ustawiony angielski. Warto to sprawdzić.",
+
     "limits.lead" => "Ustal, jak surowo bot pilnuje każdej kategorii na kanale.",
     "limits.not_ready" => "Ustawianie poziomów dla kategorii pojawi się tutaj.",
 

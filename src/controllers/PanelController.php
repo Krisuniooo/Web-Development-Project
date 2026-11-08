@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\ChannelRepository;
 use App\Database;
 use App\MessageClassifier;
+use App\Model\Channel;
 use App\ServerRepository;
 use RuntimeException;
 
@@ -73,6 +74,47 @@ final class PanelController extends AppController
         }
 
         $this->redirect('/app');
+    }
+
+    /** Saves the language people write in on one channel of the chosen server. */
+    public function setChannelLanguage(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $servers = $this->sessionServers();
+        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
+
+        if ($managedServer === null) {
+            $this->redirect('/app');
+        }
+
+        $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
+        $language = $_POST['language'] ?? null;
+        $isSaved = false;
+
+        try {
+            $repository = new ChannelRepository((new Database())->connect());
+
+            // only a channel of the chosen server, and only a language its model has questions in
+            foreach ($repository->findForServer($user['platform'], $managedServer['id']) as $channel) {
+                if ($channel->getId() === $channelId && in_array($language, $this->modelLanguages($channel->getModel()), true)) {
+                    $repository->setLanguage($channelId, $language);
+                    $isSaved = true;
+                }
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save the channel language: ' . $exception->getMessage());
+        }
+
+        $_SESSION['notice'] = $isSaved
+            ? ['text' => 'channels.saved', 'isError' => false]
+            : ['text' => 'channels.save_error', 'isError' => true];
+
+        $this->redirect('/app/channels');
     }
 
     /** For the test box: whether the model can check a message now. */
@@ -297,6 +339,10 @@ final class PanelController extends AppController
             $navigation[$key]['locked'] = $key !== 'overview' && $managedServer === null;
         }
 
+        // what the last form did, shown once
+        $notice = $_SESSION['notice'] ?? null;
+        unset($_SESSION['notice']);
+
         $this->render('panel', [
             'pageTitle' => $this->lang()->text($navigation[$section]['name']),
             'navigation' => $navigation,
@@ -304,9 +350,46 @@ final class PanelController extends AppController
             'currentAccount' => $user,
             'currentPlatformName' => array_column($platforms, 'name', 'slug')[$user['platform']] ?? $user['platform'],
             'managedServer' => $managedServer,
+            'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
+            'channelSlots' => $section === 'channels' ? $this->channelSlots($user['platform'], $managedServer['id']) : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
+    }
+
+    /**
+     * Each place for a channel, with the channel there and the languages its model can use, or null while it is free.
+     * Null instead of the list when the database does not answer.
+     *
+     * @return array<int, array{channel: Channel, languages: list<string>}|null>|null by slot
+     */
+    private function channelSlots(string $platform, string $serverId): ?array
+    {
+        try {
+            $channels = (new ChannelRepository((new Database())->connect()))->findForServer($platform, $serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the channels: ' . $exception->getMessage());
+
+            return null;
+        }
+
+        $slots = array_fill_keys(ChannelRepository::SLOTS, null);
+
+        foreach ($channels as $channel) {
+            $slots[$channel->getSlot()] = ['channel' => $channel, 'languages' => $this->modelLanguages($channel->getModel())];
+        }
+
+        return $slots;
+    }
+
+    /** @return list<string> the languages a model has questions in; none for a model without settings in config/moderation.php */
+    private function modelLanguages(string $model): array
+    {
+        try {
+            return (new MessageClassifier($model))->languages();
+        } catch (RuntimeException) {
+            return [];
+        }
     }
 
     /**
