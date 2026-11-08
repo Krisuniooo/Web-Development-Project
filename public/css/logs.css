@@ -1,23 +1,18 @@
-/* what the bot did, newest first: one row for each event, all in one card */
+/* what the bot did, newest first: one line for each event, all in one card */
 .logs {
   /* the list's own width decides its layout, not the screen's */
   container-type: inline-size;
   margin: var(--space-3) 0 0;
   padding: 0;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
   list-style: none;
 }
 
-/* the icon of the action, then what and why with who and where under it, and the time on the right */
 .logs-event {
   --event-color: var(--color-accent);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
 }
 .logs-event + .logs-event {
   border-top: 1px solid var(--color-border);
@@ -29,112 +24,141 @@
   --event-color: var(--color-danger);
 }
 
+/* the same columns in every line, so the list reads like a table: icon, author, message, category, time */
+.logs-event--row {
+  display: grid;
+  grid-template-columns: 1.75rem 9rem minmax(0, 1fr) 7.5rem 7rem 0.75rem;
+  grid-template-areas: "icon author text category time chevron";
+  /* by the first line of text, so an opened long message does not pull the rest to its middle */
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0.625rem var(--space-3);
+  list-style: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.logs-event--row::-webkit-details-marker {
+  display: none;
+}
+.logs-event--row:hover,
+.logs-event details[open] .logs-event--row {
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+.logs-event--row:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
 .logs-event--icon {
   display: grid;
+  grid-area: icon;
+  align-self: start;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
   background: color-mix(in srgb, var(--event-color) 14%, transparent);
   color: var(--event-color);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
 }
 
-.logs-event--main {
-  min-width: 0;
+/* the name of the action, for screen readers; the icon says it to the eye */
+.logs-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.logs-event--title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-0) var(--space-1);
-  margin: 0;
-  line-height: 2.25rem;
+.logs-event--author {
+  grid-area: author;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.logs-event--action {
-  font-weight: 700;
-}
-.logs-event--reason {
+
+/* the message itself, on one line until the event is opened */
+.logs-event--text {
+  grid-area: text;
+  overflow: hidden;
   color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.logs-event--level {
-  padding: 0 var(--space-1);
+.logs-event details[open] .logs-event--text {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.logs-event--text.is-gone {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.logs-event--category {
+  grid-area: category;
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0.125rem var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--color-surface-raised);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  line-height: 1.6;
-}
-
-/* who, where and how sure the model was, kept apart by space and their icons */
-.logs-event--meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--space-2);
-  margin: 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-}
-.logs-event--meta i {
-  margin-right: 0.25rem;
-  font-size: 0.85em;
-}
-
-.logs-event--time {
-  color: var(--color-muted);
-  font-size: var(--font-size-sm);
-  line-height: 2.25rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.logs-event--content {
-  margin-top: var(--space-1);
-}
-.logs-event--content summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  border-radius: 0.25rem;
-  color: var(--color-accent-strong);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  list-style: none;
-  cursor: pointer;
-}
-.logs-event--content summary::-webkit-details-marker {
-  display: none;
-}
-/* a small arrow that turns down when the text is open */
-.logs-event--content summary::before {
-  content: "▸";
-  transition: transform 0.2s;
-}
-.logs-event--content[open] summary::before {
-  transform: rotate(90deg);
-}
-.logs-event--content summary:focus-visible {
-  outline: var(--focus-ring);
-  outline-offset: 2px;
-}
-/* no wider than a comfortable line of text, even on a wide screen */
-.logs-event--content p {
-  max-width: 75ch;
-  margin: var(--space-1) 0 0;
-  padding: var(--space-1) var(--space-2);
-  border-left: 3px solid var(--event-color);
-  border-radius: 0 0.5rem 0.5rem 0;
-  background: var(--color-background);
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-
-.logs-event--gone {
-  margin: var(--space-1) 0 0;
+.logs-event--time {
+  grid-area: time;
+  justify-self: end;
   color: var(--color-muted);
   font-size: var(--font-size-sm);
-  font-style: italic;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.logs-event--chevron {
+  grid-area: chevron;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+.logs-event details[open] .logs-event--chevron {
+  transform: rotate(180deg);
+}
+
+/* the rest, under the line and level with the author */
+.logs-event--details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: var(--space-1) var(--space-3) var(--space-2) calc(var(--space-3) + 1.75rem + var(--space-2));
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+.logs-event--details div {
+  min-width: 0;
+}
+.logs-event--details dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.logs-event--details dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+.logs-event--id {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
 }
 
 .logs-empty,
@@ -145,11 +169,11 @@
   margin: var(--space-3) 0 0;
 }
 .logs-empty {
+  justify-content: center;
   padding: var(--space-4) var(--space-3);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius);
   color: var(--color-muted);
-  justify-content: center;
   text-align: center;
 }
 .logs-error {
@@ -191,15 +215,17 @@
   outline-offset: 3px;
 }
 
-/* a narrow list, as on a phone: the time goes under the rest, so the reason has the whole width */
-@container (max-width: 30rem) {
-  .logs-event {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: var(--space-2);
+/* a narrow list, as on a phone: the author and the time on top, the category and the message under them */
+@container (max-width: 40rem) {
+  .logs-event--row {
+    grid-template-columns: 1.75rem auto minmax(0, 1fr) auto 0.75rem;
+    grid-template-areas:
+      "icon author author time chevron"
+      ". category text text text";
+    gap: 0.25rem var(--space-1);
+    padding: 0.625rem var(--space-2);
   }
-  .logs-event--time {
-    grid-column: 2;
-    margin-top: calc(-1 * var(--space-1));
-    line-height: 1.4;
+  .logs-event--details {
+    padding: var(--space-1) var(--space-2) var(--space-2) calc(var(--space-2) + 1.75rem + var(--space-1));
   }
 }
