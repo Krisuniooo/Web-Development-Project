@@ -13,7 +13,7 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
 - `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
 - `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).
-- `bin/` — procesy CLI: bot Discorda i sprawdzanie wiadomości.
+- `bin/` — procesy CLI: bot Discorda, sprawdzanie wiadomości i codzienne czyszczenie danych (cron).
 
 ## Zasady pracy
 - Zachowuj `declare(strict_types=1)` w plikach PHP.

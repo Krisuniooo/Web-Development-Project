@@ -31,6 +31,7 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 | --- | --- | --- |
 | `server`, `php` | strona i panel | http://localhost:8080 |
 | `discord-bot` | bot, logi: `docker compose logs -f discord-bot` | — |
+| `cron` | codzienne czyszczenie danych, logi: `docker compose logs cron` | — |
 | `basal-mini` | model moderacji, dostępny tylko dla kontenerów | — |
 | `db` | PostgreSQL, schemat w `database/schema.sql` | localhost:5433 |
 | `pgadmin-wdpai` | pgAdmin | http://localhost:5050 |
@@ -43,3 +44,21 @@ docker compose exec php php bin/check-message.php pl "treść wiadomości"
 ```
 
 Polecenie pokazuje oceny modelu i decyzję dla każdego poziomu.
+
+## Zadanie cykliczne (cron)
+
+Historia moderacji zawiera treść wiadomości i dane ich autorów, więc nie jest przechowywana bez końca. Usługa `cron` uruchamia codziennie o 03:15 UTC polecenie `php bin/cleanup.php`, które w jednej transakcji:
+
+- usuwa treść oraz autora ze zdarzeń starszych niż 30 dni; kategoria, akcja, wynik modelu i czas zostają do statystyk,
+- usuwa serwery, z których bot został usunięty ponad 30 dni temu, razem z ich kanałami, zasadami i zdarzeniami (`ON DELETE CASCADE`).
+
+Harmonogram jest zapisany w `docker-compose.yaml` jako `15 3 * * *`. Każde uruchomienie zapisuje jedną linię z liczbą zmienionych zdarzeń i usuniętych serwerów, widoczną w `docker compose logs cron`. Ponowne uruchomienie niczego nie zmienia, bo oczyszczone zdarzenia i usunięte serwery nie spełniają już warunków.
+
+Testowanie bez czekania na harmonogram:
+
+```shell
+# tylko liczy, niczego nie zmienia
+docker compose exec php php bin/cleanup.php --dry-run
+# wykonuje czyszczenie
+docker compose exec php php bin/cleanup.php
+```
