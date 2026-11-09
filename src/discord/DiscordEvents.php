@@ -65,6 +65,10 @@ final class DiscordEvents
             }
         } elseif ($type === 'MESSAGE_CREATE') {
             $this->checkMessage($data);
+        } elseif ($type === 'MESSAGE_UPDATE' && is_string($data['edited_timestamp'] ?? null)) {
+            // an edited message is checked like a new one, so a clean text cannot be changed into a bad one;
+            // without the time of an edit the update is Discord's own, such as a link preview added to the same text
+            $this->checkMessage($data);
         }
     }
 
