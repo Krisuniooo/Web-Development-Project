@@ -29,9 +29,11 @@ return [
                 'harassment' => ['relaxed' => 0.80, 'balanced' => 0.75, 'strict' => 0.70],
                 'profanity' => ['relaxed' => 0.80, 'balanced' => 0.75, 'strict' => 0.70],
             ],
+            // racism and harassment are 0.10 above what the test messages gave: on real chats the measured values
+            // took vulgar insults for racism (0.67) and mild digs for harassment (0.73)
             'pl' => [
-                'racism' => ['relaxed' => 0.65, 'balanced' => 0.60, 'strict' => 0.55],
-                'harassment' => ['relaxed' => 0.70, 'balanced' => 0.65, 'strict' => 0.60],
+                'racism' => ['relaxed' => 0.75, 'balanced' => 0.70, 'strict' => 0.65],
+                'harassment' => ['relaxed' => 0.80, 'balanced' => 0.75, 'strict' => 0.70],
                 'profanity' => ['relaxed' => 0.85, 'balanced' => 0.80, 'strict' => 0.75],
             ],
         ],
