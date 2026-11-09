@@ -77,4 +77,20 @@ final class ServerRepository
             'kept' => '{' . implode(',', $platformServerIds) . '}',
         ]);
     }
+
+    /**
+     * Deletes the servers the bot left more than $days ago, and with them their channels, rules and events.
+     * Returns how many servers it deleted.
+     */
+    public function deleteRemovedFor(int $days): int
+    {
+        // updated_at of a removed server is the time the bot left, since nothing changes the row after that
+        $statement = $this->pdo->prepare(
+            "DELETE FROM servers WHERE status = 'removed' AND updated_at < now() - make_interval(days => :days)",
+        );
+        $statement->bindValue('days', $days, PDO::PARAM_INT);
+        $statement->execute();
+
+        return $statement->rowCount();
+    }
 }

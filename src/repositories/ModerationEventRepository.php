@@ -84,4 +84,21 @@ final class ModerationEventRepository
             'score' => $event->getScore(),
         ]);
     }
+
+    /**
+     * Removes the text and the author from the events older than $days; the rest stays for statistics.
+     * Returns how many events it changed, which is none when run again.
+     */
+    public function stripOlderThan(int $days): int
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE moderation_events SET content = NULL, author_platform_id = NULL, author_name = NULL
+             WHERE created_at < now() - make_interval(days => :days)
+               AND (content IS NOT NULL OR author_platform_id IS NOT NULL OR author_name IS NOT NULL)',
+        );
+        $statement->bindValue('days', $days, PDO::PARAM_INT);
+        $statement->execute();
+
+        return $statement->rowCount();
+    }
 }

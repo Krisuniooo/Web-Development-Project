@@ -83,7 +83,8 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-.logs-event--text.is-gone {
+.logs-event--text.is-gone,
+.logs-event--author.is-gone {
   color: var(--color-muted);
   font-style: italic;
 }

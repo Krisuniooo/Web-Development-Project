@@ -125,6 +125,7 @@ return [
     "logs.action.timeout" => "Timed out",
     "logs.action.ban" => "Banned",
     "logs.no_content" => "The message is no longer kept.",
+    "logs.no_author" => "No longer kept",
     "logs.detail.action" => "Action",
     "logs.detail.rule" => "Rule",
     "logs.detail.score" => "Model certainty",

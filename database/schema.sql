@@ -62,8 +62,10 @@ CREATE TABLE moderation_events (
     platform_channel_id TEXT NOT NULL,
     channel_name TEXT NOT NULL,
     platform_message_id TEXT NOT NULL,
-    author_platform_id TEXT NOT NULL,
-    author_name TEXT NOT NULL,
+    -- the author and the content are set to NULL by bin/cleanup.php once the event is 30 days old;
+    -- the rest of the event stays for statistics
+    author_platform_id TEXT,
+    author_name TEXT,
     category moderation_category NOT NULL,
     level moderation_level NOT NULL,
     -- text, so an event keeps the name of a model that is later removed

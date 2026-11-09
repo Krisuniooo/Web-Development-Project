@@ -24,7 +24,8 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
             <?php
             $action = $event->getAction();
             $createdAt = $event->getCreatedAt()?->setTimezone(new DateTimeZone('UTC'));
-            $author = htmlspecialchars($event->getAuthorName(), ENT_QUOTES, 'UTF-8');
+            // null once the event is old enough for its text and author to be removed
+            $author = $event->getAuthorName() === null ? null : htmlspecialchars($event->getAuthorName(), ENT_QUOTES, 'UTF-8');
             ?>
             <li class="logs-event is-<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?>">
                 <details>
@@ -34,7 +35,11 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
                             <i class="fa-solid <?= $actionIcons[$action] ?? 'fa-circle' ?>" aria-hidden="true"></i>
                             <span class="panel-hidden"><?= $t('logs.action.' . $action) ?></span>
                         </span>
-                        <span class="logs-event--author" title="<?= $author ?>"><?= $author ?></span>
+                        <?php if ($author === null): ?>
+                            <span class="logs-event--author is-gone"><?= $t('logs.no_author') ?></span>
+                        <?php else: ?>
+                            <span class="logs-event--author" title="<?= $author ?>"><?= $author ?></span>
+                        <?php endif; ?>
                         <?php if ($event->getContent() === null): ?>
                             <span class="logs-event--text is-gone"><?= $t('logs.no_content') ?></span>
                         <?php else: ?>
@@ -68,7 +73,11 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
                         </div>
                         <div>
                             <dt><?= $t('logs.detail.author') ?></dt>
-                            <dd><?= $author ?> <span class="logs-event--id">ID <?= htmlspecialchars($event->getAuthorPlatformId(), ENT_QUOTES, 'UTF-8') ?></span></dd>
+                            <?php if ($author === null): ?>
+                                <dd><?= $t('logs.no_author') ?></dd>
+                            <?php else: ?>
+                                <dd><?= $author ?> <span class="logs-event--id">ID <?= htmlspecialchars((string) $event->getAuthorPlatformId(), ENT_QUOTES, 'UTF-8') ?></span></dd>
+                            <?php endif; ?>
                         </div>
                         <?php if ($createdAt !== null): ?>
                             <div>

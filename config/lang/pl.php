@@ -125,6 +125,7 @@ return [
     "logs.action.timeout" => "Wyciszono",
     "logs.action.ban" => "Zbanowano",
     "logs.no_content" => "Treść nie jest już przechowywana.",
+    "logs.no_author" => "Już nieprzechowywany",
     "logs.detail.action" => "Akcja",
     "logs.detail.rule" => "Zasada",
     "logs.detail.score" => "Pewność modelu",
