@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Discord;
 
 use App\Database;
+use App\Log;
 use App\Model\ModerationEvent;
 use App\Moderation\PendingRequests;
 use App\Repository\ModerationEventRepository;
@@ -43,7 +44,7 @@ final class DiscordModerator
         $category = $broken[0];
 
         if ($rules[$category]['action'] === 'flag') {
-            DiscordGateway::log(sprintf('Message %s flagged for %s', $message['id'], $category));
+            Log::line(sprintf('Message %s flagged for %s', $message['id'], $category));
             $this->save($message, $category, 'flag', $scores[$category]);
             return;
         }
@@ -55,11 +56,11 @@ final class DiscordModerator
                 try {
                     DiscordBotClient::checkDeleted($request, $response);
                 } catch (Throwable $error) {
-                    DiscordGateway::log(sprintf('Message %s not deleted: %s', $message['id'], $error->getMessage()));
+                    Log::line(sprintf('Message %s not deleted: %s', $message['id'], $error->getMessage()));
                     return;
                 }
 
-                DiscordGateway::log(sprintf('Message %s deleted for %s', $message['id'], $category));
+                Log::line(sprintf('Message %s deleted for %s', $message['id'], $category));
                 $this->save($message, $category, 'delete', $scores[$category]);
             },
         );
@@ -91,7 +92,7 @@ final class DiscordModerator
         } catch (Throwable $error) {
             $this->events = null;
             // only the first line: the database adds the whole row after it, and that holds the text
-            DiscordGateway::log(sprintf('Message %s: the event was not saved: %s', $message['id'], strtok($error->getMessage(), "\n")));
+            Log::line(sprintf('Message %s: the event was not saved: %s', $message['id'], strtok($error->getMessage(), "\n")));
         }
     }
 }

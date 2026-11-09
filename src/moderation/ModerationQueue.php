@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Moderation;
 
-use App\Discord\DiscordGateway;
+use App\Log;
 use Closure;
 use CurlHandle;
 use Throwable;
@@ -54,7 +54,7 @@ final class ModerationQueue
     {
         if (count($this->waiting) >= self::MAX_WAITING) {
             $oldest = array_shift($this->waiting);
-            DiscordGateway::log("Message {$oldest['id']} not checked: the queue is full");
+            Log::line("Message {$oldest['id']} not checked: the queue is full");
         }
 
         $this->waiting[] = $message + ['settings' => $settings, 'addedAt' => microtime(true)];
@@ -79,7 +79,7 @@ final class ModerationQueue
             $waited = microtime(true) - $message['addedAt'];
 
             if ($waited > self::MAX_WAIT_SECONDS) {
-                DiscordGateway::log(sprintf('Message %s not checked: it waited %d s', $message['id'], $waited));
+                Log::line(sprintf('Message %s not checked: it waited %d s', $message['id'], $waited));
                 continue;
             }
 
@@ -116,7 +116,7 @@ final class ModerationQueue
             return;
         }
 
-        DiscordGateway::log(sprintf(
+        Log::line(sprintf(
             'Message %s in channel %s: %s | %s | waited %.1f s, checked in %.1f s',
             $message['id'],
             $message['channelId'],
@@ -147,6 +147,6 @@ final class ModerationQueue
     /** The reason names the model, the service or the status, never the text of the message. */
     private function logFailure(array $message, string $what, Throwable $error): void
     {
-        DiscordGateway::log(sprintf('Message %s %s: %s', $message['id'], $what, preg_replace('/\s+/', ' ', $error->getMessage())));
+        Log::line(sprintf('Message %s %s: %s', $message['id'], $what, preg_replace('/\s+/', ' ', $error->getMessage())));
     }
 }

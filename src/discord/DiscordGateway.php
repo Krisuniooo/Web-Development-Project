@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Discord;
 
+use App\Log;
 use App\WebSocketClient;
 use Closure;
 use RuntimeException;
@@ -84,7 +85,7 @@ final class DiscordGateway
             }
 
             // one line, even when the reason has several, such as some database errors
-            self::log("Disconnected, connecting again in $pauseSeconds s: " . preg_replace('/\s+/', ' ', $reason));
+            Log::line("Disconnected, connecting again in $pauseSeconds s: " . preg_replace('/\s+/', ' ', $reason));
             sleep($pauseSeconds);
             $pauseSeconds = min($pauseSeconds * 2, self::MAX_PAUSE_SECONDS);
         }
@@ -170,7 +171,7 @@ final class DiscordGateway
                         $name = $data['user']['username'] ?? null;
                         // READY lists every server the bot is on, their details come in later events
                         $servers = $data['guilds'] ?? null;
-                        self::log(sprintf(
+                        Log::line(sprintf(
                             'Logged in as %s, servers: %d',
                             is_string($name) ? $name : 'an unknown name',
                             is_array($servers) ? count($servers) : 0,
@@ -199,11 +200,5 @@ final class DiscordGateway
     private static function send(WebSocketClient $socket, int $op, mixed $data): void
     {
         $socket->send(json_encode(['op' => $op, 'd' => $data], JSON_THROW_ON_ERROR));
-    }
-
-    /** One line in the bot log, with the time. */
-    public static function log(string $message): void
-    {
-        echo date('Y-m-d H:i:s') . " $message\n";
     }
 }
