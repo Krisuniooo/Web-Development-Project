@@ -6,7 +6,6 @@ namespace App\Repository;
 
 use App\Model\Channel;
 use App\Model\ChannelRule;
-use DateTimeImmutable;
 use PDO;
 use Throwable;
 
@@ -34,15 +33,12 @@ final class ChannelRepository
 
         return array_map(fn(array $row): Channel => new Channel(
             (int) $row['id'],
-            (int) $row['server_id'],
             (int) $row['slot'],
             $row['platform_channel_id'],
             $row['name'],
             $row['model'],
             $row['language'],
             $row['status'],
-            new DateTimeImmutable($row['created_at']),
-            new DateTimeImmutable($row['updated_at']),
         ), $statement->fetchAll(PDO::FETCH_ASSOC));
     }
 
@@ -58,18 +54,12 @@ final class ChannelRepository
     /** @return array<string, ChannelRule> the channel's rules by category */
     public function findRules(int $channelId): array
     {
-        $statement = $this->pdo->prepare('SELECT category, level, action, updated_at FROM channel_rules WHERE channel_id = :channel_id');
+        $statement = $this->pdo->prepare('SELECT category, level, action FROM channel_rules WHERE channel_id = :channel_id');
         $statement->execute(['channel_id' => $channelId]);
         $rules = [];
 
         foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $rules[$row['category']] = new ChannelRule(
-                $channelId,
-                $row['category'],
-                $row['level'],
-                $row['action'],
-                new DateTimeImmutable($row['updated_at']),
-            );
+            $rules[$row['category']] = new ChannelRule($channelId, $row['category'], $row['level'], $row['action']);
         }
 
         return $rules;

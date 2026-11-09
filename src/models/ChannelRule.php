@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Model;
 
-use DateTimeImmutable;
-
 final class ChannelRule
 {
     public function __construct(
@@ -13,7 +11,6 @@ final class ChannelRule
         private string $category, // racism | harassment | profanity
         private string $level, // off | relaxed | balanced | strict
         private string $action, // flag | delete | timeout | ban
-        private ?DateTimeImmutable $updatedAt = null,
     ) {
     }
 
@@ -35,10 +32,5 @@ final class ChannelRule
     public function getAction(): string
     {
         return $this->action;
-    }
-
-    public function getUpdatedAt(): ?DateTimeImmutable
-    {
-        return $this->updatedAt;
     }
 }
