@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Cel projektu
-Prosta aplikacja edukacyjna w PHP 8.3 pokazująca routing i MVC. Na razie to głównie landing page, bez warstwy danych.
+ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawień, w PHP 8.3 bez frameworka, z własnym routingiem i MVC, bazą PostgreSQL i lokalnie uruchomionym modelem moderacji. To prawdziwy produkt, a zarazem projekt na zajęcia.
 
 ## Struktura
 - `public/index.php` — punkt wejścia aplikacji.
