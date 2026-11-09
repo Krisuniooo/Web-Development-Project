@@ -55,6 +55,24 @@ services:
     networks:
       - pg-network
 
+  # runs bin/cleanup.php every day at 03:15 UTC
+  cron:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    # cron keeps no output of its jobs, so it is sent to the container's log: docker compose logs cron
+    command: ["sh", "-c", "echo '15 3 * * * cd /app && php bin/cleanup.php > /proc/1/fd/1 2>&1' | crontab - && exec crond -f"]
+    env_file: .env
+    depends_on:
+      - db
+    # passes the stop signal on to cron, so the container stops at once
+    init: true
+    restart: on-failure
+    volumes:
+      - .:/app
+    networks:
+      - pg-network
+
   # the moderation model for Polish and English; it has no port, so only the other containers reach it
   basal-mini:
     build:
