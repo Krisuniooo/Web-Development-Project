@@ -14,6 +14,7 @@ use App\Moderation\MessageClassifier;
 use App\Repository\ChannelRepository;
 use App\Repository\ModerationEventRepository;
 use App\Repository\ServerRepository;
+use PDO;
 use RuntimeException;
 
 final class PanelController extends AppController
@@ -36,6 +37,10 @@ final class PanelController extends AppController
     private const RULE_ACTIONS = ['flag', 'delete'];
     // events on one page of the logs
     private const LOG_PAGE_SIZE = 50;
+    // how long Discord's answer that the user may manage the server is trusted before asking again
+    private const ACCESS_CHECK_SECONDS = 60;
+
+    private ?PDO $pdo = null;
 
     public function overview(): void
     {
@@ -90,25 +95,14 @@ final class PanelController extends AppController
     /** Saves the language people write in on one channel of the chosen server. */
     public function setChannelLanguage(): void
     {
-        if (!$this->isSameOriginRequest()) {
-            http_response_code(403);
-            return;
-        }
-
-        $user = $this->requireLogin();
-        $servers = $this->sessionServers();
-        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
-
-        if ($managedServer === null) {
-            $this->redirect('/app');
-        }
+        [$user, $managedServer] = $this->requireManagedServer();
 
         $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
         $language = $_POST['language'] ?? null;
         $isSaved = false;
 
         try {
-            $repository = new ChannelRepository((new Database())->connect());
+            $repository = new ChannelRepository($this->database());
 
             // only a channel of the chosen server, and only a language its model has questions in
             foreach ($repository->findForServer($user['platform'], $managedServer['id']) as $channel) {
@@ -134,18 +128,7 @@ final class PanelController extends AppController
     /** Connects a channel the bot can see to a free slot of the chosen server, with the default rules. */
     public function connectChannel(): void
     {
-        if (!$this->isSameOriginRequest()) {
-            http_response_code(403);
-            return;
-        }
-
-        $user = $this->requireLogin();
-        $servers = $this->sessionServers();
-        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
-
-        if ($managedServer === null) {
-            $this->redirect('/app');
-        }
+        [$user, $managedServer] = $this->requireManagedServer();
 
         $slot = filter_var($_POST['slot'] ?? null, FILTER_VALIDATE_INT);
         $platformChannelId = $_POST['channel'] ?? null;
@@ -154,7 +137,7 @@ final class PanelController extends AppController
         $isConnected = false;
 
         try {
-            $repository = new ChannelRepository((new Database())->connect());
+            $repository = new ChannelRepository($this->database());
             $connected = $repository->findForServer($user['platform'], $managedServer['id']);
             $takenSlots = array_map(fn(Channel $channel): int => $channel->getSlot(), $connected);
 
@@ -194,25 +177,14 @@ final class PanelController extends AppController
     /** Moves a slot of the chosen server to another channel the bot can see; the language, model, rules and status stay. */
     public function changeChannel(): void
     {
-        if (!$this->isSameOriginRequest()) {
-            http_response_code(403);
-            return;
-        }
-
-        $user = $this->requireLogin();
-        $servers = $this->sessionServers();
-        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
-
-        if ($managedServer === null) {
-            $this->redirect('/app');
-        }
+        [$user, $managedServer] = $this->requireManagedServer();
 
         $slot = filter_var($_POST['slot'] ?? null, FILTER_VALIDATE_INT);
         $platformChannelId = $_POST['channel'] ?? null;
         $isChanged = false;
 
         try {
-            $repository = new ChannelRepository((new Database())->connect());
+            $repository = new ChannelRepository($this->database());
             $connected = $repository->findForServer($user['platform'], $managedServer['id']);
 
             foreach ($connected as $current) {
@@ -242,18 +214,7 @@ final class PanelController extends AppController
     /** Saves the level and the action of every category on one channel of the chosen server. */
     public function saveRules(): void
     {
-        if (!$this->isSameOriginRequest()) {
-            http_response_code(403);
-            return;
-        }
-
-        $user = $this->requireLogin();
-        $servers = $this->sessionServers();
-        $managedServer = $this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')));
-
-        if ($managedServer === null) {
-            $this->redirect('/app');
-        }
+        [$user, $managedServer] = $this->requireManagedServer();
 
         $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
         $posted = is_array($_POST['rules'] ?? null) ? $_POST['rules'] : [];
@@ -275,7 +236,7 @@ final class PanelController extends AppController
         $isSaved = false;
 
         try {
-            $repository = new ChannelRepository((new Database())->connect());
+            $repository = new ChannelRepository($this->database());
             $ownIds = array_map(fn(Channel $channel): ?int => $channel->getId(), $repository->findForServer($user['platform'], $managedServer['id']));
 
             // only a channel of the chosen server
@@ -333,10 +294,8 @@ final class PanelController extends AppController
             return;
         }
 
-        $servers = $this->sessionServers();
-
-        // the same rule as the sections: a chosen server that still has the bot
-        if ($this->managedServer($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id'))) === null) {
+        // the same rule as the sections: a chosen server that still has the bot and that the user may still manage
+        if ($this->managedServer($user) === null) {
             $this->json(['error' => $lang->text('check.error.server')], 403);
             return;
         }
@@ -371,6 +330,8 @@ final class PanelController extends AppController
         $_SESSION['messageChecks'] = [...$recent, $now];
         // the model takes seconds, and an open session would make the user's other tabs wait
         session_write_close();
+        // nor is the database needed any more
+        $this->pdo = null;
 
         try {
             $scores = $classifier->scores($text, $language);
@@ -423,22 +384,103 @@ final class PanelController extends AppController
     }
 
     /**
-     * The chosen server, checked again on every page: it must still be on the user's list and still have the bot.
+     * For the forms that change the chosen server: refuses a form from another site, and sends away
+     * a visitor who is not logged in or has no server chosen.
      *
-     * @param list<string> $idsWithBot
+     * @return array{array{platform: string, id: string, name: string, avatarUrl: ?string}, array{id: string, name: string}}
+     *     the user and the chosen server
+     */
+    private function requireManagedServer(): array
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            exit;
+        }
+
+        $user = $this->requireLogin();
+        $managedServer = $this->managedServer($user);
+
+        if ($managedServer === null) {
+            $this->redirect('/app');
+        }
+
+        return [$user, $managedServer];
+    }
+
+    /**
+     * The chosen server, checked again on every page: it must still be on the user's list, still have the bot,
+     * and the user must still be allowed to manage it.
+     *
+     * @param array{platform: string, id: string} $user
      * @return array{id: string, name: string}|null
      */
-    private function managedServer(array $servers, array $idsWithBot): ?array
+    private function managedServer(array $user): ?array
     {
         $id = $_SESSION['managedServerId'] ?? null;
 
-        foreach ($servers as $server) {
-            if ($server['id'] === $id && in_array($id, $idsWithBot, true)) {
-                return ['id' => $server['id'], 'name' => $server['name']];
+        foreach ($this->sessionServers() as $server) {
+            if ($server['id'] === $id) {
+                return $this->serverIdsWithBot($user['platform'], [$id]) === [$id] && $this->canStillManage($user['id'], $id)
+                    ? ['id' => $server['id'], 'name' => $server['name']]
+                    : null;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Asks Discord whether the user may manage the server now, and trusts a yes for a while.
+     * Someone who left, was banned or lost the permission also loses the server from their list.
+     */
+    private function canStillManage(string $userId, string $serverId): bool
+    {
+        $saved = $_SESSION['accessCheck'] ?? null;
+
+        if (
+            is_array($saved)
+            && ($saved['serverId'] ?? null) === $serverId
+            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::ACCESS_CHECK_SECONDS
+        ) {
+            return true;
+        }
+
+        try {
+            $canManage = $this->discordBot()->canManageServer($serverId, $userId);
+        } catch (RuntimeException $exception) {
+            // without an answer nobody gets in, but the server stays on the list for when Discord answers again
+            error_log('Panel could not check the access to a server: ' . $exception->getMessage());
+
+            return false;
+        }
+
+        if ($canManage) {
+            $_SESSION['accessCheck'] = ['serverId' => $serverId, 'time' => time()];
+
+            return true;
+        }
+
+        unset($_SESSION['managedServerId'], $_SESSION['accessCheck'], $_SESSION['visibleChannels']);
+        $_SESSION['servers'] = array_values(array_filter(
+            $this->sessionServers(),
+            fn(array $server): bool => $server['id'] !== $serverId,
+        ));
+
+        return false;
+    }
+
+    /** One database connection for the whole request, opened when first needed. */
+    private function database(): PDO
+    {
+        return $this->pdo ??= (new Database())->connect();
+    }
+
+    private function discordBot(): DiscordBotClient
+    {
+        return new DiscordBotClient(
+            trim((string) getenv('DISCORD_BOT_TOKEN')),
+            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
+        );
     }
 
     /**
@@ -491,7 +533,7 @@ final class PanelController extends AppController
         }
 
         try {
-            return (new ServerRepository((new Database())->connect()))->findActiveIds($platform, $serverIds);
+            return (new ServerRepository($this->database()))->findActiveIds($platform, $serverIds);
         } catch (RuntimeException $exception) {
             // the servers come from the session, so the list still shows, only without the bot status
             error_log('Panel could not check which servers have the bot: ' . $exception->getMessage());
@@ -503,9 +545,9 @@ final class PanelController extends AppController
     private function renderSection(string $section): void
     {
         $user = $this->requireLogin();
+        $managedServer = $this->managedServer($user);
+        // read after the check above, which takes a server the user can no longer manage off the list
         $servers = $this->sessionServers();
-        $idsWithBot = $this->serverIdsWithBot($user['platform'], array_column($servers, 'id'));
-        $managedServer = $this->managedServer($servers, $idsWithBot);
 
         // every section but the overview is about one server, so it waits until one is chosen
         if ($section !== 'overview' && $managedServer === null) {
@@ -537,7 +579,9 @@ final class PanelController extends AppController
             'currentPlatformName' => array_column($platforms, 'name', 'slug')[$user['platform']] ?? $user['platform'],
             'managedServer' => $managedServer,
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
-            'servers' => $section === 'overview' ? $this->serverCards($servers, $idsWithBot, $managedServer) : [],
+            'servers' => $section === 'overview'
+                ? $this->serverCards($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
+                : [],
             'channelSlots' => $channelSlots,
             'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
             'changingSlot' => $changingSlot,
@@ -562,7 +606,7 @@ final class PanelController extends AppController
         $channels = [];
 
         try {
-            $repository = new ChannelRepository((new Database())->connect());
+            $repository = new ChannelRepository($this->database());
 
             foreach ($repository->findForServer($platform, $serverId) as $channel) {
                 $saved = $repository->findRules($channel->getId());
@@ -597,7 +641,7 @@ final class PanelController extends AppController
 
         try {
             // one more than a page tells whether there are older events
-            $events = (new ModerationEventRepository((new Database())->connect()))
+            $events = (new ModerationEventRepository($this->database()))
                 ->findForServer($platform, $serverId, $before, self::LOG_PAGE_SIZE + 1);
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the events: ' . $exception->getMessage());
@@ -635,7 +679,7 @@ final class PanelController extends AppController
     private function channelSlots(string $platform, string $serverId): ?array
     {
         try {
-            $channels = (new ChannelRepository((new Database())->connect()))->findForServer($platform, $serverId);
+            $channels = (new ChannelRepository($this->database()))->findForServer($platform, $serverId);
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the channels: ' . $exception->getMessage());
 
@@ -713,10 +757,7 @@ final class PanelController extends AppController
             return $saved['channels'];
         }
 
-        $channels = (new DiscordBotClient(
-            trim((string) getenv('DISCORD_BOT_TOKEN')),
-            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
-        ))->fetchVisibleTextChannels($serverId);
+        $channels = $this->discordBot()->fetchVisibleTextChannels($serverId);
         $_SESSION['visibleChannels'] = ['serverId' => $serverId, 'time' => time(), 'channels' => $channels];
 
         return $channels;
@@ -747,7 +788,7 @@ final class PanelController extends AppController
     private function messageCheck(string $platform, string $serverId): array
     {
         try {
-            $language = (new ChannelRepository((new Database())->connect()))->firstLanguage($platform, $serverId);
+            $language = (new ChannelRepository($this->database()))->firstLanguage($platform, $serverId);
         } catch (RuntimeException $exception) {
             // the box still works, only with the page's language chosen
             error_log('Panel could not read the channel language: ' . $exception->getMessage());

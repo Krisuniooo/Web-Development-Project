@@ -11,24 +11,24 @@ namespace App\Discord;
 final class DiscordPermissions
 {
     public const ADMINISTRATOR = 1 << 3;
+    public const MANAGE_GUILD = 1 << 5;
     public const VIEW_CHANNEL = 1 << 10;
 
     // every permission at once
     private const ALL = PHP_INT_MAX;
 
     /**
-     * What the member may do in the channel.
+     * What the member may do on the server, before any channel changes it.
      *
-     * @param array $guild the server from GUILD_CREATE, with its roles
-     * @param array $member a member from GUILD_CREATE, with the user and the role ids
-     * @param array $channel a channel from GUILD_CREATE, with its permission overwrites
+     * @param array $guild the server, with its roles
+     * @param array $member a member, with the user and the role ids
      */
-    public static function inChannel(array $guild, array $member, array $channel): int
+    public static function inServer(array $guild, array $member): int
     {
         $userId = $member['user']['id'] ?? null;
         $roleIds = is_array($member['roles'] ?? null) ? $member['roles'] : [];
 
-        // the owner and administrators may do everything, no channel can take it away
+        // the owner and administrators may do everything
         if ($userId !== null && $userId === ($guild['owner_id'] ?? null)) {
             return self::ALL;
         }
@@ -41,9 +41,27 @@ final class DiscordPermissions
             $permissions |= (int) ($rolePermissions[$roleId] ?? 0);
         }
 
-        if (($permissions & self::ADMINISTRATOR) !== 0) {
+        return ($permissions & self::ADMINISTRATOR) !== 0 ? self::ALL : $permissions;
+    }
+
+    /**
+     * What the member may do in the channel.
+     *
+     * @param array $guild the server from GUILD_CREATE, with its roles
+     * @param array $member a member from GUILD_CREATE, with the user and the role ids
+     * @param array $channel a channel from GUILD_CREATE, with its permission overwrites
+     */
+    public static function inChannel(array $guild, array $member, array $channel): int
+    {
+        $permissions = self::inServer($guild, $member);
+
+        // no channel can take anything away from the owner and administrators
+        if ($permissions === self::ALL) {
             return self::ALL;
         }
+
+        $userId = $member['user']['id'] ?? null;
+        $roleIds = is_array($member['roles'] ?? null) ? $member['roles'] : [];
 
         $overwrites = array_column(
             is_array($channel['permission_overwrites'] ?? null) ? $channel['permission_overwrites'] : [],

@@ -7,7 +7,7 @@ namespace App\Discord;
 use CurlHandle;
 use RuntimeException;
 
-/** Talks to Discord as the bot: what it can see on a server, so the panel sees the same channels, and deleting messages. */
+/** Talks to Discord as the bot: what it can see on a server, so the panel sees the same channels, who may manage it, and deleting messages. */
 final class DiscordBotClient
 {
     private const TIMEOUT_SECONDS = 5;
@@ -41,6 +41,28 @@ final class DiscordBotClient
             $this->request("/guilds/$serverId/members/$botUserId"),
             $this->request("/guilds/$serverId/channels"),
         );
+    }
+
+    /**
+     * Whether the user may manage the server now: its owner, an administrator or someone with Manage Server,
+     * the same rule as at login.
+     */
+    public function canManageServer(string $serverId, string $userId): bool
+    {
+        try {
+            $member = $this->request("/guilds/$serverId/members/$userId");
+        } catch (RuntimeException $error) {
+            // Discord has no such member: the user left, was banned or deleted the account
+            if ($error->getCode() === 404) {
+                return false;
+            }
+
+            throw $error;
+        }
+
+        $permissions = DiscordPermissions::inServer($this->request("/guilds/$serverId"), $member);
+
+        return ($permissions & DiscordPermissions::MANAGE_GUILD) !== 0;
     }
 
     /** The deletion of a message, ready to send; the bot sends it without waiting and gives the finished request to checkDeleted(). */
@@ -96,7 +118,8 @@ final class DiscordBotClient
         $data = json_decode($body, true);
 
         if ($status !== 200 || !is_array($data)) {
-            throw new RuntimeException("Discord request to $path failed: HTTP $status");
+            // the status is also the code, for a caller that tells a 404 from the rest
+            throw new RuntimeException("Discord request to $path failed: HTTP $status", $status);
         }
 
         return $data;
