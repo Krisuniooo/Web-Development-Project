@@ -1,5 +1,5 @@
 <?php $stylesheets[] = '/css/home/CTA.css'; ?>
-<?php $scripts[] = '/js/cta-composer.js'; ?>
+<?php $scripts[] = '/js/home/cta-composer.js'; ?>
 
 <section class="CTA">
     <h2 class="CTA-title"><?= $t('home.cta.title') ?></h2>

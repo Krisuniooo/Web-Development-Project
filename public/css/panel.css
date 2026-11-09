@@ -70,3 +70,335 @@
       "footer";
   }
 }
+
+/* the styles the sections share: the channel cards, the buttons, the error and text only for screen readers */
+
+/* the cards side by side, one under the other when there is no room;
+   each card as high as its content, so a short one has no empty space at the bottom */
+.panel-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  align-items: start;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-card {
+  /* the card's own width decides its layout, not the screen's */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* the card whose channel is being changed */
+.panel-card.is-changing {
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 1rem 2.5rem -1.5rem color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+/* a free place: only an outline, so it does not look like a connected channel */
+.panel-card.is-free {
+  border-style: dashed;
+  background: none;
+}
+
+/* the icon, the name with the slot and status under it, and a button on the right */
+.panel-card--head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.panel-card--icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-size: 1.125rem;
+}
+.panel-card.is-free .panel-card--icon {
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 55%, transparent);
+  background: none;
+}
+
+.panel-card--identity {
+  flex: 1;
+  min-width: 0;
+}
+
+/* a long name ends with "…"; the whole one is in the title */
+.panel-card--name {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-card.is-free .panel-card--name {
+  color: var(--color-text-secondary);
+}
+
+/* the slot and the status, kept apart by space alone */
+.panel-card--meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  margin: var(--space-0) 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.panel-card--status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.panel-card--status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-disabled);
+}
+.panel-card--status.is-active::before {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 22%, transparent);
+}
+
+/* everything under the head: the settings, or a message, and the buttons */
+.panel-card--body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+.panel-card.is-free .panel-card--body {
+  border-top-style: dashed;
+}
+
+/* instead of the settings, when there is nothing to choose: why, with an icon in its colour */
+.panel-card--message {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.panel-card--message i {
+  color: var(--color-muted);
+}
+.panel-card--message.is-error i {
+  color: var(--color-danger);
+}
+
+.panel-card--actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.panel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--control-size);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+/* the action of the card: connect, change */
+.panel-button.is-primary {
+  background: var(--color-accent);
+  color: var(--color-background);
+}
+.panel-button.is-primary:hover {
+  background: var(--color-accent-strong);
+}
+
+/* saving a setting: there, but not louder than the setting itself */
+.panel-button.is-tonal {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  color: var(--color-accent-strong);
+}
+.panel-button.is-tonal:hover {
+  background: color-mix(in srgb, var(--color-accent) 26%, transparent);
+}
+
+/* leads somewhere else or back, saves nothing */
+.panel-button.is-quiet {
+  border-color: var(--color-border);
+  background: none;
+  color: var(--color-text-secondary);
+}
+.panel-button.is-quiet:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+/* the tick waits on the right, in the button's own padding, so showing it never changes the width */
+.panel-button.is-tonal {
+  position: relative;
+}
+.panel-button--check {
+  position: absolute;
+  top: 50%;
+  right: 0.875rem;
+  font-size: 0.8em;
+  opacity: 0;
+  transform: translate(-0.25rem, -50%) scale(0.5);
+}
+
+/* just saved: the text steps left, the tick comes in, the button turns green for a moment, then all goes back */
+.panel-button.is-saved {
+  animation: panel-button-saved 3s ease 0.15s both;
+}
+.panel-button.is-saved .panel-button--text {
+  animation: panel-button-saved-text 3s cubic-bezier(0.3, 0.7, 0.4, 1) 0.15s both;
+}
+.panel-button.is-saved .panel-button--check {
+  animation: panel-button-saved-check 3s cubic-bezier(0.3, 0.7, 0.4, 1.4) 0.15s both;
+}
+
+@keyframes panel-button-saved {
+  12%,
+  80% {
+    background: color-mix(in srgb, var(--color-success) 18%, transparent);
+    color: var(--color-success);
+  }
+}
+@keyframes panel-button-saved-text {
+  0%,
+  100% {
+    transform: none;
+  }
+  12%,
+  80% {
+    /* as far as keeps the text and the tick together in the middle */
+    transform: translateX(-0.625rem);
+  }
+}
+@keyframes panel-button-saved-check {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-0.25rem, -50%) scale(0.5);
+  }
+  12%,
+  80% {
+    opacity: 1;
+    transform: translate(0, -50%) scale(1);
+  }
+}
+
+/* without motion: the saved look at once, and it stays */
+@media (prefers-reduced-motion: reduce) {
+  .panel-button.is-saved,
+  .panel-button.is-saved .panel-button--text,
+  .panel-button.is-saved .panel-button--check {
+    animation: none;
+  }
+  .panel-button.is-saved {
+    background: color-mix(in srgb, var(--color-success) 18%, transparent);
+    color: var(--color-success);
+  }
+  .panel-button.is-saved .panel-button--text {
+    transform: translateX(-0.625rem);
+  }
+  .panel-button.is-saved .panel-button--check {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+/* for screen readers only, such as "saved" next to the tick or the name of an icon */
+.panel-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.panel-card--head .panel-button {
+  flex-shrink: 0;
+  height: 2.25rem;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.panel-button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* a section that could not load its data */
+.panel-error {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* a narrow card, as on a phone: less space around, the head's button only as its icon, the buttons across the card */
+@container (max-width: 26rem) {
+  .panel-card--head {
+    padding: var(--space-2);
+  }
+  .panel-card--body {
+    padding: var(--space-2);
+  }
+  .panel-card--icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+  }
+  .panel-card--head .panel-button {
+    width: 2.25rem;
+    padding: 0;
+  }
+  .panel-card--head .panel-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .panel-card--actions > * {
+    flex: 1;
+  }
+}

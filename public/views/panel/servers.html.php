@@ -1,4 +1,4 @@
-<?php $stylesheets[] = '/css/servers.css'; ?>
+<?php $stylesheets[] = '/css/panel/servers.css'; ?>
 
 <p class="panel-content--description"><?= $t('servers.lead') ?></p>
 <section class="servers" aria-labelledby="servers-title">

@@ -1,0 +1,66 @@
+/* the settings of a channel; the cards and buttons come from panel.css */
+
+/* one setting: what it is above, the choice under it; side by side when the card is wide */
+.channels-setting {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.channels-setting--label {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.channels-setting--hint {
+  margin: 0.125rem 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.channels-setting--control {
+  display: flex;
+  gap: var(--space-1);
+}
+.channels-setting--control .channels-setting--select {
+  flex: 1;
+}
+
+.channels-setting--select {
+  min-width: 0;
+  height: var(--control-size);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.channels-setting--select:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, var(--color-border));
+}
+
+.channels-setting--value {
+  font-weight: 600;
+}
+
+.channels-setting--select:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* a wide card: what the setting is on the left, the choice on the right */
+@container (min-width: 34rem) {
+  .channels-setting {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .channels-setting--select {
+    width: 14rem;
+  }
+  .channels-setting--control .channels-setting--select {
+    width: 11rem;
+  }
+}

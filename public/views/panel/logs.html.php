@@ -1,6 +1,6 @@
 <?php
-$stylesheets[] = '/css/logs.css';
-$scripts[] = '/js/local-time.js';
+$stylesheets[] = '/css/panel/logs.css';
+$scripts[] = '/js/panel/local-time.js';
 
 // an icon for each action, so the list can be skimmed by its left edge
 $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'fa-volume-xmark', 'ban' => 'fa-ban'];
@@ -9,7 +9,7 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
 <p class="panel-content--description"><?= $t('logs.lead') ?></p>
 
 <?php if ($log['events'] === null): ?>
-    <p class="logs-error">
+    <p class="panel-error">
         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
         <?= $t('logs.load_error') ?>
     </p>
@@ -32,7 +32,7 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
                     <summary class="logs-event--row">
                         <span class="logs-event--icon" title="<?= $t('logs.action.' . $action) ?>">
                             <i class="fa-solid <?= $actionIcons[$action] ?? 'fa-circle' ?>" aria-hidden="true"></i>
-                            <span class="logs-hidden"><?= $t('logs.action.' . $action) ?></span>
+                            <span class="panel-hidden"><?= $t('logs.action.' . $action) ?></span>
                         </span>
                         <span class="logs-event--author" title="<?= $author ?>"><?= $author ?></span>
                         <?php if ($event->getContent() === null): ?>

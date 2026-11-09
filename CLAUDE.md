@@ -6,7 +6,7 @@ Prosta aplikacja edukacyjna w PHP 8.3 pokazująca routing i MVC. Na razie to gł
 ## Struktura
 - `public/index.php` — punkt wejścia aplikacji.
 - `public/views/` — widoki HTML z fragmentami PHP; sekcja sama dołącza swoje pliki przez `$stylesheets[]` i `$scripts[]`.
-- `public/css/`, `public/js/` — style i skrypty, style sekcji strony głównej w `public/css/home/`.
+- `public/css/`, `public/js/` — style i skrypty pod tą samą ścieżką co widok, który je dołącza (np. `views/panel/logs.html.php` → `css/panel/logs.css`); wspólne style panelu w `css/panel.css`, globalne w `css/style.css`.
 - `config/` — dane dla widoków.
 - `src/Routing.php` — dopasowanie tras i uruchamianie kontrolerów.
 - `src/controllers/` — kontrolery w namespace `App\Controller`.

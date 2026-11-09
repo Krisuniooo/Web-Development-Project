@@ -1,4 +1,4 @@
-/* the rules of each channel; the cards themselves come from channels.css */
+/* the rules of each channel; the cards and buttons come from panel.css */
 
 .limits-empty {
   margin: var(--space-3) 0 0;
@@ -167,7 +167,7 @@
     padding: 0.25rem 0.375rem;
     font-size: var(--font-size-xs);
   }
-  .limits-footer .channels-button {
+  .limits-footer .panel-button {
     width: 100%;
   }
 }

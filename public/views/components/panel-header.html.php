@@ -1,4 +1,4 @@
-<?php $stylesheets[] = '/css/panel-header.css'; ?>
+<?php $stylesheets[] = '/css/components/panel-header.css'; ?>
 
 <header class="panel-header">
     <a href="/" class="panel-header--back">

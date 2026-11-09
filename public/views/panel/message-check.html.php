@@ -1,6 +1,6 @@
 <?php
-$stylesheets[] = '/css/message-check.css';
-$scripts[] = '/js/message-check.js';
+$stylesheets[] = '/css/panel/message-check.css';
+$scripts[] = '/js/panel/message-check.js';
 ?>
 
 <?php // closed at the start; the script asks about the model only once it is opened. The addresses and the texts it shows on its own come from here ?>

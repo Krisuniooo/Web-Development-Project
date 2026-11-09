@@ -1,5 +1,5 @@
 <?php $stylesheets[] = '/css/home/models.css'; ?>
-<?php $scripts[] = '/js/model-orbit.js'; ?>
+<?php $scripts[] = '/js/home/model-orbit.js'; ?>
 
 <section class="models">
     <h2 class="models-title"><?= $t('home.models.title') ?></h2>

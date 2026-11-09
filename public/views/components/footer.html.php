@@ -1,4 +1,4 @@
-<?php $stylesheets[] = '/css/footer.css'; ?>
+<?php $stylesheets[] = '/css/components/footer.css'; ?>
 
 <footer class="footer">
     <span>&copy; <?= date('Y') ?> <?= $t('app.name') ?></span>

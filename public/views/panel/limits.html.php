@@ -1,14 +1,10 @@
-<?php
-// the channel card is the one from the Channels tab, so it comes with its styles
-$stylesheets[] = '/css/channels.css';
-$stylesheets[] = '/css/limits.css';
-?>
+<?php $stylesheets[] = '/css/panel/limits.css'; ?>
 
 <p class="panel-content--description"><?= $t('limits.lead') ?></p>
 <?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <?php if ($limits['channels'] === null): ?>
-    <p class="channels-error">
+    <p class="panel-error">
         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
         <?= $t('channels.load_error') ?>
     </p>
@@ -18,7 +14,7 @@ $stylesheets[] = '/css/limits.css';
         <a href="/app/channels"><?= $t('limits.empty_link') ?></a>
     </p>
 <?php else: ?>
-    <ul class="channels">
+    <ul class="panel-cards">
         <?php foreach ($limits['channels'] as $item): ?>
             <?php
             $channel = $item['channel'];
@@ -26,12 +22,12 @@ $stylesheets[] = '/css/limits.css';
             $name = htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8');
             $isSaved = $channel->getId() === $savedChannelId;
             ?>
-            <li class="channels-card">
-                <div class="channels-card--head">
-                    <span class="channels-card--icon" aria-hidden="true"><i class="fa-solid fa-hashtag"></i></span>
-                    <div class="channels-card--identity">
-                        <h2 class="channels-card--name" title="<?= $name ?>"><?= $name ?></h2>
-                        <p class="channels-card--meta">
+            <li class="panel-card">
+                <div class="panel-card--head">
+                    <span class="panel-card--icon" aria-hidden="true"><i class="fa-solid fa-hashtag"></i></span>
+                    <div class="panel-card--identity">
+                        <h2 class="panel-card--name" title="<?= $name ?>"><?= $name ?></h2>
+                        <p class="panel-card--meta">
                             <span><?= sprintf($t('channels.slot'), $channel->getSlot()) ?></span>
                             <span class="limits-language">
                                 <i class="fa-solid fa-language" aria-hidden="true"></i>
@@ -40,7 +36,7 @@ $stylesheets[] = '/css/limits.css';
                         </p>
                     </div>
                 </div>
-                <form method="post" action="/app/limits/rules" class="channels-card--body">
+                <form method="post" action="/app/limits/rules" class="panel-card--body">
                     <input type="hidden" name="channel" value="<?= $channelId ?>" />
                     <?php // the column names, for the eye only: every group of choices has its own name for screen readers ?>
                     <div class="limits-columns" aria-hidden="true">
@@ -73,13 +69,13 @@ $stylesheets[] = '/css/limits.css';
                     <div class="limits-footer">
                         <p class="limits-hint"><?= $t('check.levels_hint') ?></p>
                         <?php // just saved: the text moves aside for a tick for a moment, the button keeps its width ?>
-                        <button type="submit" class="channels-button is-tonal<?= $isSaved ? ' is-saved' : '' ?>">
-                            <span class="channels-button--text"><?= $t('limits.save') ?></span>
-                            <i class="fa-solid fa-check channels-button--check" aria-hidden="true"></i>
+                        <button type="submit" class="panel-button is-tonal<?= $isSaved ? ' is-saved' : '' ?>">
+                            <span class="panel-button--text"><?= $t('limits.save') ?></span>
+                            <i class="fa-solid fa-check panel-button--check" aria-hidden="true"></i>
                         </button>
                     </div>
                     <?php if ($isSaved): ?>
-                        <span class="channels-saved" role="status"><?= $t('limits.saved') ?></span>
+                        <span class="panel-hidden" role="status"><?= $t('limits.saved') ?></span>
                     <?php endif; ?>
                 </form>
             </li>

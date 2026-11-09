@@ -1,4 +1,4 @@
-<?php $stylesheets[] = '/css/nav-settings.css'; ?>
+<?php $stylesheets[] = '/css/components/nav-settings.css'; ?>
 
 <div class="nav-settings">
     <form method="post" action="/language" class="available-languages" role="group" aria-label="<?= $t('language.label') ?>">

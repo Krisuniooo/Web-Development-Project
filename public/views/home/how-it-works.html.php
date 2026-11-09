@@ -1,5 +1,5 @@
 <?php $stylesheets[] = '/css/home/how-it-works.css'; ?>
-<?php $scripts[] = '/js/how-it-works.js'; ?>
+<?php $scripts[] = '/js/home/how-it-works.js'; ?>
 <?php $modelCarousel = array_merge($models, $models); ?>
 
 <section id="how-it-works" class="how-it-works" data-levels="<?= htmlspecialchars(json_encode($howItWorks['levels']), ENT_QUOTES, 'UTF-8') ?>">

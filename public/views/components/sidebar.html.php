@@ -1,4 +1,4 @@
-<?php $stylesheets[] = '/css/sidebar.css'; ?>
+<?php $stylesheets[] = '/css/components/sidebar.css'; ?>
 
 <aside class="sidebar">
     <div class="sidebar-account">
