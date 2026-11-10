@@ -1,4 +1,4 @@
-<?php // what the last form did; a section shows it under its lead, close to what it is about ?>
+<?php // what the last form did, as a popup in the corner of the screen ?>
 <?php if ($notice !== null): ?>
     <p class="panel-notice<?= $notice['isError'] ? ' is-error' : '' ?>" role="status">
         <i class="fa-solid <?= $notice['isError'] ? 'fa-circle-exclamation' : 'fa-circle-check' ?>" aria-hidden="true"></i>

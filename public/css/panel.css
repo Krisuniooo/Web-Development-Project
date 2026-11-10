@@ -36,27 +36,58 @@
   color: var(--color-muted);
 }
 
-/* what the last form did, such as a saved setting: the icon in the colour of the outcome, the text easy to read */
+/* what the last form did, such as a saved setting: a popup in the corner, so nothing on the page moves;
+   a success leaves by itself, an error stays until the next page */
 .panel-notice {
   --notice-color: var(--color-success);
+  position: fixed;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 20;
   display: flex;
   align-items: baseline;
   gap: var(--space-1);
-  width: fit-content;
-  max-width: 100%;
-  margin: var(--space-2) 0 0;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid color-mix(in srgb, var(--notice-color) 35%, transparent);
+  max-width: min(26rem, calc(100vw - 2 * var(--space-3)));
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--notice-color) 35%, var(--color-border));
   border-radius: calc(var(--radius) / 1.5);
-  background: color-mix(in srgb, var(--notice-color) 10%, transparent);
+  /* mixed with the page's own colour, not see-through, since the page shows under it */
+  background: color-mix(in srgb, var(--notice-color) 10%, var(--color-background));
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.18);
   color: var(--color-text);
   font-weight: 600;
+  animation:
+    panel-notice-in 0.25s ease-out,
+    panel-notice-out 0.4s ease-in 6s forwards;
 }
 .panel-notice i {
   color: var(--notice-color);
 }
 .panel-notice.is-error {
   --notice-color: var(--color-danger);
+  animation: panel-notice-in 0.25s ease-out;
+}
+@keyframes panel-notice-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
+  }
+}
+@keyframes panel-notice-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* no sliding or fading: it is simply there, and a success is simply gone after the same time */
+  .panel-notice {
+    animation: panel-notice-out 0.01s 6s forwards;
+  }
+  .panel-notice.is-error {
+    animation: none;
+  }
 }
 
 @media (max-width: 900px) {
