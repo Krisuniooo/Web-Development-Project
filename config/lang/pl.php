@@ -45,6 +45,8 @@ return [
     "notfound.title" => "Nie znaleziono strony",
     "notfound.text" => "Taka strona nie istnieje.",
     "notfound.back" => "Wróć na stronę główną",
+    "servererror.title" => "Coś poszło nie tak",
+    "servererror.text" => "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
 
     "home.title" => $appName,
     "home.hero.title" => "CZYSTY CZAT BEZ WYSIŁKU",

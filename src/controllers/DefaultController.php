@@ -27,6 +27,21 @@ final class DefaultController extends AppController
         ]);
     }
 
+    /** For an error nobody caught: the page, or JSON for a request sent by a script. */
+    public function serverError(): void
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+
+        if (str_contains($accept, 'application/json') && !str_contains($accept, 'text/html')) {
+            $this->json(['error' => $this->lang()->text('servererror.text')], 500);
+            return;
+        }
+
+        $this->render('server-error', [
+            'pageTitle' => $this->lang()->text('servererror.title'),
+        ]);
+    }
+
     public function status(): void
     {
         $this->render('status', [

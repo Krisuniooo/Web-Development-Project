@@ -32,12 +32,44 @@ $routing->post('/app/check-message', PanelController::class, 'checkMessage');
 $routing->get('/app/logs', PanelController::class, 'logs');
 $routing->get('/app/settings', PanelController::class, 'settings');
 
-$routeFound = $routing->dispatch(
-    $_SERVER['REQUEST_METHOD'],
-    $_SERVER['REQUEST_URI'],
-);
+// what a request prints waits here, so an error in the middle of a page leaves no half of it behind
+ob_start();
 
-if (!$routeFound) {
-    http_response_code(404);
-    (new DefaultController())->notFound();
+try {
+    $routeFound = $routing->dispatch(
+        $_SERVER['REQUEST_METHOD'],
+        $_SERVER['REQUEST_URI'],
+    );
+
+    if (!$routeFound) {
+        http_response_code(404);
+        (new DefaultController())->notFound();
+    }
+} catch (Throwable $error) {
+    // the log gets what happened and where; only the first line, since a database error can quote a row after it
+    error_log(sprintf(
+        'Uncaught %s: %s in %s:%d',
+        $error::class,
+        strtok($error->getMessage(), "\n"),
+        $error->getFile(),
+        $error->getLine(),
+    ));
+
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    http_response_code(500);
+
+    try {
+        (new DefaultController())->serverError();
+    } catch (Throwable) {
+        // the error page failed too, so the visitor gets the plainest answer
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/plain; charset=utf-8');
+        echo '500 Internal Server Error';
+    }
 }

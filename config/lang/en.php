@@ -45,6 +45,8 @@ return [
     "notfound.title" => "Page not found",
     "notfound.text" => "This page does not exist.",
     "notfound.back" => "Back to the home page",
+    "servererror.title" => "Something went wrong",
+    "servererror.text" => "Something went wrong on our side. Try again in a moment.",
 
     "home.title" => $appName,
     "home.hero.title" => "KEEP YOUR CHAT CLEAN",
