@@ -76,6 +76,15 @@
                             </p>
                         </div>
                         <?php if (!$isChanging): ?>
+                            <?php $isPaused = $channel->getStatus() === 'paused'; ?>
+                            <form method="post" action="/app/channels/status">
+                                <input type="hidden" name="channel" value="<?= (int) $channel->getId() ?>" />
+                                <input type="hidden" name="status" value="<?= $isPaused ? 'active' : 'paused' ?>" />
+                                <button type="submit" class="panel-button is-quiet">
+                                    <i class="fa-solid <?= $isPaused ? 'fa-play' : 'fa-pause' ?>" aria-hidden="true"></i>
+                                    <span><?= $t($isPaused ? 'channels.resume' : 'channels.pause') ?></span>
+                                </button>
+                            </form>
                             <a href="/app/channels?change=<?= (int) $slot ?>" class="panel-button is-quiet">
                                 <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
                                 <span><?= $t('channels.change') ?></span>

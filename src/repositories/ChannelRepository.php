@@ -13,6 +13,8 @@ final class ChannelRepository
 {
     // the places for channels on one server, as the CHECK on channels.slot in schema.sql allows
     public const SLOTS = [1, 2];
+    // as the channel_status type in schema.sql; the bot skips a paused channel
+    public const STATUSES = ['active', 'paused'];
 
     public function __construct(private PDO $pdo)
     {
@@ -47,6 +49,15 @@ final class ChannelRepository
         $statement = $this->pdo->prepare('UPDATE channels SET language = :language WHERE id = :id');
         $statement->execute([
             'language' => $language,
+            'id' => $channelId,
+        ]);
+    }
+
+    public function setStatus(int $channelId, string $status): void
+    {
+        $statement = $this->pdo->prepare('UPDATE channels SET status = :status WHERE id = :id');
+        $statement->execute([
+            'status' => $status,
             'id' => $channelId,
         ]);
     }

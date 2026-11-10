@@ -125,6 +125,36 @@ final class PanelController extends AppController
         $this->redirect('/app/channels');
     }
 
+    /** Pauses a channel of the chosen server, or lets the bot moderate it again; its settings stay. */
+    public function setChannelStatus(): void
+    {
+        [$user, $managedServer] = $this->requireManagedServer();
+
+        $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
+        $status = $_POST['status'] ?? null;
+        $isSaved = false;
+
+        try {
+            $repository = new ChannelRepository($this->database());
+
+            // only a channel of the chosen server, and only a status the database knows
+            foreach ($repository->findForServer($user['platform'], $managedServer['id']) as $channel) {
+                if ($channel->getId() === $channelId && in_array($status, ChannelRepository::STATUSES, true)) {
+                    $repository->setStatus($channelId, $status);
+                    $isSaved = true;
+                }
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save the channel status: ' . $exception->getMessage());
+        }
+
+        $_SESSION['notice'] = $isSaved
+            ? ['text' => $status === 'paused' ? 'channels.paused' : 'channels.resumed', 'isError' => false]
+            : ['text' => 'channels.status_error', 'isError' => true];
+
+        $this->redirect('/app/channels');
+    }
+
     /** Connects a channel the bot can see to a free slot of the chosen server, with the default rules. */
     public function connectChannel(): void
     {
