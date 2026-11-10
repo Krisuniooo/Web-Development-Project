@@ -22,7 +22,7 @@ final class DefaultController extends AppController
 
     public function notFound(): void
     {
-        $this->render('not-found', [
+        $this->render('errors/not-found', [
             'pageTitle' => $this->lang()->text('notfound.title'),
         ]);
     }
@@ -37,7 +37,7 @@ final class DefaultController extends AppController
             return;
         }
 
-        $this->render('server-error', [
+        $this->render('errors/server-error', [
             'pageTitle' => $this->lang()->text('servererror.title'),
         ]);
     }
