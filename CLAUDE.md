@@ -13,7 +13,8 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
 - `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
 - `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).
-- `bin/` — procesy CLI: bot Discorda, sprawdzanie wiadomości i codzienne czyszczenie danych (cron).
+- `bin/` — procesy CLI: bot Discorda, sprawdzanie wiadomości, codzienne czyszczenie danych (cron) i uruchamianie testów.
+- `tests/` — testy jednostkowe bez zależności, namespace `Tests`; klasa `NazwaTest` rozszerza `TestCase`, a `bin/test.php` uruchamia jej metody `test…`.
 
 ## Zasady pracy
 - Zachowuj `declare(strict_types=1)` w plikach PHP.
@@ -26,6 +27,7 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 ## Uruchamianie i weryfikacja
 - Start: `docker compose up --build -d`, a po świeżym klonie także `docker compose exec -T php composer install`.
 - Składnia: `docker compose exec -T php php -l ścieżka/do/pliku.php`
+- Testy: `docker compose exec -T php php bin/test.php`
 - Nowy folder z namespace dopisz do `autoload.psr-4` w `composer.json` i uruchom `docker compose exec -T php composer dump-autoload`.
 - Po zmianie trasy sprawdź poprawny adres i odpowiedź 404.
 - Przed zakończeniem pokaż `git diff` i podsumuj zmienione pliki.

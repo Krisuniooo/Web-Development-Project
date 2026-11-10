@@ -45,6 +45,16 @@ docker compose exec php php bin/check-message.php pl "treść wiadomości"
 
 Polecenie pokazuje oceny modelu i decyzję dla każdego poziomu.
 
+## Testy jednostkowe
+
+```shell
+docker compose exec -T php php bin/test.php
+# tylko klasy z podanym tekstem w nazwie
+docker compose exec -T php php bin/test.php Permissions
+```
+
+Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, listę kanałów widocznych dla bota oraz decyzję, czy wiadomość łamie zasadę. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
+
 ## Zadanie cykliczne (cron)
 
 Historia moderacji zawiera treść wiadomości i dane ich autorów, więc nie jest przechowywana bez końca. Usługa `cron` uruchamia codziennie o 03:15 UTC polecenie `php bin/cleanup.php`, które w jednej transakcji:
