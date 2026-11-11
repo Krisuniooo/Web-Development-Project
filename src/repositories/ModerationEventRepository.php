@@ -16,25 +16,47 @@ final class ModerationEventRepository
 
     /**
      * The events from the channels of one server, newest first; with $beforeId only those older than that event.
+     * A channel, a category or an action narrows the list to the events with it.
      *
      * @return list<ModerationEvent>
      */
-    public function findForServer(string $platform, string $platformServerId, ?int $beforeId, int $limit): array
-    {
+    public function findForServer(
+        string $platform,
+        string $platformServerId,
+        ?int $beforeId,
+        int $limit,
+        ?string $platformChannelId = null,
+        ?string $category = null,
+        ?string $action = null,
+    ): array {
+        $conditions = ['servers.platform = :platform', 'servers.platform_server_id = :platform_server_id'];
+        $parameters = ['platform' => $platform, 'platform_server_id' => $platformServerId, 'limit' => $limit];
+
+        // each of these joins the query only when it was asked for
+        $optional = [
+            'before_id' => ['moderation_events.id < :before_id', $beforeId],
+            'platform_channel_id' => ['moderation_events.platform_channel_id = :platform_channel_id', $platformChannelId],
+            'category' => ['moderation_events.category = CAST(:category AS moderation_category)', $category],
+            'action' => ['moderation_events.action = CAST(:action AS moderation_action)', $action],
+        ];
+
+        foreach ($optional as $name => [$condition, $value]) {
+            if ($value !== null) {
+                $conditions[] = $condition;
+                $parameters[$name] = $value;
+            }
+        }
+
         $statement = $this->pdo->prepare(
             'SELECT moderation_events.* FROM moderation_events
              JOIN channels ON channels.id = moderation_events.channel_id
              JOIN servers ON servers.id = channels.server_id
-             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id'
-            . ($beforeId === null ? '' : ' AND moderation_events.id < :before_id')
-            . ' ORDER BY moderation_events.id DESC LIMIT :limit',
+             WHERE ' . implode(' AND ', $conditions) . '
+             ORDER BY moderation_events.id DESC LIMIT :limit',
         );
-        $statement->bindValue('platform', $platform);
-        $statement->bindValue('platform_server_id', $platformServerId);
-        $statement->bindValue('limit', $limit, PDO::PARAM_INT);
 
-        if ($beforeId !== null) {
-            $statement->bindValue('before_id', $beforeId, PDO::PARAM_INT);
+        foreach ($parameters as $name => $value) {
+            $statement->bindValue($name, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
         }
 
         $statement->execute();

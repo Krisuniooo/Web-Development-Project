@@ -4,9 +4,60 @@ $scripts[] = '/js/panel/local-time.js';
 
 // an icon for each action, so the list can be skimmed by its left edge
 $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'fa-volume-xmark', 'ban' => 'fa-ban'];
+$filters = $log['filters'];
+// the chosen filters stay in the links to the other pages
+$pageUrl = fn(array $more = []): string => htmlspecialchars(
+    '/app/logs' . ($filters + $more === [] ? '' : '?' . http_build_query($filters + $more)),
+    ENT_QUOTES,
+    'UTF-8',
+);
 ?>
 
 <p class="panel-content--description"><?= $t('logs.lead') ?></p>
+
+<?php if ($log['events'] !== null): ?>
+    <form method="get" action="/app/logs" class="logs-filters">
+        <?php // with one channel there is nothing to choose between ?>
+        <?php if (count($log['choices']['channel']) > 1): ?>
+            <label class="logs-filter">
+                <span class="logs-filter--label"><?= $t('logs.detail.channel') ?></span>
+                <select name="channel" class="logs-filter--select">
+                    <option value=""><?= $t('logs.filter.all') ?></option>
+                    <?php foreach ($log['choices']['channel'] as $choice): ?>
+                        <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>"<?= $choice['id'] === ($filters['channel'] ?? null) ? ' selected' : '' ?>>#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        <?php endif; ?>
+        <label class="logs-filter">
+            <span class="logs-filter--label"><?= $t('logs.detail.rule') ?></span>
+            <select name="category" class="logs-filter--select">
+                <option value=""><?= $t('logs.filter.all') ?></option>
+                <?php foreach ($log['choices']['category'] as $choice): ?>
+                    <option value="<?= htmlspecialchars($choice, ENT_QUOTES, 'UTF-8') ?>"<?= $choice === ($filters['category'] ?? null) ? ' selected' : '' ?>><?= $t('category.' . $choice) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="logs-filter">
+            <span class="logs-filter--label"><?= $t('logs.detail.action') ?></span>
+            <select name="action" class="logs-filter--select">
+                <option value=""><?= $t('logs.filter.all') ?></option>
+                <?php foreach ($log['choices']['action'] as $choice): ?>
+                    <option value="<?= htmlspecialchars($choice, ENT_QUOTES, 'UTF-8') ?>"<?= $choice === ($filters['action'] ?? null) ? ' selected' : '' ?>><?= $t('logs.action.' . $choice) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <div class="logs-filters--buttons">
+            <button type="submit" class="panel-button is-primary">
+                <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                <?= $t('logs.filter.submit') ?>
+            </button>
+            <?php if ($filters !== []): ?>
+                <a href="/app/logs" class="panel-button is-quiet"><?= $t('logs.filter.clear') ?></a>
+            <?php endif; ?>
+        </div>
+    </form>
+<?php endif; ?>
 
 <?php if ($log['events'] === null): ?>
     <p class="panel-error">
@@ -16,7 +67,7 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
 <?php elseif ($log['events'] === []): ?>
     <p class="logs-empty">
         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-        <?= $t($log['isNewest'] ? 'logs.empty' : 'logs.no_older') ?>
+        <?= $t(!$log['isNewest'] ? 'logs.no_older' : ($filters === [] ? 'logs.empty' : 'logs.no_match')) ?>
     </p>
 <?php else: ?>
     <ol class="logs">
@@ -99,13 +150,13 @@ $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'f
 <?php if (!$log['isNewest'] || $log['olderBefore'] !== null): ?>
     <nav class="logs-pages" aria-label="<?= $t('logs.pages') ?>">
         <?php if (!$log['isNewest']): ?>
-            <a href="/app/logs" class="logs-pages--link">
+            <a href="<?= $pageUrl() ?>" class="logs-pages--link">
                 <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
                 <?= $t('logs.newest') ?>
             </a>
         <?php endif; ?>
         <?php if ($log['olderBefore'] !== null): ?>
-            <a href="/app/logs?before=<?= (int) $log['olderBefore'] ?>" class="logs-pages--link">
+            <a href="<?= $pageUrl(['before' => (int) $log['olderBefore']]) ?>" class="logs-pages--link">
                 <?= $t('logs.older') ?>
                 <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
             </a>

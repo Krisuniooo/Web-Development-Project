@@ -659,32 +659,63 @@ final class PanelController extends AppController
 
     /**
      * One page of what the bot did on the chosen server, newest first, or null for the events when the database
-     * does not answer. ?before=<id> shows the events older than that one.
+     * does not answer. ?before=<id> shows the events older than that one, and ?channel=, ?category= and ?action=
+     * narrow the list; a value that is not among the choices is ignored.
      *
-     * @return array{events: list<ModerationEvent>|null, isNewest: bool, olderBefore: ?int}
-     *     olderBefore: the id to ask for the next older page with, or null when there is none
+     * @return array{
+     *     events: list<ModerationEvent>|null,
+     *     isNewest: bool,
+     *     olderBefore: ?int,
+     *     filters: array<string, string>,
+     *     choices: array{channel: list<array{id: string, name: string}>, category: list<string>, action: list<string>},
+     * }
+     *     olderBefore: the id to ask for the next older page with, or null when there is none;
+     *     filters: the chosen ones by name, as they go back into the links
      */
     private function moderationLog(string $platform, string $serverId): array
     {
         $before = filter_var($_GET['before'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         $before = is_int($before) ? $before : null;
+        $choices = ['channel' => [], 'category' => $this->ruleCategories(), 'action' => self::RULE_ACTIONS];
+        $filters = [];
+        $events = null;
 
         try {
+            // the channels connected now; an event from a channel that was replaced shows only without this filter
+            foreach ((new ChannelRepository($this->database()))->findForServer($platform, $serverId) as $channel) {
+                $choices['channel'][] = ['id' => $channel->getPlatformChannelId(), 'name' => $channel->getName()];
+            }
+
+            $allowed = ['channel' => array_column($choices['channel'], 'id')] + $choices;
+
+            foreach ($allowed as $name => $values) {
+                if (in_array($_GET[$name] ?? null, $values, true)) {
+                    $filters[$name] = $_GET[$name];
+                }
+            }
+
             // one more than a page tells whether there are older events
-            $events = (new ModerationEventRepository($this->database()))
-                ->findForServer($platform, $serverId, $before, self::LOG_PAGE_SIZE + 1);
+            $events = (new ModerationEventRepository($this->database()))->findForServer(
+                $platform,
+                $serverId,
+                $before,
+                self::LOG_PAGE_SIZE + 1,
+                $filters['channel'] ?? null,
+                $filters['category'] ?? null,
+                $filters['action'] ?? null,
+            );
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the events: ' . $exception->getMessage());
-
-            return ['events' => null, 'isNewest' => $before === null, 'olderBefore' => null];
         }
 
-        $page = array_slice($events, 0, self::LOG_PAGE_SIZE);
+        $page = $events === null ? null : array_slice($events, 0, self::LOG_PAGE_SIZE);
 
         return [
             'events' => $page,
             'isNewest' => $before === null,
-            'olderBefore' => count($events) > self::LOG_PAGE_SIZE ? end($page)->getId() : null,
+            'olderBefore' => $events !== null && count($events) > self::LOG_PAGE_SIZE ? end($page)->getId() : null,
+            'filters' => $filters,
+            'choices' => $choices,
         ];
     }
 
