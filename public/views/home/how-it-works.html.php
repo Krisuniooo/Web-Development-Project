@@ -73,7 +73,7 @@
                                 <li><?= $t('nav.channels') ?></li>
                                 <li><?= $t('nav.models') ?></li>
                                 <li class="is-active"><?= $t('nav.limits') ?></li>
-                                <li><?= $t('nav.settings') ?></li>
+                                <li><?= $t('nav.logs') ?></li>
                             </ul>
                         </div>
                         <div class="how-it-works-limits--main">

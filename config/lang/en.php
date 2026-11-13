@@ -13,7 +13,6 @@ return [
     "nav.models" => "Models",
     "nav.limits" => "Limits",
     "nav.logs" => "Logs",
-    "nav.settings" => "Settings",
     "nav.panel" => "Panel",
     "nav.choose_server" => "Choose a server in the Overview first",
 

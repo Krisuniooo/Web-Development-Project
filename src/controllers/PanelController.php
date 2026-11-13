@@ -67,11 +67,6 @@ final class PanelController extends AppController
         $this->renderSection('logs');
     }
 
-    public function settings(): void
-    {
-        $this->renderSection('settings');
-    }
-
     /** Chooses the server the other sections are about. */
     public function manage(): void
     {

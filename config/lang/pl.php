@@ -13,7 +13,6 @@ return [
     "nav.models" => "Modele",
     "nav.limits" => "Limity",
     "nav.logs" => "Logi",
-    "nav.settings" => "Ustawienia",
     "nav.panel" => "Panel",
     "nav.choose_server" => "Najpierw wybierz serwer w Przeglądzie",
 

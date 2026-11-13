@@ -8,5 +8,4 @@ return [
     "models" => ["name" => "nav.models", "path" => "/app/models", "icon" => "fa-microchip"],
     "limits" => ["name" => "nav.limits", "path" => "/app/limits", "icon" => "fa-sliders"],
     "logs" => ["name" => "nav.logs", "path" => "/app/logs", "icon" => "fa-list"],
-    "settings" => ["name" => "nav.settings", "path" => "/app/settings", "icon" => "fa-gear"],
 ];
