@@ -89,6 +89,22 @@ services:
     networks:
       - pg-network
 
+  # the smaller and faster moderation model, for English only; no port either
+  basal-pico:
+    build:
+      context: .
+      dockerfile: docker/basal/Dockerfile
+    environment:
+      # pinned like mini, so an update on Hugging Face does not change the results
+      BASAL_REPO: Remek/basal-omni-pico-GGUF
+      BASAL_REVISION: c125629c09ca8fcaa62113e0f12ba5abc5e14896
+      BASAL_FILE: basal-omni-pico-Q8_0.gguf
+    restart: on-failure
+    volumes:
+      - basal-models:/root/.cache/huggingface
+    networks:
+      - pg-network
+
   mailpit:
     image: axllent/mailpit:latest
     ports:

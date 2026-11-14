@@ -32,7 +32,8 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 | `server`, `php` | strona i panel | http://localhost:8080 |
 | `discord-bot` | bot, logi: `docker compose logs -f discord-bot` | — |
 | `cron` | codzienne czyszczenie danych, logi: `docker compose logs cron` | — |
-| `basal-mini` | model moderacji, dostępny tylko dla kontenerów | — |
+| `basal-mini` | model moderacji dla polskiego i angielskiego, dostępny tylko dla kontenerów | — |
+| `basal-pico` | mniejszy i szybszy model moderacji, tylko angielski | — |
 | `db` | PostgreSQL, schemat w `database/schema.sql` | localhost:5433 |
 | `pgadmin-wdpai` | pgAdmin | http://localhost:5050 |
 | `mailpit` | skrzynka testowa | http://localhost:8025 |
