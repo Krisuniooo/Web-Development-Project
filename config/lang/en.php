@@ -116,7 +116,11 @@ return [
     "action.flag" => "Only flag",
     "action.delete" => "Delete",
 
-    "models.lead" => "Which model checks each channel of this server. Once there is more than one model to choose from, you will choose it here.",
+    "models.lead" => "Which model checks each channel of this server. A model must understand the language of the channel.",
+    "models.choose" => "Which model should check this channel?",
+    "models.other_language" => "does not understand the channel's language",
+    "models.saved" => "The channel model is saved.",
+    "models.save_error" => "The model could not be saved. Refresh the page and try again.",
     "models.model" => "Model",
     "models.languages" => "Languages the model understands",
     "models.channel_language" => "Language of the channel",

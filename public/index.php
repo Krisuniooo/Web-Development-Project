@@ -26,6 +26,7 @@ $routing->post('/app/channels/status', PanelController::class, 'setChannelStatus
 $routing->post('/app/channels/connect', PanelController::class, 'connectChannel');
 $routing->post('/app/channels/change', PanelController::class, 'changeChannel');
 $routing->get('/app/models', PanelController::class, 'models');
+$routing->post('/app/models/model', PanelController::class, 'setChannelModel');
 $routing->get('/app/limits', PanelController::class, 'limits');
 $routing->post('/app/limits/rules', PanelController::class, 'saveRules');
 $routing->get('/app/model-status', PanelController::class, 'modelStatus');

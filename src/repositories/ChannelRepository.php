@@ -53,6 +53,16 @@ final class ChannelRepository
         ]);
     }
 
+    /** The database turns down a model that does not go with the channel's language, such as pico with Polish. */
+    public function setModel(int $channelId, string $model): void
+    {
+        $statement = $this->pdo->prepare('UPDATE channels SET model = :model WHERE id = :id');
+        $statement->execute([
+            'model' => $model,
+            'id' => $channelId,
+        ]);
+    }
+
     public function setStatus(int $channelId, string $status): void
     {
         $statement = $this->pdo->prepare('UPDATE channels SET status = :status WHERE id = :id');

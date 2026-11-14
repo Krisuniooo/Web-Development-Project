@@ -116,7 +116,11 @@ return [
     "action.flag" => "Tylko oznacz",
     "action.delete" => "Usuń",
 
-    "models.lead" => "Który model sprawdza każdy kanał tego serwera. Gdy do wyboru będzie więcej niż jeden model, wybierzesz go tutaj.",
+    "models.lead" => "Który model sprawdza każdy kanał tego serwera. Model musi rozumieć język kanału.",
+    "models.choose" => "Który model ma sprawdzać ten kanał?",
+    "models.other_language" => "nie rozumie języka kanału",
+    "models.saved" => "Zapisano model kanału.",
+    "models.save_error" => "Nie udało się zapisać modelu. Odśwież stronę i spróbuj ponownie.",
     "models.model" => "Model",
     "models.languages" => "Języki, które model rozumie",
     "models.channel_language" => "Język kanału",

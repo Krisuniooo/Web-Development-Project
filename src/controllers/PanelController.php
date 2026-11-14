@@ -156,6 +156,43 @@ final class PanelController extends AppController
         $this->redirect('/app/channels');
     }
 
+    /** Saves the model that checks one channel of the chosen server; its language and rules stay. */
+    public function setChannelModel(): void
+    {
+        [$user, $managedServer] = $this->requireManagedServer();
+
+        $channelId = filter_var($_POST['channel'] ?? null, FILTER_VALIDATE_INT);
+        $model = $_POST['model'] ?? null;
+        $isSaved = false;
+
+        try {
+            $repository = new ChannelRepository($this->database());
+
+            // only a channel of the chosen server, a model the bot has, and one with questions in the channel's language
+            foreach ($repository->findForServer($user['platform'], $managedServer['id']) as $channel) {
+                if (
+                    $channel->getId() === $channelId
+                    && in_array($model, $this->availableModels(), true)
+                    && in_array($channel->getLanguage(), $this->modelLanguages($model), true)
+                ) {
+                    $repository->setModel($channelId, $model);
+                    $isSaved = true;
+                }
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save the channel model: ' . $exception->getMessage());
+        }
+
+        if ($isSaved) {
+            // the channel's own button shows it, so no notice
+            $_SESSION['savedChannelId'] = $channelId;
+        } else {
+            $_SESSION['notice'] = ['text' => 'models.save_error', 'isError' => true];
+        }
+
+        $this->redirect('/app/models');
+    }
+
     /** Connects a channel the bot can see to a free slot of the chosen server, with the default rules. */
     public function connectChannel(): void
     {
@@ -630,9 +667,16 @@ final class PanelController extends AppController
 
     /**
      * Each channel of the chosen server with the model that checks it: the name and size the home page shows for it,
-     * and the languages it has questions in. Null when the database does not answer.
+     * and the languages it has questions in; and the models to choose from, each with whether it knows the channel's language.
+     * Null when the database does not answer.
      *
-     * @return list<array{channel: Channel, label: string, size: ?string, languages: list<string>}>|null
+     * @return list<array{
+     *     channel: Channel,
+     *     label: string,
+     *     size: ?string,
+     *     languages: list<string>,
+     *     choices: list<array{slug: string, label: string, isForLanguage: bool}>,
+     * }>|null
      */
     private function modelChannels(string $platform, string $serverId): ?array
     {
@@ -652,7 +696,18 @@ final class PanelController extends AppController
             'label' => $offers[$channel->getModel()]['label'] ?? $channel->getModel(),
             'size' => $offers[$channel->getModel()]['size'] ?? null,
             'languages' => $this->modelLanguages($channel->getModel()),
+            'choices' => array_map(fn(string $slug): array => [
+                'slug' => $slug,
+                'label' => $offers[$slug]['label'] ?? $slug,
+                'isForLanguage' => in_array($channel->getLanguage(), $this->modelLanguages($slug), true),
+            ], $this->availableModels()),
         ], $channels);
+    }
+
+    /** @return list<string> the models the bot can ask: those with settings in config/moderation.php */
+    private function availableModels(): array
+    {
+        return array_keys(require dirname(__DIR__, 2) . '/config/moderation.php');
     }
 
     /**
