@@ -1,0 +1,33 @@
+/* which model checks each channel; the cards come from panel.css */
+
+.models-details {
+  margin: 0;
+}
+
+/* what it is on the left, the value on the right; one under the other when the card is narrow */
+.models-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem var(--space-3);
+}
+.models-detail dt {
+  flex: 0 0 14rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.models-detail dd {
+  flex: 1 1 10rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.models-detail--size {
+  margin-left: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.models-empty {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+}

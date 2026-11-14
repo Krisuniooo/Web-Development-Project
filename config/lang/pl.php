@@ -116,6 +116,10 @@ return [
     "action.flag" => "Tylko oznacz",
     "action.delete" => "Usuń",
 
+    "models.lead" => "Który model sprawdza każdy kanał tego serwera. Gdy do wyboru będzie więcej niż jeden model, wybierzesz go tutaj.",
+    "models.model" => "Model",
+    "models.languages" => "Języki, które model rozumie",
+    "models.channel_language" => "Język kanału",
     "limits.lead" => "Ustal, jak surowo bot pilnuje każdej kategorii na kanale i co robi z wiadomością, która łamie zasadę.",
     "limits.level" => "Poziom",
     "limits.action" => "Akcja",

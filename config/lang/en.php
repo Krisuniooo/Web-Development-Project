@@ -116,6 +116,10 @@ return [
     "action.flag" => "Only flag",
     "action.delete" => "Delete",
 
+    "models.lead" => "Which model checks each channel of this server. Once there is more than one model to choose from, you will choose it here.",
+    "models.model" => "Model",
+    "models.languages" => "Languages the model understands",
+    "models.channel_language" => "Language of the channel",
     "limits.lead" => "Decide how strictly the bot watches each category on the channel, and what it does with a message that breaks the rule.",
     "limits.level" => "Level",
     "limits.action" => "Action",

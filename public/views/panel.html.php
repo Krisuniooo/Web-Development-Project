@@ -9,6 +9,8 @@
             <?php include __DIR__ . '/panel/servers.html.php'; ?>
         <?php elseif ($activeSection === 'channels'): ?>
             <?php include __DIR__ . '/panel/channels.html.php'; ?>
+        <?php elseif ($activeSection === 'models'): ?>
+            <?php include __DIR__ . '/panel/models.html.php'; ?>
         <?php elseif ($activeSection === 'limits'): ?>
             <?php include __DIR__ . '/panel/limits.html.php'; ?>
         <?php elseif ($activeSection === 'logs'): ?>

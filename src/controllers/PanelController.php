@@ -614,6 +614,7 @@ final class PanelController extends AppController
                 ? $this->serverCards($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
                 : [],
             'status' => $section === 'overview' ? $this->serviceStatus($user['platform'], $managedServer) : null,
+            'modelChannels' => $section === 'models' ? $this->modelChannels($user['platform'], $managedServer['id']) : null,
             'channelSlots' => $channelSlots,
             'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
             'changingSlot' => $changingSlot,
@@ -625,6 +626,33 @@ final class PanelController extends AppController
             'log' => $section === 'logs' ? $this->moderationLog($user['platform'], $managedServer['id']) : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
+    }
+
+    /**
+     * Each channel of the chosen server with the model that checks it: the name and size the home page shows for it,
+     * and the languages it has questions in. Null when the database does not answer.
+     *
+     * @return list<array{channel: Channel, label: string, size: ?string, languages: list<string>}>|null
+     */
+    private function modelChannels(string $platform, string $serverId): ?array
+    {
+        try {
+            $channels = (new ChannelRepository($this->database()))->findForServer($platform, $serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the channels: ' . $exception->getMessage());
+
+            return null;
+        }
+
+        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
+
+        return array_map(fn(Channel $channel): array => [
+            'channel' => $channel,
+            // a model the home page does not list still shows, under the name the database has
+            'label' => $offers[$channel->getModel()]['label'] ?? $channel->getModel(),
+            'size' => $offers[$channel->getModel()]['size'] ?? null,
+            'languages' => $this->modelLanguages($channel->getModel()),
+        ], $channels);
     }
 
     /**
