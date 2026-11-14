@@ -21,7 +21,11 @@ final class MessageClassifier
 
     private array $model;
 
-    public function __construct(private string $modelName)
+    /**
+     * @param array<string, array<string, string>> $questions asked instead of those in the config, by language and category;
+     *     only for trying a new question with bin/measure.php
+     */
+    public function __construct(private string $modelName, array $questions = [])
     {
         $models = require dirname(__DIR__, 2) . '/config/moderation.php';
 
@@ -30,6 +34,16 @@ final class MessageClassifier
         }
 
         $this->model = $models[$modelName];
+
+        foreach ($questions as $language => $byCategory) {
+            foreach ($byCategory as $category => $question) {
+                if (!isset($this->model['questions'][$language][$category])) {
+                    throw new RuntimeException("The model $modelName has no question about $category in $language to replace");
+                }
+
+                $this->model['questions'][$language][$category] = $question;
+            }
+        }
     }
 
     /** @return list<string> the languages the model has questions in */
@@ -135,7 +149,7 @@ final class MessageClassifier
     }
 
     /** @return array<string, string> the questions in this language, by category */
-    private function questions(string $language): array
+    public function questions(string $language): array
     {
         return $this->model['questions'][$language]
             ?? throw new RuntimeException("The model $this->modelName has no questions in the language $language");
