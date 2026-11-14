@@ -46,6 +46,18 @@ docker compose exec php php bin/check-message.php pl "treść wiadomości"
 
 Polecenie pokazuje oceny modelu i decyzję dla każdego poziomu.
 
+## Pomiar modeli
+
+```shell
+docker compose exec -T php php bin/measure.php basal-mini pl
+# nowe pytanie dla jednej zasady, bez zmiany konfiguracji
+docker compose exec -T php php bin/measure.php basal-mini pl --racism="Czy ta wiadomość ..."
+```
+
+Polecenie wysyła do modelu opisane wiadomości z `tests/models/<język>.php` i dla każdej zasady oraz poziomu podaje, ile naruszeń model złapał i ile czystych wiadomości zablokował, a na końcu wypisuje pomyłki. Proponowany próg dobiera na co drugiej wiadomości i sprawdza na pozostałych. Odpowiedzi modelu zapamiętuje w katalogu tymczasowym kontenera, więc ponowny pomiar z tymi samymi pytaniami trwa chwilę. Pierwszy trwa kilka minut i w tym czasie bot odpowiada wolniej, bo dzieli z nim model.
+
+Nową wiadomość dopisuje się do zbioru razem z listą zasad, które naprawdę łamie; pusta lista oznacza czystą wiadomość.
+
 ## Testy jednostkowe
 
 ```shell
