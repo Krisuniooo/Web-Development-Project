@@ -24,7 +24,14 @@ final class ModerationEvent
         private ?string $content = null,
         private ?float $score = null,
         private ?DateTimeImmutable $createdAt = null,
+        // why the action did not happen, or null when it did
+        private ?string $failure = null,
     ) {
+    }
+
+    public function getFailure(): ?string
+    {
+        return $this->failure;
     }
 
     public function getId(): ?int

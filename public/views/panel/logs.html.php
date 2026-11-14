@@ -77,14 +77,17 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
             $createdAt = $event->getCreatedAt()?->setTimezone(new DateTimeZone('UTC'));
             // null once the event is old enough for its text and author to be removed
             $author = $event->getAuthorName() === null ? null : htmlspecialchars($event->getAuthorName(), ENT_QUOTES, 'UTF-8');
+            // an action the platform refused: the message is still in the chat, so the line says "not deleted" and why
+            $failure = $event->getFailure();
+            $actionLabel = $t(($failure === null ? 'logs.action.' : 'logs.failed.') . $action);
             ?>
-            <li class="logs-event is-<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?>">
+            <li class="logs-event is-<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?><?= $failure === null ? '' : ' is-failed' ?>">
                 <details>
                     <?php // one line: what happened, to whom, the message and when; a click opens the rest ?>
                     <summary class="logs-event--row">
-                        <span class="logs-event--icon" title="<?= $t('logs.action.' . $action) ?>">
-                            <i class="fa-solid <?= $actionIcons[$action] ?? 'fa-circle' ?>" aria-hidden="true"></i>
-                            <span class="panel-hidden"><?= $t('logs.action.' . $action) ?></span>
+                        <span class="logs-event--icon" title="<?= $actionLabel ?>">
+                            <i class="fa-solid <?= $failure === null ? ($actionIcons[$action] ?? 'fa-circle') : 'fa-triangle-exclamation' ?>" aria-hidden="true"></i>
+                            <span class="panel-hidden"><?= $actionLabel ?></span>
                         </span>
                         <?php if ($author === null): ?>
                             <span class="logs-event--author is-gone"><?= $t('logs.no_author') ?></span>
@@ -106,8 +109,14 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
                     <dl class="logs-event--details">
                         <div>
                             <dt><?= $t('logs.detail.action') ?></dt>
-                            <dd><?= $t('logs.action.' . $action) ?></dd>
+                            <dd><?= $actionLabel ?></dd>
                         </div>
+                        <?php if ($failure !== null): ?>
+                            <div class="logs-event--failure">
+                                <dt><?= $t('logs.detail.failure') ?></dt>
+                                <dd><?= htmlspecialchars($failure, ENT_QUOTES, 'UTF-8') ?></dd>
+                            </div>
+                        <?php endif; ?>
                         <div>
                             <dt><?= $t('logs.detail.rule') ?></dt>
                             <dd><?= $t('category.' . $event->getCategory()) ?> (<?= $t('level.' . $event->getLevel()) ?>)</dd>

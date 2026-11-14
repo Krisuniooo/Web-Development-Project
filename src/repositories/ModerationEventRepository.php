@@ -76,19 +76,39 @@ final class ModerationEventRepository
             $row['content'],
             $row['score'] === null ? null : (float) $row['score'],
             new DateTimeImmutable($row['created_at']),
+            $row['failure'],
         ), $statement->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    /** Saves what the bot did about a message. */
+    /** How many messages the bot really acted on in the last $days days on one server; failed actions do not count. */
+    public function countActed(string $platform, string $platformServerId, int $days): int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT count(*) FROM moderation_events
+             JOIN channels ON channels.id = moderation_events.channel_id
+             JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+               AND moderation_events.failure IS NULL
+               AND moderation_events.created_at > now() - make_interval(days => :days)',
+        );
+        $statement->bindValue('platform', $platform);
+        $statement->bindValue('platform_server_id', $platformServerId);
+        $statement->bindValue('days', $days, PDO::PARAM_INT);
+        $statement->execute();
+
+        return (int) $statement->fetchColumn();
+    }
+
+    /** Saves what the bot did about a message, or tried to do. */
     public function add(ModerationEvent $event): void
     {
         $statement = $this->pdo->prepare(
             'INSERT INTO moderation_events (
                 channel_id, platform_channel_id, channel_name, platform_message_id, author_platform_id, author_name,
-                category, level, model, action, content, score
+                category, level, model, action, content, score, failure
              ) VALUES (
                 :channel_id, :platform_channel_id, :channel_name, :platform_message_id, :author_platform_id, :author_name,
-                :category, :level, :model, :action, :content, :score
+                :category, :level, :model, :action, :content, :score, :failure
              )',
         );
         $statement->execute([
@@ -104,6 +124,7 @@ final class ModerationEventRepository
             'action' => $event->getAction(),
             'content' => $event->getContent(),
             'score' => $event->getScore(),
+            'failure' => $event->getFailure(),
         ]);
     }
 

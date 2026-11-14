@@ -62,6 +62,34 @@ final class ChannelRepository
         ]);
     }
 
+    /** Adds one to the messages the bot checked on the channel today. */
+    public function countCheck(int $channelId): void
+    {
+        $statement = $this->pdo->prepare(
+            'INSERT INTO channel_checks (channel_id, day, checked) VALUES (:channel_id, CURRENT_DATE, 1)
+             ON CONFLICT (channel_id, day) DO UPDATE SET checked = channel_checks.checked + 1',
+        );
+        $statement->execute(['channel_id' => $channelId]);
+    }
+
+    /** How many messages the bot checked on the server's channels in the last $days days. */
+    public function countChecks(string $platform, string $platformServerId, int $days): int
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT COALESCE(SUM(channel_checks.checked), 0) FROM channel_checks
+             JOIN channels ON channels.id = channel_checks.channel_id
+             JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+               AND channel_checks.day > CURRENT_DATE - CAST(:days AS INTEGER)',
+        );
+        $statement->bindValue('platform', $platform);
+        $statement->bindValue('platform_server_id', $platformServerId);
+        $statement->bindValue('days', $days, PDO::PARAM_INT);
+        $statement->execute();
+
+        return (int) $statement->fetchColumn();
+    }
+
     /** @return array<string, ChannelRule> the channel's rules by category */
     public function findRules(int $channelId): array
     {

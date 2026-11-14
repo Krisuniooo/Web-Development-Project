@@ -33,13 +33,18 @@ try {
         new DiscordBotClient($token, getenv('DISCORD_API_URL') ?: DiscordClient::API_URL),
         $database,
     );
-    $queue = new ModerationQueue($requests, $moderator->act(...));
+    $queue = new ModerationQueue($requests, $moderator->act(...), $moderator->countChecked(...));
     $events = new DiscordEvents($database, $queue);
     $gateway = new DiscordGateway(
         $token,
         getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json',
         $events->handle(...),
-        $queue->tick(...),
+        // between events: the report for the panel and the queue; at least every half a minute, so the report stays fresh
+        function () use ($events, $queue): float {
+            $events->reportAlive();
+
+            return min($queue->tick() ?? 30.0, 30.0);
+        },
     );
     $gateway->run();
 } catch (RuntimeException $error) {

@@ -8,6 +8,7 @@ use App\Database;
 use App\Moderation\ModerationQueue;
 use App\Repository\ChannelRepository;
 use App\Repository\ServerRepository;
+use App\Repository\ServiceStatusRepository;
 use RuntimeException;
 
 /**
@@ -19,8 +20,13 @@ final class DiscordEvents
 {
     private const PLATFORM = 'discord';
 
+    // how often the bot tells the panel it is connected
+    private const REPORT_SECONDS = 30;
+
     private ?ServerRepository $servers = null;
     private ?ChannelRepository $channels = null;
+    private ?ServiceStatusRepository $status = null;
+    private float $reportedAt = 0.0;
     private ?string $botUserId = null;
     private array $defaults;
 
@@ -37,6 +43,9 @@ final class DiscordEvents
             $pdo = $this->database->connect();
             $this->servers = new ServerRepository($pdo);
             $this->channels = new ChannelRepository($pdo);
+            $this->status = new ServiceStatusRepository($pdo);
+            // logged in, so the panel hears about it at once
+            $this->reportedAt = 0.0;
             $this->botUserId = is_string($data['user']['id'] ?? null) ? $data['user']['id'] : null;
 
             // READY lists every server the bot is on; one missing here was left while the bot was offline
@@ -70,6 +79,20 @@ final class DiscordEvents
             // without the time of an edit the update is Discord's own, such as a link preview added to the same text
             $this->checkMessage($data);
         }
+    }
+
+    /**
+     * Tells the panel the bot is connected. The bot calls it between Gateway events, so it writes only now and then;
+     * when the bot stops or loses Discord, the last report grows old and the panel shows it.
+     */
+    public function reportAlive(): void
+    {
+        if ($this->status === null || microtime(true) - $this->reportedAt < self::REPORT_SECONDS) {
+            return;
+        }
+
+        $this->status->report(ServiceStatusRepository::DISCORD_BOT);
+        $this->reportedAt = microtime(true);
     }
 
     /** Puts a message from a moderated channel in the queue for the model, with the settings its channel has now. */

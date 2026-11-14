@@ -213,6 +213,10 @@
   background: var(--color-success);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 22%, transparent);
 }
+.panel-card--status.is-down::before {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 22%, transparent);
+}
 
 /* everything under the head: the settings, or a message, and the buttons */
 .panel-card--body {

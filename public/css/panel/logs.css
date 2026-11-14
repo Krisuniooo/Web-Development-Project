@@ -194,6 +194,11 @@
   font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
 }
+/* why an action failed: across the whole row, since Discord's reason can be a sentence */
+.logs-event--details .logs-event--failure {
+  grid-column: 1 / -1;
+  color: var(--color-danger);
+}
 .logs-event--id {
   color: var(--color-muted);
   font-size: var(--font-size-xs);

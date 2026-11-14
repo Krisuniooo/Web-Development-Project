@@ -14,6 +14,7 @@ use App\Moderation\MessageClassifier;
 use App\Repository\ChannelRepository;
 use App\Repository\ModerationEventRepository;
 use App\Repository\ServerRepository;
+use App\Repository\ServiceStatusRepository;
 use PDO;
 use RuntimeException;
 
@@ -39,6 +40,11 @@ final class PanelController extends AppController
     private const LOG_PAGE_SIZE = 50;
     // how long Discord's answer that the user may manage the server is trusted before asking again
     private const ACCESS_CHECK_SECONDS = 60;
+
+    // the bot reports about every half a minute; after this long without a report it counts as not connected
+    private const BOT_SILENCE_SECONDS = 120;
+    // how far back the overview counts checked messages
+    private const STATUS_DAYS = 7;
 
     private ?PDO $pdo = null;
 
@@ -607,6 +613,7 @@ final class PanelController extends AppController
             'servers' => $section === 'overview'
                 ? $this->serverCards($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
                 : [],
+            'status' => $section === 'overview' ? $this->serviceStatus($user['platform'], $managedServer) : null,
             'channelSlots' => $channelSlots,
             'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
             'changingSlot' => $changingSlot,
@@ -618,6 +625,42 @@ final class PanelController extends AppController
             'log' => $section === 'logs' ? $this->moderationLog($user['platform'], $managedServer['id']) : null,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
+    }
+
+    /**
+     * Whether the bot and the model work now, and for the chosen server how many messages the bot checked
+     * and acted on lately. An empty log alone cannot tell a clean chat from a bot that is not running.
+     *
+     * @param array{id: string, name: string}|null $managedServer
+     * @return array{isBotConnected: ?bool, isModelReady: bool, checked: ?int, acted: ?int, days: int}
+     *     isBotConnected: null when the database does not answer; checked and acted: null then too, and with no server chosen
+     */
+    private function serviceStatus(string $platform, ?array $managedServer): array
+    {
+        $isBotConnected = null;
+        $checked = null;
+        $acted = null;
+
+        try {
+            $pdo = $this->database();
+            $seconds = (new ServiceStatusRepository($pdo))->secondsSinceSeen(ServiceStatusRepository::DISCORD_BOT);
+            $isBotConnected = $seconds !== null && $seconds <= self::BOT_SILENCE_SECONDS;
+
+            if ($managedServer !== null) {
+                $checked = (new ChannelRepository($pdo))->countChecks($platform, $managedServer['id'], self::STATUS_DAYS);
+                $acted = (new ModerationEventRepository($pdo))->countActed($platform, $managedServer['id'], self::STATUS_DAYS);
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the status: ' . $exception->getMessage());
+        }
+
+        return [
+            'isBotConnected' => $isBotConnected,
+            'isModelReady' => (new MessageClassifier(self::TEST_MODEL))->isReady(),
+            'checked' => $checked,
+            'acted' => $acted,
+            'days' => self::STATUS_DAYS,
+        ];
     }
 
     /**

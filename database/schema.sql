@@ -73,7 +73,24 @@ CREATE TABLE moderation_events (
     action moderation_action NOT NULL,
     content TEXT,
     score DOUBLE PRECISION,
+    -- why the action did not happen, in the platform's words, or NULL when it did
+    failure TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- how many messages the bot checked on a channel each day: numbers only, never the content;
+-- next to the events they tell a clean chat ("checked 120, acted on 0") from a bot that is not working
+CREATE TABLE channel_checks (
+    channel_id BIGINT NOT NULL REFERENCES channels (id) ON DELETE CASCADE,
+    day DATE NOT NULL,
+    checked INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (channel_id, day)
+);
+
+-- when each background service, such as the Discord bot, last said it was working
+CREATE TABLE service_status (
+    service TEXT PRIMARY KEY,
+    seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX moderation_events_channel_id_created_at_idx ON moderation_events (channel_id, created_at DESC);

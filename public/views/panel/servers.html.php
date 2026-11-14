@@ -1,6 +1,31 @@
 <?php $stylesheets[] = '/css/panel/servers.css'; ?>
 
 <p class="panel-content--description"><?= $t('servers.lead') ?></p>
+
+<?php
+// each line: what it is about, whether it works (null when unknown) and the text for that state
+$statusLines = [
+    ['status.bot', $status['isBotConnected'], $status['isBotConnected'] === null ? 'status.unknown' : ($status['isBotConnected'] ? 'status.bot.ok' : 'status.bot.down')],
+    ['status.model', $status['isModelReady'], $status['isModelReady'] ? 'status.model.ok' : 'status.model.down'],
+];
+?>
+<section class="servers-status" aria-labelledby="servers-status-title">
+    <h2 id="servers-status-title" class="servers-title"><?= $t('status.heading') ?></h2>
+    <dl class="servers-status--list">
+        <?php foreach ($statusLines as [$name, $isWorking, $text]): ?>
+            <div class="servers-status--item">
+                <dt><?= $t($name) ?></dt>
+                <dd class="panel-card--status<?= $isWorking === true ? ' is-active' : ($isWorking === false ? ' is-down' : '') ?>"><?= $t($text) ?></dd>
+            </div>
+        <?php endforeach; ?>
+        <?php if ($status['checked'] !== null && $status['acted'] !== null): ?>
+            <div class="servers-status--item">
+                <dt><?= sprintf($t('status.days'), $status['days']) ?></dt>
+                <dd><?= sprintf($t('status.counts'), $status['checked'], $status['acted']) ?></dd>
+            </div>
+        <?php endif; ?>
+    </dl>
+</section>
 <section class="servers" aria-labelledby="servers-title">
     <div class="servers-header">
         <h2 id="servers-title" class="servers-title">
