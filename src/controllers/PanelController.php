@@ -715,14 +715,16 @@ final class PanelController extends AppController
      * and acted on lately. An empty log alone cannot tell a clean chat from a bot that is not running.
      *
      * @param array{id: string, name: string}|null $managedServer
-     * @return array{isBotConnected: ?bool, isModelReady: bool, checked: ?int, acted: ?int, days: int}
-     *     isBotConnected: null when the database does not answer; checked and acted: null then too, and with no server chosen
+     * @return array{isBotConnected: ?bool, models: list<array{label: string, isReady: bool}>, checked: ?int, acted: ?int, days: int}
+     *     isBotConnected: null when the database does not answer; checked and acted: null then too, and with no server chosen;
+     *     models: those the channels of the chosen server use, or every model when that is not known
      */
     private function serviceStatus(string $platform, ?array $managedServer): array
     {
         $isBotConnected = null;
         $checked = null;
         $acted = null;
+        $models = $this->availableModels();
 
         try {
             $pdo = $this->database();
@@ -730,16 +732,31 @@ final class PanelController extends AppController
             $isBotConnected = $seconds !== null && $seconds <= self::BOT_SILENCE_SECONDS;
 
             if ($managedServer !== null) {
-                $checked = (new ChannelRepository($pdo))->countChecks($platform, $managedServer['id'], self::STATUS_DAYS);
+                $channels = new ChannelRepository($pdo);
+                $checked = $channels->countChecks($platform, $managedServer['id'], self::STATUS_DAYS);
                 $acted = (new ModerationEventRepository($pdo))->countActed($platform, $managedServer['id'], self::STATUS_DAYS);
+                $used = array_map(
+                    fn(Channel $channel): string => $channel->getModel(),
+                    $channels->findForServer($platform, $managedServer['id']),
+                );
+
+                // a server without channels has no model of its own yet, so it sees them all
+                if ($used !== []) {
+                    $models = array_values(array_intersect($models, $used));
+                }
             }
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the status: ' . $exception->getMessage());
         }
 
+        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
+
         return [
             'isBotConnected' => $isBotConnected,
-            'isModelReady' => (new MessageClassifier(self::TEST_MODEL))->isReady(),
+            'models' => array_map(fn(string $model): array => [
+                'label' => $offers[$model]['label'] ?? $model,
+                'isReady' => (new MessageClassifier($model))->isReady(),
+            ], $models),
             'checked' => $checked,
             'acted' => $acted,
             'days' => self::STATUS_DAYS,

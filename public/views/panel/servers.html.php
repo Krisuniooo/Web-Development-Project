@@ -5,16 +5,24 @@
 <?php
 // each line: what it is about, whether it works (null when unknown) and the text for that state
 $statusLines = [
-    ['status.bot', $status['isBotConnected'], $status['isBotConnected'] === null ? 'status.unknown' : ($status['isBotConnected'] ? 'status.bot.ok' : 'status.bot.down')],
-    ['status.model', $status['isModelReady'], $status['isModelReady'] ? 'status.model.ok' : 'status.model.down'],
+    [$t('status.bot'), $status['isBotConnected'], $status['isBotConnected'] === null ? 'status.unknown' : ($status['isBotConnected'] ? 'status.bot.ok' : 'status.bot.down')],
 ];
+
+// one line for each model, with its name
+foreach ($status['models'] as $model) {
+    $statusLines[] = [
+        $t('status.model') . ' ' . htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8'),
+        $model['isReady'],
+        $model['isReady'] ? 'status.model.ok' : 'status.model.down',
+    ];
+}
 ?>
 <section class="servers-status" aria-labelledby="servers-status-title">
     <h2 id="servers-status-title" class="servers-title"><?= $t('status.heading') ?></h2>
     <dl class="servers-status--list">
         <?php foreach ($statusLines as [$name, $isWorking, $text]): ?>
             <div class="servers-status--item">
-                <dt><?= $t($name) ?></dt>
+                <dt><?= $name ?></dt>
                 <dd class="panel-card--status<?= $isWorking === true ? ' is-active' : ($isWorking === false ? ' is-down' : '') ?>"><?= $t($text) ?></dd>
             </div>
         <?php endforeach; ?>
