@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 // What the bot asks each model about a message, and from which answer the message breaks a rule.
-// The questions and thresholds were measured together on 80 test messages per language,
-// so a changed question needs new thresholds.
+// The questions and thresholds are measured together on the labelled messages in tests/models/ with bin/measure.php,
+// so a changed question needs a new measurement.
 
 $englishQuestions = [
     'racism' => 'Does this chat message attack or demean a racial, ethnic or national group, or a person because of their race or origin?',
@@ -26,20 +26,22 @@ return [
         'url' => 'http://basal-mini:8000',
         'questions' => [
             'en' => $englishQuestions,
+            // the exceptions name what the model took for a violation: slang and colours as racism, beating someone
+            // in a game as harassment; the swear words name the forms it missed
             'pl' => [
-                'racism' => 'Czy ta wiadomość z czatu atakuje lub poniża grupę rasową, etniczną lub narodową albo osobę z powodu jej rasy lub pochodzenia?',
-                'harassment' => 'Czy ta wiadomość z czatu jest obelgą, groźbą lub nękaniem skierowanym do osoby? Mówienie o grze lub o sobie się nie liczy.',
-                'profanity' => 'Czy ta wiadomość z czatu zawiera przekleństwo lub wulgarne słowo, takie jak kurwa albo chuj? Zwykłe obelgi, takie jak idiota, się nie liczą.',
+                'racism' => 'Czy ta wiadomość z czatu atakuje lub poniża grupę rasową, etniczną lub narodową albo osobę z powodu jej rasy lub pochodzenia? Slang internetowy, taki jak chad czy sigma, kolory przedmiotów w grze i rozmowa o rasizmie się nie liczą.',
+                'harassment' => 'Czy ta wiadomość z czatu jest obelgą, groźbą lub nękaniem skierowanym do osoby? Mówienie o grze, w tym zapowiedzi pokonania kogoś w grze, oraz mówienie o sobie się nie liczy.',
+                'profanity' => 'Czy ta wiadomość z czatu zawiera przekleństwo lub wulgarne słowo, takie jak kurwa, chuj, pierdolić albo gówno, także w odmienionej formie? Zwykłe obelgi, takie jak idiota, się nie liczą.',
             ],
         ],
         'thresholds' => [
             'en' => $englishThresholds,
-            // racism and harassment are 0.10 above what the test messages gave: on real chats the measured values
-            // took vulgar insults for racism (0.67) and mild digs for harassment (0.73)
+            // measured on tests/models/pl.php: no clean message scores above 0.46 for profanity,
+            // so its thresholds are lower than those of the other rules
             'pl' => [
                 'racism' => ['relaxed' => 0.75, 'balanced' => 0.70, 'strict' => 0.65],
                 'harassment' => ['relaxed' => 0.80, 'balanced' => 0.75, 'strict' => 0.70],
-                'profanity' => ['relaxed' => 0.85, 'balanced' => 0.80, 'strict' => 0.75],
+                'profanity' => ['relaxed' => 0.75, 'balanced' => 0.70, 'strict' => 0.65],
             ],
         ],
     ],
@@ -47,8 +49,8 @@ return [
     'basal-pico' => [
         'url' => 'http://basal-pico:8000',
         'questions' => ['en' => $englishQuestions],
-        // TEMPORARY: the thresholds of mini, not measured for pico. The two models answer with different numbers,
-        // so these need their own measurement
+        // the thresholds of mini: on tests/models/en.php pico does about as well with them as mini
+        // (it acts on 18 of 22 violations and blocks 3 of 36 clean, mini 20 and 4); too few messages to tune its own yet
         'thresholds' => ['en' => $englishThresholds],
     ],
 ];
