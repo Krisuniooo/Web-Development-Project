@@ -43,10 +43,17 @@ final class PanelController extends AppController
 
     // the bot reports about every half a minute; after this long without a report it counts as not connected
     private const BOT_SILENCE_SECONDS = 120;
-    // how far back the overview counts checked messages
-    private const STATUS_DAYS = 7;
+    // the periods the overview can count, in days; the first is shown at the start
+    private const OVERVIEW_PERIODS = [7, 30];
+    // how many authors the overview lists
+    private const TOP_AUTHORS = 5;
 
     private ?PDO $pdo = null;
+
+    public function servers(): void
+    {
+        $this->renderSection('servers');
+    }
 
     public function overview(): void
     {
@@ -469,7 +476,7 @@ final class PanelController extends AppController
         $managedServer = $this->managedServer($user);
 
         if ($managedServer === null) {
-            $this->redirect('/app');
+            $this->redirect('/app/servers');
         }
 
         return [$user, $managedServer];
@@ -617,16 +624,16 @@ final class PanelController extends AppController
         // read after the check above, which takes a server the user can no longer manage off the list
         $servers = $this->sessionServers();
 
-        // every section but the overview is about one server, so it waits until one is chosen
-        if ($section !== 'overview' && $managedServer === null) {
-            $this->redirect('/app');
+        // every section but the list of servers is about one server, so it waits until one is chosen there
+        if ($section !== 'servers' && $managedServer === null) {
+            $this->redirect('/app/servers');
         }
 
         $navigation = require dirname(__DIR__, 2) . '/config/panel-navigation.php';
         $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
 
         foreach ($navigation as $key => $item) {
-            $navigation[$key]['locked'] = $key !== 'overview' && $managedServer === null;
+            $navigation[$key]['locked'] = $key !== 'servers' && $managedServer === null;
         }
 
         // what the last form did, shown once
@@ -647,10 +654,10 @@ final class PanelController extends AppController
             'currentPlatformName' => array_column($platforms, 'name', 'slug')[$user['platform']] ?? $user['platform'],
             'managedServer' => $managedServer,
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
-            'servers' => $section === 'overview'
+            'servers' => $section === 'servers'
                 ? $this->serverCards($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
                 : [],
-            'status' => $section === 'overview' ? $this->serviceStatus($user['platform'], $managedServer) : null,
+            'overview' => $section === 'overview' ? $this->overviewData($user['platform'], $managedServer['id']) : null,
             'modelChannels' => $section === 'models' ? $this->modelChannels($user['platform'], $managedServer['id']) : null,
             'channelSlots' => $channelSlots,
             'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
@@ -711,45 +718,74 @@ final class PanelController extends AppController
     }
 
     /**
-     * Whether the bot and the model work now, and for the chosen server how many messages the bot checked
-     * and acted on lately. An empty log alone cannot tell a clean chat from a bot that is not running.
+     * What the overview shows about the chosen server: whether the bot and the models of its channels work now,
+     * and for the chosen period what the bot did there. An empty log alone cannot tell a clean chat from a bot
+     * that is not running, so the counts of checked messages sit next to the counts of actions.
+     * ?days= picks the period, from OVERVIEW_PERIODS.
      *
-     * @param array{id: string, name: string}|null $managedServer
-     * @return array{isBotConnected: ?bool, models: list<array{label: string, isReady: bool}>, checked: ?int, acted: ?int, days: int}
-     *     isBotConnected: null when the database does not answer; checked and acted: null then too, and with no server chosen;
-     *     models: those the channels of the chosen server use, or every model when that is not known
+     * @return array{
+     *     isBotConnected: ?bool,
+     *     models: list<array{label: string, isReady: bool}>,
+     *     days: int,
+     *     periods: list<int>,
+     *     stats: array{
+     *         checked: int,
+     *         acted: int,
+     *         failed: int,
+     *         channels: list<array{channel: Channel, model: string, checked: int, acted: int}>,
+     *         categories: array<string, int>,
+     *         authors: list<array{id: string, name: string, events: int, category: string}>,
+     *     }|null,
+     * }
+     *     isBotConnected and stats: null when the database does not answer;
+     *     models: those the channels use, or every model while the server has no channel
      */
-    private function serviceStatus(string $platform, ?array $managedServer): array
+    private function overviewData(string $platform, string $serverId): array
     {
-        $isBotConnected = null;
-        $checked = null;
-        $acted = null;
+        $days = filter_var($_GET['days'] ?? null, FILTER_VALIDATE_INT);
+        $days = in_array($days, self::OVERVIEW_PERIODS, true) ? $days : self::OVERVIEW_PERIODS[0];
+        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
         $models = $this->availableModels();
+        $isBotConnected = null;
+        $stats = null;
 
         try {
             $pdo = $this->database();
             $seconds = (new ServiceStatusRepository($pdo))->secondsSinceSeen(ServiceStatusRepository::DISCORD_BOT);
             $isBotConnected = $seconds !== null && $seconds <= self::BOT_SILENCE_SECONDS;
 
-            if ($managedServer !== null) {
-                $channels = new ChannelRepository($pdo);
-                $checked = $channels->countChecks($platform, $managedServer['id'], self::STATUS_DAYS);
-                $acted = (new ModerationEventRepository($pdo))->countActed($platform, $managedServer['id'], self::STATUS_DAYS);
-                $used = array_map(
-                    fn(Channel $channel): string => $channel->getModel(),
-                    $channels->findForServer($platform, $managedServer['id']),
-                );
+            $channelRepository = new ChannelRepository($pdo);
+            $channels = $channelRepository->findForServer($platform, $serverId);
+            $checks = $channelRepository->countChecksByChannel($platform, $serverId, $days);
+            $events = new ModerationEventRepository($pdo);
+            $summary = $events->summarize($platform, $serverId, $days);
 
-                // a server without channels has no model of its own yet, so it sees them all
-                if ($used !== []) {
-                    $models = array_values(array_intersect($models, $used));
-                }
+            // a server without channels has no model of its own yet, so it sees them all
+            if ($channels !== []) {
+                $models = array_values(array_intersect($models, array_map(fn(Channel $channel): string => $channel->getModel(), $channels)));
             }
-        } catch (RuntimeException $exception) {
-            error_log('Panel could not read the status: ' . $exception->getMessage());
-        }
 
-        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
+            $stats = [
+                // the checks of channels that were replaced since are gone with them, so the total is that of the channels now
+                'checked' => array_sum($checks),
+                'acted' => $summary['acted'],
+                'failed' => $summary['failed'],
+                'channels' => array_map(fn(Channel $channel): array => [
+                    'channel' => $channel,
+                    'model' => $offers[$channel->getModel()]['label'] ?? $channel->getModel(),
+                    'checked' => $checks[$channel->getId()] ?? 0,
+                    'acted' => $summary['actedByChannel'][$channel->getId()] ?? 0,
+                ], $channels),
+                // every rule, even one nobody broke, so the list always looks the same
+                'categories' => array_map(
+                    fn(string $category): int => $summary['byCategory'][$category] ?? 0,
+                    array_combine($this->ruleCategories(), $this->ruleCategories()),
+                ),
+                'authors' => $events->topAuthors($platform, $serverId, $days, self::TOP_AUTHORS),
+            ];
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the overview: ' . $exception->getMessage());
+        }
 
         return [
             'isBotConnected' => $isBotConnected,
@@ -757,9 +793,9 @@ final class PanelController extends AppController
                 'label' => $offers[$model]['label'] ?? $model,
                 'isReady' => (new MessageClassifier($model))->isReady(),
             ], $models),
-            'checked' => $checked,
-            'acted' => $acted,
-            'days' => self::STATUS_DAYS,
+            'days' => $days,
+            'periods' => self::OVERVIEW_PERIODS,
+            'stats' => $stats,
         ];
     }
 

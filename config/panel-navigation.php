@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 return [
+    "servers" => ["name" => "nav.servers", "path" => "/app/servers", "icon" => "fa-server"],
     "overview" => ["name" => "nav.overview", "path" => "/app", "icon" => "fa-gauge-high"],
     "channels" => ["name" => "nav.channels", "path" => "/app/channels", "icon" => "fa-hashtag"],
     "models" => ["name" => "nav.models", "path" => "/app/models", "icon" => "fa-microchip"],

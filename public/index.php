@@ -21,6 +21,7 @@ $routing->get('/auth/discord', AuthController::class, 'discord');
 $routing->get('/auth/discord/callback', AuthController::class, 'discordCallback');
 $routing->post('/logout', AuthController::class, 'logout');
 $routing->get('/app', PanelController::class, 'overview');
+$routing->get('/app/servers', PanelController::class, 'servers');
 $routing->post('/app/manage', PanelController::class, 'manage');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->post('/app/channels/language', PanelController::class, 'setChannelLanguage');

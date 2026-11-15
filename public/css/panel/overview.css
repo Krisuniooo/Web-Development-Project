@@ -1,0 +1,174 @@
+/* the overview of the chosen server: whether everything works, then what the bot did in the chosen period */
+
+.overview-section {
+  margin-top: var(--space-4);
+}
+
+.overview-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+/* every block below a title sits in the same kind of card */
+.overview-status,
+.overview-list {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+/* what it is about on the left, its state on the right; one under the other on a narrow screen */
+.overview-status--item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem var(--space-3);
+}
+.overview-status--item dt {
+  flex: 0 0 9rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.overview-status--item dd {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+
+/* the periods, as small buttons; the chosen one filled */
+.overview-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+}
+
+.overview-periods--link {
+  padding: var(--space-0) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+.overview-periods--link:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+.overview-periods--link.is-active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+  color: var(--color-text);
+}
+.overview-periods--link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* the three numbers of the period, side by side while there is room */
+.overview-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-tile {
+  display: grid;
+  gap: 0.125rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+.overview-tile.is-error {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, var(--color-border));
+}
+
+.overview-tile--value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.overview-tile.is-error .overview-tile--value {
+  color: var(--color-danger);
+}
+
+.overview-tile--label {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+/* one line of a list: the name, what is known about it, and its number on the right */
+.overview-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem var(--space-2);
+}
+.overview-row + .overview-row {
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
+}
+
+.overview-row--name {
+  flex: 0 1 12rem;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-row--meta {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.overview-row--count {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.overview-row--id {
+  margin-left: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+}
+
+/* how often a rule was broken, against the most broken one */
+.overview-bar {
+  flex: 1 1 8rem;
+  align-self: center;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--color-danger) var(--share), color-mix(in srgb, var(--color-border) 60%, transparent) var(--share));
+}
+
+.overview-empty,
+.overview-note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+}
+.overview-note {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}

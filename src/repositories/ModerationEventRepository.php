@@ -80,23 +80,82 @@ final class ModerationEventRepository
         ), $statement->fetchAll(PDO::FETCH_ASSOC));
     }
 
-    /** How many messages the bot really acted on in the last $days days on one server; failed actions do not count. */
-    public function countActed(string $platform, string $platformServerId, int $days): int
+    /**
+     * What the bot did on one server in the last $days days: the actions done and failed,
+     * the done ones by channel, and every broken rule by category, whether its action worked or not.
+     *
+     * @return array{acted: int, failed: int, actedByChannel: array<int, int>, byCategory: array<string, int>}
+     */
+    public function summarize(string $platform, string $platformServerId, int $days): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT count(*) FROM moderation_events
+            'SELECT moderation_events.channel_id, CAST(moderation_events.category AS TEXT) AS category,
+                    moderation_events.failure IS NULL AS is_done, count(*) AS events
+             FROM moderation_events
              JOIN channels ON channels.id = moderation_events.channel_id
              JOIN servers ON servers.id = channels.server_id
              WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
-               AND moderation_events.failure IS NULL
-               AND moderation_events.created_at > now() - make_interval(days => :days)',
+               AND moderation_events.created_at > now() - make_interval(days => :days)
+             GROUP BY 1, 2, 3',
         );
         $statement->bindValue('platform', $platform);
         $statement->bindValue('platform_server_id', $platformServerId);
         $statement->bindValue('days', $days, PDO::PARAM_INT);
         $statement->execute();
 
-        return (int) $statement->fetchColumn();
+        $summary = ['acted' => 0, 'failed' => 0, 'actedByChannel' => [], 'byCategory' => []];
+
+        foreach ($statement->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $events = (int) $row['events'];
+            $summary['byCategory'][$row['category']] = ($summary['byCategory'][$row['category']] ?? 0) + $events;
+
+            if ($row['is_done']) {
+                $summary['acted'] += $events;
+                $channelId = (int) $row['channel_id'];
+                $summary['actedByChannel'][$channelId] = ($summary['actedByChannel'][$channelId] ?? 0) + $events;
+            } else {
+                $summary['failed'] += $events;
+            }
+        }
+
+        return $summary;
+    }
+
+    /**
+     * The authors who broke the rules most often on one server in the last $days days, with the name they used last
+     * and the rule they broke most. An author removed after 30 days by bin/cleanup.php no longer counts.
+     *
+     * @return list<array{id: string, name: string, events: int, category: string}>
+     */
+    public function topAuthors(string $platform, string $platformServerId, int $days, int $limit): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT moderation_events.author_platform_id AS id,
+                    (array_agg(moderation_events.author_name ORDER BY moderation_events.id DESC))[1] AS name,
+                    count(*) AS events,
+                    CAST(mode() WITHIN GROUP (ORDER BY moderation_events.category) AS TEXT) AS category
+             FROM moderation_events
+             JOIN channels ON channels.id = moderation_events.channel_id
+             JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
+               AND moderation_events.author_platform_id IS NOT NULL
+               AND moderation_events.created_at > now() - make_interval(days => :days)
+             GROUP BY moderation_events.author_platform_id
+             ORDER BY events DESC, max(moderation_events.id) DESC
+             LIMIT :limit',
+        );
+        $statement->bindValue('platform', $platform);
+        $statement->bindValue('platform_server_id', $platformServerId);
+        $statement->bindValue('days', $days, PDO::PARAM_INT);
+        $statement->bindValue('limit', $limit, PDO::PARAM_INT);
+        $statement->execute();
+
+        return array_map(fn(array $row): array => [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'events' => (int) $row['events'],
+            'category' => $row['category'],
+        ], $statement->fetchAll(PDO::FETCH_ASSOC));
     }
 
     /** Saves what the bot did about a message, or tried to do. */

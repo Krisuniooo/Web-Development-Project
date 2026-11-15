@@ -82,22 +82,27 @@ final class ChannelRepository
         $statement->execute(['channel_id' => $channelId]);
     }
 
-    /** How many messages the bot checked on the server's channels in the last $days days. */
-    public function countChecks(string $platform, string $platformServerId, int $days): int
+    /**
+     * How many messages the bot checked on each channel of the server in the last $days days, today included.
+     *
+     * @return array<int, int> by the channel's id; a channel with no check is left out
+     */
+    public function countChecksByChannel(string $platform, string $platformServerId, int $days): array
     {
         $statement = $this->pdo->prepare(
-            'SELECT COALESCE(SUM(channel_checks.checked), 0) FROM channel_checks
+            'SELECT channel_checks.channel_id, SUM(channel_checks.checked) FROM channel_checks
              JOIN channels ON channels.id = channel_checks.channel_id
              JOIN servers ON servers.id = channels.server_id
              WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
-               AND channel_checks.day > CURRENT_DATE - CAST(:days AS INTEGER)',
+               AND channel_checks.day > CURRENT_DATE - CAST(:days AS INTEGER)
+             GROUP BY channel_checks.channel_id',
         );
         $statement->bindValue('platform', $platform);
         $statement->bindValue('platform_server_id', $platformServerId);
         $statement->bindValue('days', $days, PDO::PARAM_INT);
         $statement->execute();
 
-        return (int) $statement->fetchColumn();
+        return array_map('intval', $statement->fetchAll(PDO::FETCH_KEY_PAIR));
     }
 
     /** @return array<string, ChannelRule> the channel's rules by category */

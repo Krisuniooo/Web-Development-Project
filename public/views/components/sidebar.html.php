@@ -28,7 +28,7 @@
         <ul class="sidebar-nav--list">
             <?php foreach ($navigation as $key => $item): ?>
                 <li>
-                    <?php if ($item['locked']): // not a link until a server is chosen in the overview ?>
+                    <?php if ($item['locked']): // not a link until a server is chosen on the servers tab ?>
                         <span class="sidebar-nav--link is-locked" title="<?= $t('nav.choose_server') ?>">
                             <i class="fa-solid <?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?> sidebar-nav--icon" aria-hidden="true"></i>
                             <?= $t($item['name']) ?>
