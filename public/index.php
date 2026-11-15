@@ -14,6 +14,8 @@ $routing = new Routing();
 $routing->get('/', DefaultController::class, 'index');
 $routing->post('/language', DefaultController::class, 'setLanguage');
 $routing->get('/status', DefaultController::class, 'status');
+$routing->get('/privacy', DefaultController::class, 'privacy');
+$routing->get('/terms', DefaultController::class, 'terms');
 $routing->get('/login', DefaultController::class, 'login');
 $routing->get('/auth/discord', AuthController::class, 'discord');
 $routing->get('/auth/discord/callback', AuthController::class, 'discordCallback');

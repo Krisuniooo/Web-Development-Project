@@ -42,6 +42,49 @@ final class DefaultController extends AppController
         ]);
     }
 
+    public function privacy(): void
+    {
+        $this->renderLegal('privacy', 'legal.privacy');
+    }
+
+    public function terms(): void
+    {
+        $this->renderLegal('terms', 'legal.terms');
+    }
+
+    /** A legal page from config/legal/, in the page's language, with the name, operator and contact filled in. */
+    private function renderLegal(string $document, string $titleKey): void
+    {
+        $configPath = dirname(__DIR__, 2) . '/config';
+        $legal = require "$configPath/legal/$document.php";
+        $app = require "$configPath/app.php";
+        // a value not set yet stands out on the page instead of leaving a gap
+        $missing = '[' . $this->lang()->text('legal.missing') . ']';
+        $fill = fn(string $text): string => strtr($text, [
+            '{app}' => $app['name'],
+            '{operator}' => $app['operator'] ?? $missing,
+            '{contact}' => $app['contact'] ?? $missing,
+        ]);
+
+        $sections = array_map(fn(array $section): array => [
+            'heading' => $fill($section['heading']),
+            // a block is a paragraph, or a list of points
+            'blocks' => array_map(
+                fn(string|array $block): string|array => is_array($block) ? array_map($fill, $block) : $fill($block),
+                $section['blocks'],
+            ),
+        ], $legal[$this->lang()->code()]);
+
+        $this->render('legal', [
+            'pageTitle' => $this->lang()->text($titleKey),
+            'title' => $this->lang()->text($titleKey),
+            'updated' => $legal['updated'],
+            'sections' => $sections,
+            // for the header, which lists them
+            'platforms' => require "$configPath/platforms.php",
+        ]);
+    }
+
     public function status(): void
     {
         $this->render('status', [
