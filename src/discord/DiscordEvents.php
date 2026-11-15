@@ -37,6 +37,17 @@ final class DiscordEvents
 
     public function handle(string $type, array $data): void
     {
+        try {
+            $this->dispatch($type, $data);
+        } catch (RuntimeException $error) {
+            $this->forgetConnection();
+
+            throw $error;
+        }
+    }
+
+    private function dispatch(string $type, array $data): void
+    {
         if ($type === 'READY') {
             // a new database connection for every login: after any error the bot logs in again,
             // so a broken connection is never used twice
@@ -91,8 +102,26 @@ final class DiscordEvents
             return;
         }
 
-        $this->status->report(ServiceStatusRepository::DISCORD_BOT);
+        try {
+            $this->status->report(ServiceStatusRepository::DISCORD_BOT);
+        } catch (RuntimeException $error) {
+            $this->forgetConnection();
+
+            throw $error;
+        }
+
         $this->reportedAt = microtime(true);
+    }
+
+    /**
+     * Drops the database connection after an error. The bot then logs in again, and the reports between events,
+     * which come before READY, wait for the new connection instead of failing on the broken one again and again.
+     */
+    private function forgetConnection(): void
+    {
+        $this->servers = null;
+        $this->channels = null;
+        $this->status = null;
     }
 
     /** Puts a message from a moderated channel in the queue for the model, with the settings its channel has now. */
