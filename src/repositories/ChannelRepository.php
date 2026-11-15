@@ -11,9 +11,9 @@ use Throwable;
 
 final class ChannelRepository
 {
-    // the places for channels on one server, as the CHECK on channels.slot in schema.sql allows
+    // the places for channels on one server, as the CHECK on channels.slot in the first migration allows
     public const SLOTS = [1, 2];
-    // as the channel_status type in schema.sql; the bot skips a paused channel
+    // as the channel_status type in the first migration; the bot skips a paused channel
     public const STATUSES = ['active', 'paused'];
 
     public function __construct(private PDO $pdo)

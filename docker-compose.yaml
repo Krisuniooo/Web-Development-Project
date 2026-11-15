@@ -24,15 +24,40 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     networks:
       - pg-network
+    # the schema comes from the migrate service, not from Postgres's first start, so it works on an existing database too
     volumes:
-      - ./database:/docker-entrypoint-initdb.d
       - pg-data:/var/lib/postgresql
+    # ready once it takes connections, so migrate does not start too early
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # brings the schema up to date with database/migrations, then stops; the app, the bot and cron wait for it
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    # the autoloader first, since a fresh clone has no vendor/ yet
+    command: ["sh", "-c", "composer dump-autoload --quiet && php bin/migrate.php"]
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - pg-network
 
   php:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
     env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     volumes:
       - .:/app
     networks:
@@ -45,7 +70,8 @@ services:
     command: php bin/discord-bot.php
     env_file: .env
     depends_on:
-      - db
+      migrate:
+        condition: service_completed_successfully
     # passes the stop signal on to PHP, so the container stops at once
     init: true
     # starts again after a crash, but not when the bot stops on purpose
@@ -64,7 +90,8 @@ services:
     command: ["sh", "-c", "echo '15 3 * * * cd /app && php bin/cleanup.php > /proc/1/fd/1 2>&1' | crontab - && exec crond -f"]
     env_file: .env
     depends_on:
-      - db
+      migrate:
+        condition: service_completed_successfully
     # passes the stop signal on to cron, so the container stops at once
     init: true
     restart: on-failure

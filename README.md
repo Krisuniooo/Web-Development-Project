@@ -9,10 +9,9 @@ Aplikacja jest napisana w PHP 8.3 bez frameworka, z własnym routingiem i MVC, i
 ```shell
 cp .env.example .env
 docker compose up --build -d
-docker compose exec -T php composer install
 ```
 
-Aplikacja będzie dostępna pod adresem http://localhost:8080.
+Aplikacja będzie dostępna pod adresem http://localhost:8080. Przy każdym starcie usługa `migrate` przygotowuje autoloader Composera i schemat bazy, a aplikacja, bot i cron czekają, aż skończy.
 
 Przy pierwszym starcie kontener `basal-mini` pobiera model z Hugging Face, więc sprawdzanie wiadomości zaczyna działać dopiero po chwili.
 
@@ -34,9 +33,22 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 | `cron` | codzienne czyszczenie danych, logi: `docker compose logs cron` | — |
 | `basal-mini` | model moderacji dla polskiego i angielskiego, dostępny tylko dla kontenerów | — |
 | `basal-pico` | mniejszy i szybszy model moderacji, tylko angielski | — |
-| `db` | PostgreSQL, schemat w `database/schema.sql` | localhost:5433 |
+| `migrate` | jednorazowo przy starcie: migracje bazy, logi: `docker compose logs migrate` | — |
+| `db` | PostgreSQL, schemat w `database/migrations/` | localhost:5433 |
 | `pgadmin-wdpai` | pgAdmin | http://localhost:5050 |
 | `mailpit` | skrzynka testowa | http://localhost:8025 |
+
+## Migracje bazy
+
+Schemat bazy powstaje z plików `database/migrations/*.sql`, wykonywanych w kolejności numerów. `bin/migrate.php` uruchamia każdy plik tylko raz, w osobnej transakcji, i zapisuje go w tabeli `schema_migrations`. Nieudana migracja niczego nie zmienia, a usługi czekające na `migrate` się nie uruchamiają.
+
+Zmiana schematu to nowy plik z kolejnym numerem, np. `0002_add_feedback.sql`, bez `BEGIN` i `COMMIT`. Wykonane już pliki zostają bez zmian. Migracje bez restartu kontenerów:
+
+```shell
+docker compose exec -T php php bin/migrate.php
+```
+
+Baza utworzona wcześniej ze starego `database/schema.sql` ma już schemat pierwszej migracji, więc przy pierwszym uruchomieniu ta migracja jest tylko zapisywana jako wykonana.
 
 ## Sprawdzenie jednej wiadomości
 

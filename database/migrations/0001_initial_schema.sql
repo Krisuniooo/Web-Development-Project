@@ -1,4 +1,4 @@
-BEGIN;
+-- the schema from before migrations; bin/migrate.php runs each file in a transaction, so none has BEGIN or COMMIT
 
 -- nothing about the people who log in is stored: their platform account lives only in the session
 CREATE TYPE server_status AS ENUM ('active', 'removed');
@@ -101,5 +101,3 @@ CREATE TRIGGER channels_set_updated_at BEFORE UPDATE ON channels
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE TRIGGER channel_rules_set_updated_at BEFORE UPDATE ON channel_rules
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-COMMIT;

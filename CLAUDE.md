@@ -26,7 +26,8 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - Wprowadzaj małe zmiany i nie modyfikuj plików niezwiązanych z zadaniem.
 
 ## Uruchamianie i weryfikacja
-- Start: `docker compose up --build -d`, a po świeżym klonie także `docker compose exec -T php composer install`.
+- Start: `docker compose up --build -d`; usługa `migrate` przygotowuje autoloader i schemat bazy.
+- Zmiana schematu: nowy plik `database/migrations/NNNN_opis.sql`, bez edycji wykonanych już migracji.
 - Składnia: `docker compose exec -T php php -l ścieżka/do/pliku.php`
 - Testy: `docker compose exec -T php php bin/test.php`
 - Nowy folder z namespace dopisz do `autoload.psr-4` w `composer.json` i uruchom `docker compose exec -T php composer dump-autoload`.
