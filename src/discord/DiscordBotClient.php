@@ -65,6 +65,19 @@ final class DiscordBotClient
         return ($permissions & DiscordPermissions::MANAGE_GUILD) !== 0;
     }
 
+    /** The picture of any Discord user, by their ID; Discord answers even after they left every server the bot is on. */
+    public function fetchAvatarUrl(string $userId): string
+    {
+        // the ID goes into the address of the request and of the picture
+        if (!preg_match('/^\d{1,20}$/', $userId)) {
+            throw new RuntimeException('Not a Discord user ID');
+        }
+
+        $user = $this->request("/users/$userId");
+
+        return DiscordClient::avatarUrl($userId, $user['avatar'] ?? null, $user['discriminator'] ?? '0');
+    }
+
     /** The deletion of a message, ready to send; the bot sends it without waiting and gives the finished request to checkDeleted(). */
     public function deleteMessageRequest(string $channelId, string $messageId): CurlHandle
     {

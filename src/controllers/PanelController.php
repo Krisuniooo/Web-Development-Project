@@ -47,6 +47,10 @@ final class PanelController extends AppController
     private const OVERVIEW_PERIODS = [7, 30];
     // how many authors the overview lists
     private const TOP_AUTHORS = 5;
+    // how many colours the initials of authors come in, as the is-tone-* classes in css/panel/overview.css
+    private const AVATAR_TONES = 6;
+    // how long the picture of an author from Discord is used before asking again
+    private const AVATAR_SECONDS = 3600;
 
     private ?PDO $pdo = null;
 
@@ -569,13 +573,11 @@ final class PanelController extends AppController
         $list = [];
 
         foreach ($servers as $server) {
-            // shown instead of a missing icon: the first letters of the first two words, as on Discord
-            $words = array_slice(preg_split('/\s+/u', trim($server['name']), -1, PREG_SPLIT_NO_EMPTY), 0, 2);
-
             $list[] = [
                 'id' => $server['id'],
                 'name' => $server['name'],
-                'initials' => mb_strtoupper(implode('', array_map(fn(string $word): string => mb_substr($word, 0, 1), $words))),
+                // shown instead of a missing icon
+                'initials' => $this->initials($server['name']),
                 'iconUrl' => $server['icon'] === null
                     ? null
                     : "https://cdn.discordapp.com/icons/{$server['id']}/{$server['icon']}.png?size=64",
@@ -711,6 +713,60 @@ final class PanelController extends AppController
         ], $channels);
     }
 
+    /**
+     * The authors with their picture from Discord, and initials in a colour of their own for when there is none.
+     * The bot stores no pictures, so they are asked for here and kept in the session for a while; a failure too,
+     * so a user Discord does not know is not asked for on every page. After one failure the rest is not asked for,
+     * since a Discord that does not answer would make the page wait for each of them.
+     *
+     * @param list<array{id: string, name: string, events: int, category: string}> $authors
+     * @return list<array{id: string, name: string, events: int, category: string, avatarUrl: ?string, initials: string, tone: int}>
+     */
+    private function withAvatars(array $authors): array
+    {
+        $saved = is_array($_SESSION['authorAvatars'] ?? null) ? $_SESSION['authorAvatars'] : [];
+        // only the pictures still fresh stay, so the session does not keep growing
+        $saved = array_filter($saved, fn(mixed $entry): bool => is_int($entry['time'] ?? null) && $entry['time'] > time() - self::AVATAR_SECONDS);
+        $isDiscordDown = false;
+
+        foreach ($authors as $index => $author) {
+            if (!isset($saved[$author['id']]) && !$isDiscordDown) {
+                try {
+                    $url = $this->discordBot()->fetchAvatarUrl($author['id']);
+                } catch (RuntimeException $exception) {
+                    error_log('Panel could not read the picture of an author: ' . $exception->getMessage());
+                    $url = null;
+                    // a user Discord does not know is an answer; anything else means Discord may not answer the rest either
+                    $isDiscordDown = $exception->getCode() !== 404;
+                }
+
+                if (!$isDiscordDown) {
+                    $saved[$author['id']] = ['url' => $url, 'time' => time()];
+                }
+            }
+
+            $url = $saved[$author['id']]['url'] ?? null;
+            $authors[$index] += [
+                'avatarUrl' => is_string($url) ? $url : null,
+                'initials' => $this->initials($author['name']),
+                // from the ID, so the same person keeps the same colour from page to page
+                'tone' => (int) substr($author['id'], -3) % self::AVATAR_TONES,
+            ];
+        }
+
+        $_SESSION['authorAvatars'] = $saved;
+
+        return $authors;
+    }
+
+    /** The first letters of the first two words of a name, as Discord shows a server without an icon. */
+    private function initials(string $name): string
+    {
+        $words = array_slice(preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY), 0, 2);
+
+        return mb_strtoupper(implode('', array_map(fn(string $word): string => mb_substr($word, 0, 1), $words)));
+    }
+
     /** @return list<string> the models the bot can ask: those with settings in config/moderation.php */
     private function availableModels(): array
     {
@@ -734,7 +790,7 @@ final class PanelController extends AppController
      *         failed: int,
      *         channels: list<array{channel: Channel, model: string, checked: int, acted: int}>,
      *         categories: array<string, int>,
-     *         authors: list<array{id: string, name: string, events: int, category: string}>,
+     *         authors: list<array{id: string, name: string, events: int, category: string, avatarUrl: ?string, initials: string, tone: int}>,
      *     }|null,
      * }
      *     isBotConnected and stats: null when the database does not answer;
@@ -781,7 +837,7 @@ final class PanelController extends AppController
                     fn(string $category): int => $summary['byCategory'][$category] ?? 0,
                     array_combine($this->ruleCategories(), $this->ruleCategories()),
                 ),
-                'authors' => $events->topAuthors($platform, $serverId, $days, self::TOP_AUTHORS),
+                'authors' => $this->withAvatars($events->topAuthors($platform, $serverId, $days, self::TOP_AUTHORS)),
             ];
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the overview: ' . $exception->getMessage());

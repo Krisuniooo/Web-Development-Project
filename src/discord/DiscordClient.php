@@ -63,10 +63,21 @@ final class DiscordClient
             'id' => $id,
             'name' => $name,
             // the picture the user chose, or else the default one Discord shows for them
-            'avatarUrl' => is_string($avatar) && preg_match('/^(a_)?[0-9a-f]{32}$/', $avatar)
-                ? "https://cdn.discordapp.com/avatars/$id/$avatar.png?size=64"
-                : 'https://cdn.discordapp.com/embed/avatars/' . self::defaultAvatar($id, $user['discriminator'] ?? '0') . '.png',
+            'avatarUrl' => self::avatarUrl($id, $avatar, $user['discriminator'] ?? '0'),
         ];
+    }
+
+    /**
+     * The address of a user's picture: the one they chose, or else the default one Discord shows for them.
+     *
+     * @param string $id digits only, as it becomes part of the address
+     */
+    public static function avatarUrl(string $id, mixed $avatar, mixed $discriminator): string
+    {
+        // only a real picture hash goes into the address
+        return is_string($avatar) && preg_match('/^(a_)?[0-9a-f]{32}$/', $avatar)
+            ? "https://cdn.discordapp.com/avatars/$id/$avatar.png?size=64"
+            : 'https://cdn.discordapp.com/embed/avatars/' . self::defaultAvatar($id, $discriminator) . '.png';
     }
 
     /** Which of Discord's default pictures the user has: by the id for new names, by the old #1234 tag for the rest. */
