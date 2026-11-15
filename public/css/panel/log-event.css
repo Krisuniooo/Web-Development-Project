@@ -1,0 +1,105 @@
+.log-event--back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.log-event--back:hover {
+  color: var(--color-text);
+}
+.log-event--back:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* one event in a card like the list */
+.log-event {
+  margin: var(--space-2) 0 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.log-event--title {
+  margin: 0;
+  padding: var(--space-2) var(--space-3) 0;
+  color: var(--event-color);
+  font-size: 1rem;
+}
+
+/* who wrote the message: the picture, the name with the ID under it, and what they did lately on the right */
+.log-event--author {
+  --avatar-size: 3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: var(--space-2) var(--space-3) 0;
+  padding: var(--space-2);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--color-surface-raised);
+}
+.log-event--author.is-gone {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.log-event--who {
+  display: grid;
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.log-event--name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.log-event--name i {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+a.log-event--name:hover {
+  text-decoration: underline;
+}
+a.log-event--name:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.log-event--history {
+  display: grid;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: right;
+}
+.log-event--rule {
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* the whole message, with its own line breaks */
+.log-event--text {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.log-event--text.is-gone {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* the details as in the list, but without the room left there for the icon */
+.log-event .logs-event--details {
+  padding: var(--space-2) var(--space-3);
+}

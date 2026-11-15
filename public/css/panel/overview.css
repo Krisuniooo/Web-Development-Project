@@ -314,40 +314,6 @@
   text-align: center;
 }
 
-.overview-avatar {
-  --tone: var(--color-accent);
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--tone) 24%, var(--color-surface));
-  color: color-mix(in srgb, var(--tone) 70%, var(--color-text));
-  font-size: var(--font-size-sm);
-  font-weight: 800;
-}
-/* the picture from Discord, cut to the same circle */
-.overview-avatar.is-photo {
-  object-fit: cover;
-  background: var(--color-surface-raised);
-}
-.overview-avatar.is-tone-1 {
-  --tone: var(--color-platform-discord);
-}
-.overview-avatar.is-tone-2 {
-  --tone: var(--color-platform-twitch);
-}
-.overview-avatar.is-tone-3 {
-  --tone: var(--color-platform-telegram);
-}
-.overview-avatar.is-tone-4 {
-  --tone: var(--color-success);
-}
-.overview-avatar.is-tone-5 {
-  --tone: var(--color-model-basal-pico);
-}
-
 /* the name above its ID; a long name ends with "…", the whole one is in the title */
 .overview-author--who {
   display: grid;

@@ -199,6 +199,26 @@
   grid-column: 1 / -1;
   color: var(--color-danger);
 }
+/* the link to the event's own page, under its details */
+.logs-event--open {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3) var(--space-2) calc(var(--space-3) + 1.75rem + var(--space-2));
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.logs-event--open:hover {
+  text-decoration: underline;
+}
+.logs-event--open:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
 .logs-event--id {
   color: var(--color-muted);
   font-size: var(--font-size-xs);
@@ -263,5 +283,8 @@
   }
   .logs-event--details {
     padding: var(--space-1) var(--space-2) var(--space-2) calc(var(--space-2) + 1.75rem + var(--space-1));
+  }
+  .logs-event--open {
+    padding: 0 var(--space-2) var(--space-2) calc(var(--space-2) + 1.75rem + var(--space-1));
   }
 }

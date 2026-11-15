@@ -4,7 +4,7 @@
     <?php include __DIR__ . '/components/panel-header.html.php'; ?>
     <?php include __DIR__ . '/components/sidebar.html.php'; ?>
     <main class="panel-content">
-        <h1 class="panel-content--title"><?= $t($navigation[$activeSection]['name']) ?></h1>
+        <h1 class="panel-content--title"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
         <?php if ($activeSection === 'servers'): ?>
             <?php include __DIR__ . '/panel/servers.html.php'; ?>
         <?php elseif ($activeSection === 'overview'): ?>
@@ -16,7 +16,7 @@
         <?php elseif ($activeSection === 'limits'): ?>
             <?php include __DIR__ . '/panel/limits.html.php'; ?>
         <?php elseif ($activeSection === 'logs'): ?>
-            <?php include __DIR__ . '/panel/logs.html.php'; ?>
+            <?php include __DIR__ . ($logEvent === null ? '/panel/logs.html.php' : '/panel/log-event.html.php'); ?>
         <?php else: ?>
             <p class="panel-content--description"><?= $t('panel.not_ready') ?></p>
         <?php endif; ?>

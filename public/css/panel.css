@@ -376,6 +376,41 @@
 }
 
 /* for screen readers only, such as "saved" next to the tick or the name of an icon */
+/* the picture of a chat author, in the overview and on the page of an event */
+.panel-avatar {
+  --tone: var(--color-accent);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--avatar-size, 2.25rem);
+  height: var(--avatar-size, 2.25rem);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tone) 24%, var(--color-surface));
+  color: color-mix(in srgb, var(--tone) 70%, var(--color-text));
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+/* the picture from Discord, cut to the same circle */
+.panel-avatar.is-photo {
+  object-fit: cover;
+  background: var(--color-surface-raised);
+}
+.panel-avatar.is-tone-1 {
+  --tone: var(--color-platform-discord);
+}
+.panel-avatar.is-tone-2 {
+  --tone: var(--color-platform-twitch);
+}
+.panel-avatar.is-tone-3 {
+  --tone: var(--color-platform-telegram);
+}
+.panel-avatar.is-tone-4 {
+  --tone: var(--color-success);
+}
+.panel-avatar.is-tone-5 {
+  --tone: var(--color-model-basal-pico);
+}
+
 .panel-hidden {
   position: absolute;
   width: 1px;

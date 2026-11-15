@@ -152,12 +152,7 @@ $stats = $overview['stats'];
                     <?php $authorName = htmlspecialchars($author['name'], ENT_QUOTES, 'UTF-8'); ?>
                     <li class="overview-author">
                         <span class="overview-author--place"><?= $place + 1 ?></span>
-                        <?php if ($author['avatarUrl'] !== null): ?>
-                            <img src="<?= htmlspecialchars($author['avatarUrl'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="overview-avatar is-photo" width="36" height="36" loading="lazy" />
-                        <?php else: ?>
-                            <?php // no picture from Discord: the initials in a colour of their own ?>
-                            <span class="overview-avatar is-tone-<?= (int) $author['tone'] ?>" aria-hidden="true"><?= htmlspecialchars($author['initials'], ENT_QUOTES, 'UTF-8') ?></span>
-                        <?php endif; ?>
+                        <?php include __DIR__ . '/../components/author-avatar.html.php'; ?>
                         <span class="overview-author--who">
                             <span class="overview-author--name" title="<?= $authorName ?>"><?= $authorName ?></span>
                             <span class="overview-author--id">ID <?= htmlspecialchars($author['id'], ENT_QUOTES, 'UTF-8') ?></span>

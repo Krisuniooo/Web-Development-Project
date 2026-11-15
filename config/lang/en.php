@@ -56,6 +56,9 @@ return [
     "notfound.back" => "Back to the home page",
     "servererror.title" => "Something went wrong",
     "servererror.text" => "Something went wrong on our side. Try again in a moment.",
+    "forbidden.title" => "Access denied",
+    "forbidden.text" => "You cannot see this page. If it is about another of your servers, choose that server first.",
+    "forbidden.back" => "Choose a server",
 
     "home.title" => $appName,
     "home.hero.title" => "KEEP YOUR CHAT CLEAN",
@@ -200,6 +203,13 @@ return [
     "logs.pages" => "Log pages",
     "logs.newest" => "Newest",
     "logs.older" => "Older",
+    "logs.event.title" => "Event #%d",
+    "logs.event.open" => "Open the event page",
+    "logs.event.back" => "All events",
+    "logs.event.profile" => "(opens the profile on Discord)",
+    "logs.event.history" => "Events in the last %d days: %d",
+    "logs.event.history_none" => "No events in the last %d days",
+    "logs.event.author_gone" => "The author is no longer kept.",
 
     "check.title" => "Check a message",
     "check.hint" => "See what the bot would do with a message at each level.",

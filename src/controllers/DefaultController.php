@@ -20,13 +20,6 @@ final class DefaultController extends AppController
         ]);
     }
 
-    public function notFound(): void
-    {
-        $this->render('errors/not-found', [
-            'pageTitle' => $this->lang()->text('notfound.title'),
-        ]);
-    }
-
     /** For an error nobody caught: the page, or JSON for a request sent by a script. */
     public function serverError(): void
     {

@@ -99,6 +99,23 @@ abstract class AppController
         echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 
+    public function notFound(): void
+    {
+        http_response_code(404);
+        $this->render('errors/not-found', [
+            'pageTitle' => $this->lang()->text('notfound.title'),
+        ]);
+    }
+
+    /** For a logged-in visitor asking for something that belongs to a server they are not managing now. */
+    public function forbidden(): void
+    {
+        http_response_code(403);
+        $this->render('errors/forbidden', [
+            'pageTitle' => $this->lang()->text('forbidden.title'),
+        ]);
+    }
+
     protected function redirect(string $location): never
     {
         header('Location: ' . $location, true, 303);

@@ -61,23 +61,31 @@ final class ModerationEventRepository
 
         $statement->execute();
 
-        return array_map(fn(array $row): ModerationEvent => new ModerationEvent(
-            (int) $row['id'],
-            (int) $row['channel_id'],
-            $row['platform_channel_id'],
-            $row['channel_name'],
-            $row['platform_message_id'],
-            $row['author_platform_id'],
-            $row['author_name'],
-            $row['category'],
-            $row['level'],
-            $row['model'],
-            $row['action'],
-            $row['content'],
-            $row['score'] === null ? null : (float) $row['score'],
-            new DateTimeImmutable($row['created_at']),
-            $row['failure'],
-        ), $statement->fetchAll(PDO::FETCH_ASSOC));
+        return array_map($this->toEvent(...), $statement->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    /**
+     * One event with the server of its channel, so the caller can tell a missing event from one of another server.
+     *
+     * @return array{event: ModerationEvent, platform: string, platformServerId: string}|null
+     */
+    public function findWithServer(int $id): ?array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT moderation_events.*, servers.platform, servers.platform_server_id FROM moderation_events
+             JOIN channels ON channels.id = moderation_events.channel_id
+             JOIN servers ON servers.id = channels.server_id
+             WHERE moderation_events.id = :id',
+        );
+        $statement->bindValue('id', $id, PDO::PARAM_INT);
+        $statement->execute();
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $row === false ? null : [
+            'event' => $this->toEvent($row),
+            'platform' => $row['platform'],
+            'platformServerId' => $row['platform_server_id'],
+        ];
     }
 
     /**
@@ -124,11 +132,17 @@ final class ModerationEventRepository
     /**
      * The authors who broke the rules most often on one server in the last $days days, with the name they used last
      * and the rule they broke most. An author removed after 30 days by bin/cleanup.php no longer counts.
+     * With $authorPlatformId only that author, as a list of one, or of none when they broke no rule then.
      *
      * @return list<array{id: string, name: string, events: int, category: string}>
      */
-    public function topAuthors(string $platform, string $platformServerId, int $days, int $limit): array
-    {
+    public function topAuthors(
+        string $platform,
+        string $platformServerId,
+        int $days,
+        int $limit,
+        ?string $authorPlatformId = null,
+    ): array {
         $statement = $this->pdo->prepare(
             'SELECT moderation_events.author_platform_id AS id,
                     (array_agg(moderation_events.author_name ORDER BY moderation_events.id DESC))[1] AS name,
@@ -139,13 +153,19 @@ final class ModerationEventRepository
              JOIN servers ON servers.id = channels.server_id
              WHERE servers.platform = :platform AND servers.platform_server_id = :platform_server_id
                AND moderation_events.author_platform_id IS NOT NULL
-               AND moderation_events.created_at > now() - make_interval(days => :days)
+               AND moderation_events.created_at > now() - make_interval(days => :days)'
+            . ($authorPlatformId === null ? '' : ' AND moderation_events.author_platform_id = :author_platform_id') . '
              GROUP BY moderation_events.author_platform_id
              ORDER BY events DESC, max(moderation_events.id) DESC
              LIMIT :limit',
         );
         $statement->bindValue('platform', $platform);
         $statement->bindValue('platform_server_id', $platformServerId);
+
+        if ($authorPlatformId !== null) {
+            $statement->bindValue('author_platform_id', $authorPlatformId);
+        }
+
         $statement->bindValue('days', $days, PDO::PARAM_INT);
         $statement->bindValue('limit', $limit, PDO::PARAM_INT);
         $statement->execute();
@@ -202,5 +222,26 @@ final class ModerationEventRepository
         $statement->execute();
 
         return $statement->rowCount();
+    }
+
+    private function toEvent(array $row): ModerationEvent
+    {
+        return new ModerationEvent(
+            (int) $row['id'],
+            (int) $row['channel_id'],
+            $row['platform_channel_id'],
+            $row['channel_name'],
+            $row['platform_message_id'],
+            $row['author_platform_id'],
+            $row['author_name'],
+            $row['category'],
+            $row['level'],
+            $row['model'],
+            $row['action'],
+            $row['content'],
+            $row['score'] === null ? null : (float) $row['score'],
+            new DateTimeImmutable($row['created_at']),
+            $row['failure'],
+        );
     }
 }

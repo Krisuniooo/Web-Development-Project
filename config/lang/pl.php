@@ -56,6 +56,9 @@ return [
     "notfound.back" => "Wróć na stronę główną",
     "servererror.title" => "Coś poszło nie tak",
     "servererror.text" => "Coś poszło nie tak po naszej stronie. Spróbuj ponownie za chwilę.",
+    "forbidden.title" => "Brak dostępu",
+    "forbidden.text" => "Nie masz dostępu do tej strony. Jeśli dotyczy innego z Twoich serwerów, najpierw go wybierz.",
+    "forbidden.back" => "Wybierz serwer",
 
     "home.title" => $appName,
     "home.hero.title" => "CZYSTY CZAT BEZ WYSIŁKU",
@@ -200,6 +203,13 @@ return [
     "logs.pages" => "Strony logów",
     "logs.newest" => "Najnowsze",
     "logs.older" => "Starsze",
+    "logs.event.title" => "Zdarzenie #%d",
+    "logs.event.open" => "Otwórz stronę zdarzenia",
+    "logs.event.back" => "Wszystkie zdarzenia",
+    "logs.event.profile" => "(otwiera profil na Discordzie)",
+    "logs.event.history" => "Zdarzenia z ostatnich %d dni: %d",
+    "logs.event.history_none" => "Brak zdarzeń z ostatnich %d dni",
+    "logs.event.author_gone" => "Autor nie jest już przechowywany.",
 
     "check.title" => "Sprawdź wiadomość",
     "check.hint" => "Zobacz, co bot zrobiłby z wiadomością na każdym poziomie.",

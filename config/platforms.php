@@ -7,6 +7,8 @@ return [
         "name" => "Discord",
         "slug" => "discord",
         "loginPath" => "/login",
+        // a user's profile, with their ID in place of %s
+        "profileUrl" => "https://discord.com/users/%s",
         "ctaMessage" => "cta.discord",
     ],
     [

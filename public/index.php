@@ -35,6 +35,7 @@ $routing->post('/app/limits/rules', PanelController::class, 'saveRules');
 $routing->get('/app/model-status', PanelController::class, 'modelStatus');
 $routing->post('/app/check-message', PanelController::class, 'checkMessage');
 $routing->get('/app/logs', PanelController::class, 'logs');
+$routing->get('/app/logs/{id}', PanelController::class, 'logEvent');
 
 // what a request prints waits here, so an error in the middle of a page leaves no half of it behind
 ob_start();
@@ -46,7 +47,6 @@ try {
     );
 
     if (!$routeFound) {
-        http_response_code(404);
         (new DefaultController())->notFound();
     }
 } catch (Throwable $error) {

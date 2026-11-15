@@ -51,6 +51,8 @@ final class PanelController extends AppController
     private const AVATAR_TONES = 6;
     // how long the picture of an author from Discord is used before asking again
     private const AVATAR_SECONDS = 3600;
+    // how far back the page of an event counts what its author did: as long as authors are kept
+    private const AUTHOR_HISTORY_DAYS = 30;
 
     private ?PDO $pdo = null;
 
@@ -82,6 +84,37 @@ final class PanelController extends AppController
     public function logs(): void
     {
         $this->renderSection('logs');
+    }
+
+    /** One event of the logs on its own page, to link to; only an event of the chosen server is shown. */
+    public function logEvent(int $id): void
+    {
+        $user = $this->requireLogin();
+        $managedServer = $this->managedServer($user);
+
+        if ($managedServer === null) {
+            $this->redirect('/app/servers');
+        }
+
+        // the ids start at 1, so a smaller one is not looked up
+        $found = $id < 1 ? null : (new ModerationEventRepository($this->database()))->findWithServer($id);
+
+        if ($found === null) {
+            $this->notFound();
+            return;
+        }
+
+        // an event of someone else's server, or of another server of this user, which has to be chosen first
+        if ($found['platform'] !== $user['platform'] || $found['platformServerId'] !== $managedServer['id']) {
+            $this->forbidden();
+            return;
+        }
+
+        $this->renderSection('logs', [
+            'event' => $found['event'],
+            'author' => $this->eventAuthor($user['platform'], $managedServer['id'], $found['event']),
+            'historyDays' => self::AUTHOR_HISTORY_DAYS,
+        ]);
     }
 
     /** Chooses the server the other sections are about. */
@@ -619,7 +652,8 @@ final class PanelController extends AppController
         }
     }
 
-    private function renderSection(string $section): void
+    /** @param array{event: ModerationEvent, author: ?array, historyDays: int}|null $logEvent the one event the logs show instead of the list */
+    private function renderSection(string $section, ?array $logEvent = null): void
     {
         $user = $this->requireLogin();
         $managedServer = $this->managedServer($user);
@@ -649,7 +683,9 @@ final class PanelController extends AppController
         $changingSlot = is_int($changingSlot) && isset($channelSlots[$changingSlot]) ? $changingSlot : null;
 
         $this->render('panel', [
-            'pageTitle' => $this->lang()->text($navigation[$section]['name']),
+            'pageTitle' => $logEvent === null
+                ? $this->lang()->text($navigation[$section]['name'])
+                : sprintf($this->lang()->text('logs.event.title'), $logEvent['event']->getId()),
             'navigation' => $navigation,
             'activeSection' => $section,
             'currentAccount' => $user,
@@ -669,7 +705,8 @@ final class PanelController extends AppController
                 ? $this->channelChoice($managedServer['id'], $channelSlots)
                 : null,
             'limits' => $section === 'limits' ? $this->channelLimits($user['platform'], $managedServer['id']) : null,
-            'log' => $section === 'logs' ? $this->moderationLog($user['platform'], $managedServer['id']) : null,
+            'log' => $section === 'logs' && $logEvent === null ? $this->moderationLog($user['platform'], $managedServer['id']) : null,
+            'logEvent' => $logEvent,
             'messageCheck' => $section === 'limits' ? $this->messageCheck($user['platform'], $managedServer['id']) : null,
         ]);
     }
@@ -757,6 +794,35 @@ final class PanelController extends AppController
         $_SESSION['authorAvatars'] = $saved;
 
         return $authors;
+    }
+
+    /**
+     * The author of an event with their picture, a link to their profile and how often they broke the rules on this
+     * server lately; null once bin/cleanup.php has removed the author from the event.
+     *
+     * @return array{id: string, name: string, events: int, category: string, avatarUrl: ?string, initials: string, tone: int, profileUrl: ?string}|null
+     *     events and category: in the last AUTHOR_HISTORY_DAYS days, this event included
+     */
+    private function eventAuthor(string $platform, string $serverId, ModerationEvent $event): ?array
+    {
+        $id = $event->getAuthorPlatformId();
+
+        if ($id === null) {
+            return null;
+        }
+
+        $history = (new ModerationEventRepository($this->database()))
+            ->topAuthors($platform, $serverId, self::AUTHOR_HISTORY_DAYS, 1, $id)[0] ?? null;
+        $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
+        $profileUrl = array_column($platforms, 'profileUrl', 'slug')[$platform] ?? null;
+
+        return $this->withAvatars([[
+            'id' => $id,
+            'name' => (string) $event->getAuthorName(),
+            // an event older than the period is not counted in it
+            'events' => $history['events'] ?? 0,
+            'category' => $history['category'] ?? $event->getCategory(),
+        ]])[0] + ['profileUrl' => $profileUrl === null ? null : sprintf($profileUrl, $id)];
     }
 
     /** The first letters of the first two words of a name, as Discord shows a server without an icon. */
