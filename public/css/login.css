@@ -42,6 +42,19 @@
   font-size: var(--font-size-sm);
 }
 
+.login-notice {
+  margin: var(--space-2) 0 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+}
+.login-notice a {
+  color: var(--color-text-secondary);
+}
+.login-notice a:hover {
+  color: var(--color-text);
+}
+
 .login-error {
   margin: var(--space-2) 0 0;
   padding: var(--space-1) var(--space-2);

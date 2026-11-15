@@ -15,6 +15,14 @@
             <img src="/assets/icons/discord.svg" alt="" class="login-platform--icon" width="20" height="20" />
             <?= $t('login.discord') ?>
         </a>
+        <?php // what logging in hands over, said before it happens ?>
+        <p class="login-notice">
+            <?= sprintf(
+                $t('login.notice'),
+                '<a href="/terms">' . $t('login.terms_link') . '</a>',
+                '<a href="/privacy">' . $t('login.privacy_link') . '</a>',
+            ) ?>
+        </p>
         <?php include __DIR__ . '/components/nav-settings.html.php'; ?>
     </div>
 </main>
