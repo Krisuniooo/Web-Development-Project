@@ -21,7 +21,9 @@
     // the space before the next message in a lane, in pixels
     const MIN_GAP = 60;
     const MAX_GAP = 260;
-    // at the start, half the lanes already show a message somewhere in this part of the width, the rest wait up to this long
+    // at the start, this share of the lanes already shows a message somewhere in this part of the width,
+    // the rest wait up to this long
+    const START_VISIBLE_CHANCE = 0.5;
     const START_SPREAD = 0.7;
     const MAX_START_DELAY_MS = 4000;
     // where across the hero a message gets its verdict, as a part of the width
@@ -32,6 +34,8 @@
     const MAX_STATIC_X = 0.7;
     // a resize restarts the lanes once it has stopped for this long
     const RESIZE_SETTLE_MS = 300;
+    // the speeds are per second, the timers count milliseconds
+    const MS_PER_SECOND = 1000;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let lanes = [];
@@ -111,11 +115,11 @@
 
         element.animate(
             [{ transform: `translateX(${fromX}px)` }, { transform: `translateX(${width}px)` }],
-            { duration: (width - fromX) / lane.speed * 1000, easing: "linear" }
+            { duration: (width - fromX) / lane.speed * MS_PER_SECOND, easing: "linear" }
         ).onfinish = () => element.remove();
 
-        setTimeout(() => judge(element, message), (scanLine - fromX - messageWidth) / lane.speed * 1000);
-        lane.timer = setTimeout(() => launch(lane), (messageWidth + random(MIN_GAP, MAX_GAP)) / lane.speed * 1000);
+        setTimeout(() => judge(element, message), (scanLine - fromX - messageWidth) / lane.speed * MS_PER_SECOND);
+        lane.timer = setTimeout(() => launch(lane), (messageWidth + random(MIN_GAP, MAX_GAP)) / lane.speed * MS_PER_SECOND);
     };
 
     const stop = () => {
@@ -139,7 +143,7 @@
             const lane = { y, speed: random(MIN_SPEED, MAX_SPEED), timer: null };
             lanes.push(lane);
 
-            if (Math.random() < 0.5) {
+            if (Math.random() < START_VISIBLE_CHANCE) {
                 launch(lane, random(0, hero.clientWidth * START_SPREAD));
             } else {
                 lane.timer = setTimeout(() => launch(lane), random(0, MAX_START_DELAY_MS));

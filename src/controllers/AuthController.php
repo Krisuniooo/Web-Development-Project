@@ -9,6 +9,9 @@ use RuntimeException;
 
 final class AuthController extends AppController
 {
+    // random bytes in the state of a login: enough that nobody guesses it
+    private const STATE_BYTES = 16;
+
     /** Sends the browser to Discord, which asks the user for consent. */
     public function discord(): void
     {
@@ -18,7 +21,7 @@ final class AuthController extends AppController
         }
 
         $this->startSession();
-        $_SESSION['oauth_state'] = bin2hex(random_bytes(16));
+        $_SESSION['oauth_state'] = bin2hex(random_bytes(self::STATE_BYTES));
 
         $this->redirect(DiscordClient::AUTHORIZE_URL . '?' . http_build_query([
             'response_type' => 'code',

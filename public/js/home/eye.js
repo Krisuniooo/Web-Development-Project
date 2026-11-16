@@ -18,6 +18,8 @@
     const MAX_SHIFT_Y = 1;
     // a character of the highlight counts a little outside its ellipse, so its edge is not ragged
     const HIGHLIGHT_TOLERANCE = 1.1;
+    // the highlight is as wide as the middle one of this many of its widest rows, so one ragged row does not decide
+    const HIGHLIGHT_WIDEST_ROWS = 3;
     // characters measured at once for their width, and the line height to use when the browser gives none
     const SAMPLE_CHARS = 20;
     const LINE_HEIGHT_RATIO = 1.87;
@@ -97,7 +99,7 @@
         const maxY = Math.max(...ys);
         const centerX = median([...rows.values()].map(([min, max]) => (min + max + 1) / 2));
         const centerY = (minY + maxY + 1) / 2;
-        const radiusX = median([...rows.values()].map(([min, max]) => max - min + 1).sort((a, b) => a - b).slice(-3)) / 2;
+        const radiusX = median([...rows.values()].map(([min, max]) => max - min + 1).sort((a, b) => a - b).slice(-HIGHLIGHT_WIDEST_ROWS)) / 2;
         const radiusY = (maxY - minY + 1) / 2;
         const inBlob = new Set(blob);
 

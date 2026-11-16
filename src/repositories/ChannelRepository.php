@@ -248,11 +248,12 @@ final class ChannelRepository
     ): bool {
         return $this->insertWithRules(
             'INSERT INTO channels (server_id, slot, platform_channel_id, name, model, language)
-             SELECT id, 1, :platform_channel_id, :name, :model, :language FROM servers
+             SELECT id, :slot, :platform_channel_id, :name, :model, :language FROM servers
              WHERE platform = :platform AND platform_server_id = :platform_server_id
                AND NOT EXISTS (SELECT 1 FROM channels WHERE channels.server_id = servers.id)
              RETURNING id',
             [
+                'slot' => self::SLOTS[0],
                 'platform_channel_id' => $platformChannelId,
                 'name' => $name,
                 'model' => $model,

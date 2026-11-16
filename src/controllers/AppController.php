@@ -9,6 +9,9 @@ use App\Lang;
 
 abstract class AppController
 {
+    // any moment in the past, so the browser drops the cookie
+    private const EXPIRED = 1;
+
     private ?Lang $lang = null;
 
     protected function lang(): Lang
@@ -122,7 +125,7 @@ abstract class AppController
 
         $cookie = session_get_cookie_params();
         setcookie(session_name(), '', [
-            'expires' => 1,
+            'expires' => self::EXPIRED,
             'path' => $cookie['path'],
             'secure' => $cookie['secure'],
             'httponly' => $cookie['httponly'],

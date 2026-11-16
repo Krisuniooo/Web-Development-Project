@@ -14,6 +14,10 @@ final class WebSocketClient
 {
     // the server joins our key with this fixed text, which proves it really speaks WebSocket
     private const HANDSHAKE_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+    // random bytes in the key of a handshake, as the protocol asks
+    private const KEY_BYTES = 16;
+    private const DEFAULT_PORT = 80;
+    private const DEFAULT_SECURE_PORT = 443;
     private const TIMEOUT_SECONDS = 10;
     // a bigger message is treated as an error, so a broken server cannot use up the memory
     private const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
@@ -34,6 +38,8 @@ final class WebSocketClient
     // these lengths say that the real one follows in the next 2 or 8 bytes
     private const LENGTH_16_BIT = 126;
     private const LENGTH_64_BIT = 127;
+    private const LENGTH_16_BIT_BYTES = 2;
+    private const LENGTH_64_BIT_BYTES = 8;
     private const MAX_16_BIT_LENGTH = 0xFFFF;
     // a client masks every frame it sends with this many random bytes
     private const MASK_BYTES = 4;
@@ -44,6 +50,12 @@ final class WebSocketClient
     private const OPCODE_CLOSE = 0x8;
     private const OPCODE_PING = 0x9;
     private const OPCODE_PONG = 0xA;
+
+    // close codes (RFC 6455, section 7.4.1): a normal end, and the one that stands for a close frame without a code;
+    // a close frame gives its code in its first two bytes
+    private const CLOSE_NORMAL = 1000;
+    private const CLOSE_NO_CODE = 1005;
+    private const CLOSE_CODE_BYTES = 2;
 
     /** @var resource */
     private $socket;
@@ -71,7 +83,7 @@ final class WebSocketClient
         }
 
         $secure = $scheme === 'wss';
-        $port = $parts['port'] ?? ($secure ? 443 : 80);
+        $port = $parts['port'] ?? ($secure ? self::DEFAULT_SECURE_PORT : self::DEFAULT_PORT);
         $path = ($parts['path'] ?? '/') . (isset($parts['query']) ? '?' . $parts['query'] : '');
 
         $socket = @stream_socket_client(
@@ -93,7 +105,7 @@ final class WebSocketClient
         stream_set_timeout($socket, self::TIMEOUT_SECONDS);
 
         // a random key for this connection, which the server must transform and send back
-        $key = base64_encode(random_bytes(16));
+        $key = base64_encode(random_bytes(self::KEY_BYTES));
 
         self::writeAll($socket, implode("\r\n", [
             "GET $path HTTP/1.1",
@@ -180,10 +192,11 @@ final class WebSocketClient
             } elseif ($opcode === self::OPCODE_PONG) {
                 // an answer to a ping we never send, so there is nothing to do
             } elseif ($opcode === self::OPCODE_CLOSE) {
-                $code = strlen($payload) >= 2 ? unpack('n', $payload)[1] : 1005;
-                $reason = substr($payload, 2);
+                $hasCode = strlen($payload) >= self::CLOSE_CODE_BYTES;
+                $code = $hasCode ? unpack('n', $payload)[1] : self::CLOSE_NO_CODE;
+                $reason = substr($payload, self::CLOSE_CODE_BYTES);
                 // the protocol asks to answer a close with a close before hanging up
-                $this->close(strlen($payload) >= 2 ? $code : null);
+                $this->close($hasCode ? $code : null);
                 throw new RuntimeException("The server closed the connection: $code $reason", $code);
             } elseif ($opcode === self::OPCODE_TEXT || $opcode === self::OPCODE_BINARY) {
                 if ($this->fragments !== null) {
@@ -219,7 +232,7 @@ final class WebSocketClient
     }
 
     /** Ends the connection politely, with a close code the server can read. */
-    public function close(?int $code = 1000): void
+    public function close(?int $code = self::CLOSE_NORMAL): void
     {
         if (!is_resource($this->socket)) {
             return;
@@ -263,7 +276,9 @@ final class WebSocketClient
 
         // a longer payload gives its real length in the next 2 or 8 bytes, as a big-endian number
         if ($length === self::LENGTH_16_BIT || $length === self::LENGTH_64_BIT) {
-            [$format, $size] = $length === self::LENGTH_16_BIT ? ['n', 2] : ['J', 8];
+            [$format, $size] = $length === self::LENGTH_16_BIT
+                ? ['n', self::LENGTH_16_BIT_BYTES]
+                : ['J', self::LENGTH_64_BIT_BYTES];
 
             if (strlen($this->buffer) < $headerLength + $size) {
                 return null;

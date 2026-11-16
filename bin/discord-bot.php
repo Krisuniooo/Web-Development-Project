@@ -37,13 +37,14 @@ try {
     $events = new DiscordEvents($database, $queue);
     $gateway = new DiscordGateway(
         $token,
-        getenv('DISCORD_GATEWAY_URL') ?: 'wss://gateway.discord.gg/?v=10&encoding=json',
+        // Discord's own address, or a fake one for tests
+        getenv('DISCORD_GATEWAY_URL') ?: DiscordGateway::URL,
         $events->handle(...),
-        // between events: the report for the panel and the queue; at least every half a minute, so the report stays fresh
+        // between events: the report for the panel and the queue; an idle queue still wakes the bot in time for the next report
         function () use ($events, $queue): float {
             $events->reportAlive();
 
-            return min($queue->tick() ?? 30.0, 30.0);
+            return min($queue->tick() ?? DiscordEvents::REPORT_SECONDS, DiscordEvents::REPORT_SECONDS);
         },
     );
     $gateway->run();

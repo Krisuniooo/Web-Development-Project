@@ -21,8 +21,8 @@ final class DiscordEvents
 {
     private const PLATFORM = 'discord';
 
-    // how often the bot tells the panel it is connected
-    private const REPORT_SECONDS = 30;
+    // how often the bot tells the panel it is connected; bin/discord-bot.php wakes it at least this often
+    public const REPORT_SECONDS = 30;
 
     private ?ServerRepository $servers = null;
     private ?ChannelRepository $channels = null;

@@ -15,6 +15,9 @@ use RuntimeException;
  */
 final class DiscordGateway
 {
+    // Discord's own address, with the same version as the API in DiscordClient
+    public const URL = 'wss://gateway.discord.gg/?v=10&encoding=json';
+
     // server events, such as joining or leaving a server
     private const INTENT_GUILDS = 1 << 0;
     // new messages on those servers; direct messages need another intent, which the bot does not ask for
@@ -32,10 +35,13 @@ final class DiscordGateway
 
     private const HELLO_TIMEOUT_SECONDS = 10;
 
-    // Discord resets the token after 1000 logins in a day, so the pause between attempts grows up to this
+    // Discord resets the token after 1000 logins in a day, so the pause between attempts doubles, from the first up to the longest
+    private const FIRST_PAUSE_SECONDS = 1;
     private const MAX_PAUSE_SECONDS = 120;
-    // a connection that lasted this long was healthy, so the pause starts again from one second
+    // a connection that lasted this long was healthy, so the pause starts again from the first one
     private const HEALTHY_SECONDS = 1800;
+    // Discord gives the time between heartbeats in milliseconds
+    private const MILLISECONDS_PER_SECOND = 1000;
 
     // these come back after every new connection, so the bot stops and says what to fix
     private const FATAL_CLOSE_CODES = [
@@ -63,7 +69,7 @@ final class DiscordGateway
     /** Stays connected until Discord refuses the bot for a reason that connecting again cannot fix. */
     public function run(): void
     {
-        $pauseSeconds = 1;
+        $pauseSeconds = self::FIRST_PAUSE_SECONDS;
 
         while (true) {
             $startedAt = time();
@@ -81,7 +87,7 @@ final class DiscordGateway
             }
 
             if (time() - $startedAt >= self::HEALTHY_SECONDS) {
-                $pauseSeconds = 1;
+                $pauseSeconds = self::FIRST_PAUSE_SECONDS;
             }
 
             // one line, even when the reason has several, such as some database errors
@@ -116,7 +122,7 @@ final class DiscordGateway
             $sequence = null;
             $acknowledged = true;
             // the first heartbeat goes at a random moment, so bots that start together do not all come at once
-            $nextHeartbeat = microtime(true) + random_int(0, $interval) / 1000;
+            $nextHeartbeat = microtime(true) + random_int(0, $interval) / self::MILLISECONDS_PER_SECOND;
 
             while (true) {
                 if (microtime(true) >= $nextHeartbeat) {
@@ -127,7 +133,7 @@ final class DiscordGateway
 
                     self::send($socket, self::OP_HEARTBEAT, $sequence);
                     $acknowledged = false;
-                    $nextHeartbeat = microtime(true) + $interval / 1000;
+                    $nextHeartbeat = microtime(true) + $interval / self::MILLISECONDS_PER_SECOND;
                 }
 
                 // waits for an event, but never past the time of the next heartbeat, nor past what the other work asks for
