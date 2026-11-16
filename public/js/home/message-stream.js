@@ -11,7 +11,27 @@
         "mika_gg", "kubson", "nightowl", "tomek_92", "frostbyte", "ola.pl", "zeroLag",
         "vex", "pixelmarta", "sunny", "orbit", "hexa", "milkyway", "ghostie",
     ];
+    // the messages run in lanes from the top of the hero to above its bottom edge
     const LANE_HEIGHT = 56;
+    const LANES_TOP = 16;
+    const LANES_BOTTOM_MARGIN = 40;
+    // each lane moves at its own speed, in pixels per second
+    const MIN_SPEED = 42;
+    const MAX_SPEED = 78;
+    // the space before the next message in a lane, in pixels
+    const MIN_GAP = 60;
+    const MAX_GAP = 260;
+    // at the start, half the lanes already show a message somewhere in this part of the width, the rest wait up to this long
+    const START_SPREAD = 0.7;
+    const MAX_START_DELAY_MS = 4000;
+    // where across the hero a message gets its verdict, as a part of the width
+    const MIN_SCAN_LINE = 0.4;
+    const MAX_SCAN_LINE = 0.6;
+    // without animation the messages stand still somewhere in this part of the width
+    const MIN_STATIC_X = 0.05;
+    const MAX_STATIC_X = 0.7;
+    // a resize restarts the lanes once it has stopped for this long
+    const RESIZE_SETTLE_MS = 300;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let lanes = [];
@@ -87,7 +107,7 @@
 
         const messageWidth = measureWithVerdict(element, message);
         const fromX = startX ?? -messageWidth;
-        const scanLine = width * random(0.4, 0.6);
+        const scanLine = width * random(MIN_SCAN_LINE, MAX_SCAN_LINE);
 
         element.animate(
             [{ transform: `translateX(${fromX}px)` }, { transform: `translateX(${width}px)` }],
@@ -95,7 +115,7 @@
         ).onfinish = () => element.remove();
 
         setTimeout(() => judge(element, message), (scanLine - fromX - messageWidth) / lane.speed * 1000);
-        lane.timer = setTimeout(() => launch(lane), (messageWidth + random(60, 260)) / lane.speed * 1000);
+        lane.timer = setTimeout(() => launch(lane), (messageWidth + random(MIN_GAP, MAX_GAP)) / lane.speed * 1000);
     };
 
     const stop = () => {
@@ -104,26 +124,35 @@
         stream.replaceChildren();
     };
 
+    // the top of every lane that fits in the hero now
+    const laneTops = () => {
+        const tops = [];
+        for (let y = LANES_TOP; y < hero.clientHeight - LANES_BOTTOM_MARGIN; y += LANE_HEIGHT) {
+            tops.push(y);
+        }
+        return tops;
+    };
+
     const start = () => {
         stop();
-        for (let y = 16; y < hero.clientHeight - 40; y += LANE_HEIGHT) {
-            const lane = { y, speed: random(42, 78), timer: null };
+        for (const y of laneTops()) {
+            const lane = { y, speed: random(MIN_SPEED, MAX_SPEED), timer: null };
             lanes.push(lane);
 
             if (Math.random() < 0.5) {
-                launch(lane, random(0, hero.clientWidth * 0.7));
+                launch(lane, random(0, hero.clientWidth * START_SPREAD));
             } else {
-                lane.timer = setTimeout(() => launch(lane), random(0, 4000));
+                lane.timer = setTimeout(() => launch(lane), random(0, MAX_START_DELAY_MS));
             }
         }
     };
 
     const showStatic = () => {
-        for (let y = 16; y < hero.clientHeight - 40; y += LANE_HEIGHT) {
+        for (const y of laneTops()) {
             const message = nextMessage();
             const element = createMessage(message);
             element.style.top = `${y}px`;
-            element.style.transform = `translateX(${random(0.05, 0.7) * hero.clientWidth}px)`;
+            element.style.transform = `translateX(${random(MIN_STATIC_X, MAX_STATIC_X) * hero.clientWidth}px)`;
             stream.append(element);
             judge(element, message);
         }
@@ -155,6 +184,6 @@
             if (hero.clientWidth === lastWidth) return;
             lastWidth = hero.clientWidth;
             update();
-        }, 300);
+        }, RESIZE_SETTLE_MS);
     });
 })();

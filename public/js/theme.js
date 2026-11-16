@@ -1,26 +1,30 @@
-const switchMode = document.querySelector(".switch-mode");
+// The light and dark switch: themeInit.js sets the theme before the page shows, this script changes it on a click
+// and remembers the choice.
+(() => {
+    const button = document.querySelector(".switch-mode");
+    if (!button) return;
 
-const saveTheme = (mode) => {
-    try {
-        localStorage.setItem("theme", mode);
-    } catch (e) {
-        // nothing ever happens
-    }
-}
+    const saveTheme = (theme) => {
+        try {
+            localStorage.setItem("theme", theme);
+        } catch {
+            // storage can be off, e.g. in a private window; the theme then lasts until the page closes
+        }
+    };
 
-const updateLabel = (mode) => {
-    const newLabel = mode === "light" ? switchMode?.dataset.labelDark : switchMode?.dataset.labelLight;
-    switchMode?.setAttribute("aria-label", newLabel);
-}
+    // the label says what a click does, so it names the other theme
+    const updateLabel = (theme) => {
+        button.setAttribute("aria-label", theme === "light" ? button.dataset.labelDark : button.dataset.labelLight);
+    };
 
-switchMode?.addEventListener("click", () => {
-    const newTheme = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    button.addEventListener("click", () => {
+        const theme = document.documentElement.dataset.theme === "light" ? "dark" : "light";
 
-    document.documentElement.dataset.theme = newTheme;
-    updateLabel(newTheme);
-    saveTheme(newTheme);
-});
+        document.documentElement.dataset.theme = theme;
+        updateLabel(theme);
+        saveTheme(theme);
+    });
 
-// Since themeInit.js runs before button is created,
-// this function call is needed to sync the label
-updateLabel(document.documentElement.dataset.theme);
+    // the view renders the label for the dark theme, before anyone knows which one themeInit.js chose
+    updateLabel(document.documentElement.dataset.theme);
+})();

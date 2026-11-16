@@ -1,5 +1,5 @@
-// x = cos(a) * r
-// y = sin(a) * r
+// The models circle the logo: each item sits on a circle at its own angle, x = cos(angle) * r and y = sin(angle) * r,
+// and the angles turn with time.
 (() => {
     const display = document.querySelector(".models-display");
     const modelScene = document.querySelectorAll(".models-orbit-item");
@@ -8,8 +8,7 @@
     const MAX_RADIUS = 250;
     const FULL_TURN_MS = 30000;
     const TAU = Math.PI * 2;
-    // modelScene should have points equally between
-    // 0 and 2 pi, since that is one function period
+    // the items are spread evenly around the full circle
     const ANGLE_STEP = TAU / modelScene.length;
     const ANGLE_PER_MS = TAU / FULL_TURN_MS;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -21,14 +20,14 @@
     let isVisible = false;
 
     const setRotation = (rotation) => {
-        for(let idx = 0; idx < modelScene.length; idx++) {
+        for (let idx = 0; idx < modelScene.length; idx++) {
             const angle = rotation + idx * ANGLE_STEP;
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
 
             modelScene[idx].style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
         }
-    }
+    };
 
     // keep whole items inside the display, whatever its current size
     const updateRadius = () => {
@@ -80,4 +79,4 @@
     });
 
     updateRadius();
-})()
+})();

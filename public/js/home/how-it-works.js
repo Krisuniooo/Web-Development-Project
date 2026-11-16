@@ -2,17 +2,21 @@
     const section = document.querySelector(".how-it-works");
     if (!section) return;
 
+    // how often each card shows its next step
     const PLATFORM_MS = 3200;
     const MODEL_MS = 2600;
     const LIMIT_MS = 1800;
     // fade the arrow out, then draw it again towards the next platform
+    const ARROW_REDRAW_MS = 900;
     const ARROW_REDRAW = [
         { strokeDashoffset: 0, opacity: 1 },
         { strokeDashoffset: 0, opacity: 0, offset: 0.2 },
         { strokeDashoffset: 1, opacity: 1, offset: 0.2 },
         { strokeDashoffset: 0, opacity: 1 },
     ];
+    // how far a slider moves away from its value, towards the middle of the track
     const LIMIT_SHIFT = 35;
+    const LIMIT_MIDDLE = 50;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // without animation the initial state rendered by the view stays on screen
@@ -35,7 +39,7 @@
     const nextPlatform = () => {
         platforms[platformIdx].classList.remove("is-active");
         platformIdx = (platformIdx + 1) % platforms.length;
-        arrow.animate(ARROW_REDRAW, { duration: 900, easing: "ease-in-out" }).onfinish = () => {
+        arrow.animate(ARROW_REDRAW, { duration: ARROW_REDRAW_MS, easing: "ease-in-out" }).onfinish = () => {
             platforms[platformIdx].classList.add("is-active");
         };
     };
@@ -57,7 +61,7 @@
         limitStep = (limitStep + 1) % (sliders.length * 2);
 
         const initial = initialLimits[sliderIdx];
-        const shifted = initial < 50 ? initial + LIMIT_SHIFT : initial - LIMIT_SHIFT;
+        const shifted = initial < LIMIT_MIDDLE ? initial + LIMIT_SHIFT : initial - LIMIT_SHIFT;
         const value = isLeaving ? shifted : initial;
 
         const slider = sliders[sliderIdx];

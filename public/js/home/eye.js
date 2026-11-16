@@ -9,13 +9,33 @@
     const opening = frame.querySelector(".hero-eye--opening");
     const irisLayer = frame.querySelector(".hero-eye--iris-layer");
 
+    // the eye's shape in characters of the frames: where the iris is, how wide the opening and how far the iris moves
     const IRIS_CENTER_X = 53;
     const IRIS_RADIUS_X = 22;
     const OPENING_RADIUS_X = 26;
+    const OPENING_MARGIN_Y = 0.3;
     const MAX_SHIFT_X = 3;
     const MAX_SHIFT_Y = 1;
+    // a character of the highlight counts a little outside its ellipse, so its edge is not ragged
+    const HIGHLIGHT_TOLERANCE = 1.1;
+    // characters measured at once for their width, and the line height to use when the browser gives none
+    const SAMPLE_CHARS = 20;
+    const LINE_HEIGHT_RATIO = 1.87;
+    // the pointer this far away, in pixels, makes the eye look as far as it can
     const FULL_LOOK_DISTANCE = 380;
+    // the part of the way the iris moves towards its target each frame, and how close counts as there
+    const FOLLOW_STEP = 0.14;
+    const FOLLOW_PRECISION = 0.001;
+    // with no pointer for a while, the eye looks around now and then: back ahead, or anywhere within these reaches
     const IDLE_AFTER_MS = 5000;
+    const LOOK_AROUND_MS = 2600;
+    const LOOK_AHEAD_CHANCE = 0.35;
+    const LOOK_AROUND_X = 0.9;
+    const LOOK_AROUND_Y = 0.6;
+    // the open eye waits its frame's time and up to this much more between blinks, and sometimes blinks twice
+    const BLINK_EXTRA_PAUSE_MS = 3500;
+    const DOUBLE_BLINK_CHANCE = 0.2;
+    const DOUBLE_BLINK_GAP_MS = 120;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const width = Math.max(...rawFrames.flatMap((rawFrame) => rawFrame.lines.map((line) => line.length)));
@@ -87,7 +107,7 @@
 
             const dx = (x + 0.5 - centerX) / radiusX;
             const dy = (y + 0.5 - centerY) / radiusY;
-            return dx * dx + dy * dy <= 1.1;
+            return dx * dx + dy * dy <= HIGHLIGHT_TOLERANCE;
         };
     };
 
@@ -144,24 +164,25 @@
             duration: rawFrame.duration,
             sclera: toHtml(false),
             iris: toHtml(true),
-            opening: { cx: IRIS_CENTER_X + 0.5, cy: centerY + 0.5, rx: OPENING_RADIUS_X, ry: radiusY + MAX_SHIFT_Y + 0.3 },
+            opening: { cx: IRIS_CENTER_X + 0.5, cy: centerY + 0.5, rx: OPENING_RADIUS_X, ry: radiusY + MAX_SHIFT_Y + OPENING_MARGIN_Y },
         };
     };
 
     const frames = rawFrames.map(toLayers);
 
-    let charWidth = 6;
-    let charHeight = 10;
+    // in pixels; measured below before anything uses them
+    let charWidth = 0;
+    let charHeight = 0;
     let current = 0;
 
     const measureChar = () => {
         const sample = document.createElement("span");
-        sample.textContent = "0".repeat(20);
+        sample.textContent = "0".repeat(SAMPLE_CHARS);
         sample.style.cssText = "position: absolute; visibility: hidden; white-space: pre;";
         scleraLayer.append(sample);
-        charWidth = sample.getBoundingClientRect().width / 20;
+        charWidth = sample.getBoundingClientRect().width / SAMPLE_CHARS;
         sample.remove();
-        charHeight = parseFloat(getComputedStyle(scleraLayer).lineHeight) || charWidth * 1.87;
+        charHeight = parseFloat(getComputedStyle(scleraLayer).lineHeight) || charWidth * LINE_HEIGHT_RATIO;
     };
 
     const updateOpening = () => {
@@ -201,11 +222,11 @@
     let blinkRun = 0;
 
     const follow = () => {
-        lookX += (targetX - lookX) * 0.14;
-        lookY += (targetY - lookY) * 0.14;
+        lookX += (targetX - lookX) * FOLLOW_STEP;
+        lookY += (targetY - lookY) * FOLLOW_STEP;
         irisLayer.style.transform = `translate(${lookX * MAX_SHIFT_X * charWidth}px, ${lookY * MAX_SHIFT_Y * charHeight}px)`;
 
-        if (Math.abs(targetX - lookX) > 0.001 || Math.abs(targetY - lookY) > 0.001) {
+        if (Math.abs(targetX - lookX) > FOLLOW_PRECISION || Math.abs(targetY - lookY) > FOLLOW_PRECISION) {
             requestAnimationFrame(follow);
         } else {
             isLooping = false;
@@ -222,10 +243,10 @@
 
     const lookAround = () => {
         if (performance.now() - lastPointerMove < IDLE_AFTER_MS) return;
-        if (Math.random() < 0.35) {
+        if (Math.random() < LOOK_AHEAD_CHANCE) {
             lookAt(0, 0);
         } else {
-            lookAt(random(-0.9, 0.9), random(-0.6, 0.6));
+            lookAt(random(-LOOK_AROUND_X, LOOK_AROUND_X), random(-LOOK_AROUND_Y, LOOK_AROUND_Y));
         }
     };
 
@@ -234,9 +255,9 @@
 
         while (isCurrent()) {
             show(0);
-            await wait(frames[0].duration + Math.random() * 3500);
+            await wait(frames[0].duration + Math.random() * BLINK_EXTRA_PAUSE_MS);
 
-            const repeats = Math.random() < 0.2 ? 2 : 1;
+            const repeats = Math.random() < DOUBLE_BLINK_CHANCE ? 2 : 1;
             for (let repeat = 0; repeat < repeats && isCurrent(); repeat++) {
                 for (let idx = 1; idx < frames.length && isCurrent(); idx++) {
                     show(idx);
@@ -244,7 +265,7 @@
                 }
                 if (repeat < repeats - 1) {
                     show(0);
-                    await wait(120);
+                    await wait(DOUBLE_BLINK_GAP_MS);
                 }
             }
         }
@@ -253,7 +274,7 @@
     const start = () => {
         if (isActive) return;
         isActive = true;
-        idleTimer = setInterval(lookAround, 2600);
+        idleTimer = setInterval(lookAround, LOOK_AROUND_MS);
         blinkRun++;
         if (frames.length > 1) blink(blinkRun);
     };
