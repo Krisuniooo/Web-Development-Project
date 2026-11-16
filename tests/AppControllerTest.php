@@ -6,7 +6,7 @@ namespace Tests;
 
 use App\Controller\AppController;
 
-/** The origin check that guards every form sent by POST. */
+/** What every controller inherits: the origin check that guards every form sent by POST, and when cookies are kept off plain HTTP. */
 final class AppControllerTest extends TestCase
 {
     public function testFormFromThisSiteIsAccepted(): void
@@ -38,10 +38,48 @@ final class AppControllerTest extends TestCase
         $this->assertSame(true, self::isSameOrigin([]));
     }
 
-    /** Runs the check with only these headers, leaving $_SERVER as it was. */
+    public function testRequestOverHttpsKeepsCookiesOffPlainHttp(): void
+    {
+        $this->assertSame(true, self::isHttps(['HTTPS' => 'on'], 'http://localhost:8080'));
+    }
+
+    public function testHttpsAddressBehindAProxyKeepsCookiesOffPlainHttp(): void
+    {
+        // the proxy ends the encrypted connection, so PHP itself sees plain HTTP
+        $this->assertSame(true, self::isHttps([], 'https://chatwarden.example'));
+    }
+
+    public function testPlainHttpSiteStillGetsItsCookies(): void
+    {
+        $this->assertSame(false, self::isHttps([], 'http://localhost:8080'));
+        $this->assertSame(false, self::isHttps([], ''));
+    }
+
     private static function isSameOrigin(array $headers): bool
     {
-        $keys = ['HTTP_SEC_FETCH_SITE', 'HTTP_ORIGIN', 'HTTP_HOST'];
+        return self::withServer(
+            ['HTTP_SEC_FETCH_SITE', 'HTTP_ORIGIN', 'HTTP_HOST'],
+            $headers,
+            fn(): bool => (new ExposedController())->sameOrigin(),
+        );
+    }
+
+    /** Runs the check with this APP_URL, then puts the real one back. */
+    private static function isHttps(array $server, string $appUrl): bool
+    {
+        $saved = getenv('APP_URL');
+        putenv('APP_URL=' . $appUrl);
+
+        try {
+            return self::withServer(['HTTPS'], $server, fn(): bool => (new ExposedController())->https());
+        } finally {
+            putenv($saved === false ? 'APP_URL' : 'APP_URL=' . $saved);
+        }
+    }
+
+    /** Runs the check with only these values under the keys, leaving $_SERVER as it was. */
+    private static function withServer(array $keys, array $values, callable $check): bool
+    {
         $saved = array_intersect_key($_SERVER, array_flip($keys));
 
         try {
@@ -49,11 +87,11 @@ final class AppControllerTest extends TestCase
                 unset($_SERVER[$key]);
             }
 
-            foreach ($headers as $key => $value) {
+            foreach ($values as $key => $value) {
                 $_SERVER[$key] = $value;
             }
 
-            return (new OriginCheckingController())->check();
+            return $check();
         } finally {
             foreach ($keys as $key) {
                 unset($_SERVER[$key]);
@@ -66,10 +104,16 @@ final class AppControllerTest extends TestCase
     }
 }
 
-final class OriginCheckingController extends AppController
+/** Opens the protected checks to the tests. */
+final class ExposedController extends AppController
 {
-    public function check(): bool
+    public function sameOrigin(): bool
     {
         return $this->isSameOriginRequest();
+    }
+
+    public function https(): bool
+    {
+        return $this->isHttps();
     }
 }

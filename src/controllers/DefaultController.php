@@ -105,7 +105,7 @@ final class DefaultController extends AppController
             return;
         }
 
-        Lang::remember($_POST['lang'] ?? null);
+        Lang::remember($_POST['lang'] ?? null, $this->isHttps());
 
         $this->redirect($this->localPathOrHome($_POST['back'] ?? null));
     }

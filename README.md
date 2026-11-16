@@ -43,7 +43,7 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 - **Nagłówki HTTP.** nginx (`docker/nginx/nginx.conf`) dodaje do każdej odpowiedzi Content-Security-Policy, która dopuszcza tylko skrypty, style i fonty z tej strony oraz obrazki z Discorda. Wysyła też `X-Frame-Options: DENY`, więc panelu nie da się osadzić w ramce na obcej stronie, a do tego `X-Content-Type-Options`, `Referrer-Policy` i `Permissions-Policy`.
 - **PHP.** `docker/php/app.ini` wyłącza pokazywanie błędów na stronach (trafiają do `docker compose logs`) i ukrywa wersję PHP.
 - **Ikony.** Font Awesome jest serwowany z `public/assets/fontawesome/`, więc na stronach nie działa żaden skrypt z innej domeny.
-- **Sesja.** Sesja należy do jednego konta: nowe logowanie zastępuje całą sesję, a jej identyfikator zmienia się przy logowaniu. Sesja nieużywana przez godzinę wygasa.
+- **Sesja.** Sesja należy do jednego konta: nowe logowanie zastępuje całą sesję, a jej identyfikator zmienia się przy logowaniu. Sesja nieużywana przez godzinę wygasa. Ciasteczko sesji jest niedostępne dla skryptów (`HttpOnly`), ma `SameSite=Lax`, a gdy strona działa po HTTPS, także `Secure`. Za serwerem pośredniczącym, który sam obsługuje HTTPS, decyduje o tym `APP_URL` zaczynający się od `https://`.
 - **Formularze.** Każdy formularz POST jest sprawdzany pod kątem pochodzenia (`Sec-Fetch-Site` albo `Origin`).
 - **Dostęp.** Dostęp do serwera jest sprawdzany na Discordzie przed każdą zmianą (`src/services/ServerAccess.php`).
 

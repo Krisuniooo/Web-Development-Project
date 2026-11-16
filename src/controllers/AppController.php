@@ -16,6 +16,15 @@ abstract class AppController
         return $this->lang ??= Lang::fromRequest();
     }
 
+    /**
+     * Whether the visitor reaches the site over HTTPS, so its cookies can be kept off plain HTTP.
+     * Behind a proxy that ends the encrypted connection PHP sees plain HTTP, so the public address in APP_URL counts too.
+     */
+    protected function isHttps(): bool
+    {
+        return !empty($_SERVER['HTTPS']) || str_starts_with((string) getenv('APP_URL'), 'https://');
+    }
+
     protected function startSession(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
@@ -27,7 +36,7 @@ abstract class AppController
             'cookie_httponly' => true,
             // Strict would drop the cookie when Discord sends the browser back
             'cookie_samesite' => 'Lax',
-            'cookie_secure' => !empty($_SERVER['HTTPS']),
+            'cookie_secure' => $this->isHttps(),
         ]);
     }
 

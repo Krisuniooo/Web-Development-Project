@@ -27,13 +27,14 @@ final class Lang
         return new self($code, array_replace(self::load(self::FALLBACK), self::load($code)));
     }
 
-    public static function remember(mixed $code): void
+    /** @param bool $isHttps whether the site is served over HTTPS, so the cookie can be kept off plain HTTP */
+    public static function remember(mixed $code, bool $isHttps): void
     {
         if (in_array($code, self::SUPPORTED, true)) {
             setcookie(self::COOKIE, $code, [
                 'expires' => time() + self::COOKIE_LIFETIME,
                 'path' => '/',
-                'secure' => !empty($_SERVER['HTTPS']),
+                'secure' => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
