@@ -14,8 +14,8 @@ use App\Model\ModerationEvent;
 use App\Moderation\MessageClassifier;
 use App\Repository\ChannelRepository;
 use App\Repository\ModerationEventRepository;
-use App\Repository\ServerRepository;
 use App\Repository\ServiceStatusRepository;
+use App\Service\ServerAccess;
 use PDO;
 use RuntimeException;
 
@@ -32,15 +32,10 @@ final class PanelController extends AppController
     // at most this many checks in the test box in this many seconds, for one login, because the bot uses the same model
     private const TEST_CHECKS_LIMIT = 10;
     private const TEST_LIMIT_SECONDS = 60;
-    // how long the channels from Discord are used before asking again: 2 times a minute of the 10 Discord allows
-    private const VISIBLE_CHANNELS_SECONDS = 30;
     // the actions the bot performs now; timeout and ban come later
     private const RULE_ACTIONS = [ChannelRule::ACTION_FLAG, ChannelRule::ACTION_DELETE];
     // events on one page of the logs
     private const LOG_PAGE_SIZE = 50;
-    // how long Discord's answer that the user may manage the server is trusted before asking again
-    private const ACCESS_CHECK_SECONDS = 60;
-
     // the bot reports about every half a minute; after this long without a report it counts as not connected
     private const BOT_SILENCE_SECONDS = 120;
     // the periods the overview can count, in days; the first is shown at the start
@@ -55,6 +50,7 @@ final class PanelController extends AppController
     private const AUTHOR_HISTORY_DAYS = ModerationEventRepository::KEEP_CONTENT_DAYS;
 
     private ?PDO $pdo = null;
+    private ?ServerAccess $access = null;
 
     public function servers(): void
     {
@@ -90,7 +86,7 @@ final class PanelController extends AppController
     public function logEvent(int $id): void
     {
         $user = $this->requireLogin();
-        $managedServer = $this->managedServer($user);
+        $managedServer = $this->access()->managedServer($user);
 
         if ($managedServer === null) {
             $this->redirect('/app/servers');
@@ -125,14 +121,7 @@ final class PanelController extends AppController
             return;
         }
 
-        $user = $this->requireLogin();
-        $serverId = $_POST['server'] ?? null;
-        $isOwnServer = is_string($serverId) && in_array($serverId, array_column($this->sessionServers(), 'id'), true);
-
-        // only a server the user manages, and only with the bot on it, since the settings are for the bot
-        if ($isOwnServer && $this->serverIdsWithBot($user['platform'], [$serverId]) === [$serverId]) {
-            $_SESSION['managedServerId'] = $serverId;
-        }
+        $this->access()->choose($this->requireLogin(), $_POST['server'] ?? null);
 
         $this->redirect('/app');
     }
@@ -260,7 +249,7 @@ final class PanelController extends AppController
                 && in_array($language, $this->modelLanguages($defaults['model']), true)
             ) {
                 // only a channel the bot can see and that is not connected yet; its name comes from Discord, not from the form
-                foreach ($this->availableChannels($managedServer['id'], $connected) as $channel) {
+                foreach ($this->access()->availableChannels($managedServer['id'], $connected) as $channel) {
                     if ($channel['id'] === $platformChannelId) {
                         $isConnected = $repository->add(
                             $user['platform'],
@@ -305,7 +294,7 @@ final class PanelController extends AppController
                 }
 
                 // only a channel the bot can see and that is not connected yet; its name comes from Discord, not from the form
-                foreach ($this->availableChannels($managedServer['id'], $connected) as $channel) {
+                foreach ($this->access()->availableChannels($managedServer['id'], $connected) as $channel) {
                     if ($channel['id'] === $platformChannelId) {
                         $repository->setPlatformChannel($current->getId(), $channel['id'], $channel['name']);
                         $isChanged = true;
@@ -407,7 +396,7 @@ final class PanelController extends AppController
         }
 
         // the same rule as the sections: a chosen server that still has the bot and that the user may still manage
-        if ($this->managedServer($user) === null) {
+        if ($this->access()->managedServer($user) === null) {
             $this->json(['error' => $lang->text('check.error.server')], 403);
             return;
         }
@@ -481,14 +470,6 @@ final class PanelController extends AppController
         return $user;
     }
 
-    /** @return list<array{id: string, name: string, icon: ?string}> the servers saved at login */
-    private function sessionServers(): array
-    {
-        $servers = $_SESSION['servers'] ?? [];
-
-        return is_array($servers) ? $servers : [];
-    }
-
     /**
      * For the forms that change the chosen server: refuses a form from another site, and sends away
      * a visitor who is not logged in or has no server chosen.
@@ -504,7 +485,7 @@ final class PanelController extends AppController
         }
 
         $user = $this->requireLogin();
-        $managedServer = $this->managedServer($user);
+        $managedServer = $this->access()->managedServer($user);
 
         if ($managedServer === null) {
             $this->redirect('/app/servers');
@@ -513,79 +494,16 @@ final class PanelController extends AppController
         return [$user, $managedServer];
     }
 
-    /**
-     * The chosen server, checked again on every page: it must still be on the user's list, still have the bot,
-     * and the user must still be allowed to manage it.
-     *
-     * @param array{platform: string, id: string} $user
-     * @return array{id: string, name: string}|null
-     */
-    private function managedServer(array $user): ?array
-    {
-        $id = $_SESSION['managedServerId'] ?? null;
-
-        foreach ($this->sessionServers() as $server) {
-            if ($server['id'] === $id) {
-                return $this->serverIdsWithBot($user['platform'], [$id]) === [$id] && $this->canStillManage($user['id'], $id)
-                    ? ['id' => $server['id'], 'name' => $server['name']]
-                    : null;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Asks Discord whether the user may manage the server now, and trusts a yes for a while.
-     * Someone who left, was banned or lost the permission also loses the server from their list.
-     */
-    private function canStillManage(string $userId, string $serverId): bool
-    {
-        $saved = $_SESSION['accessCheck'] ?? null;
-
-        // the answer holds only for the same user and server
-        if (
-            is_array($saved)
-            && ($saved['userId'] ?? null) === $userId
-            && ($saved['serverId'] ?? null) === $serverId
-            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::ACCESS_CHECK_SECONDS
-        ) {
-            return true;
-        }
-
-        try {
-            $canManage = $this->discordBot()->canManageServer($serverId, $userId);
-        } catch (RuntimeException $exception) {
-            // without an answer nobody gets in, but the server stays on the list for when Discord answers again
-            error_log('Panel could not check the access to a server: ' . $exception->getMessage());
-
-            return false;
-        }
-
-        if ($canManage) {
-            $_SESSION['accessCheck'] = ['userId' => $userId, 'serverId' => $serverId, 'time' => time()];
-
-            return true;
-        }
-
-        unset($_SESSION['managedServerId'], $_SESSION['accessCheck'], $_SESSION['visibleChannels']);
-        $_SESSION['servers'] = array_values(array_filter(
-            $this->sessionServers(),
-            fn(array $server): bool => $server['id'] !== $serverId,
-        ));
-
-        return false;
-    }
-
     /** One database connection for the whole request, opened when first needed. */
     private function database(): PDO
     {
         return $this->pdo ??= (new Database())->connect();
     }
 
-    private function discordBot(): DiscordBotClient
+    /** Which servers the user may manage, and what the bot sees on them; shares the request's connection. */
+    private function access(): ServerAccess
     {
-        return DiscordBotClient::fromEnvironment();
+        return $this->access ??= new ServerAccess($this->database(...));
     }
 
     /**
@@ -621,35 +539,13 @@ final class PanelController extends AppController
         return $list;
     }
 
-    /**
-     * Asks the database which of these servers have the bot. The bot keeps that list up to date.
-     *
-     * @param list<string> $serverIds
-     * @return list<string>
-     */
-    private function serverIdsWithBot(string $platform, array $serverIds): array
-    {
-        if ($serverIds === []) {
-            return [];
-        }
-
-        try {
-            return (new ServerRepository($this->database()))->findActiveIds($platform, $serverIds);
-        } catch (RuntimeException $exception) {
-            // the servers come from the session, so the list still shows, only without the bot status
-            error_log('Panel could not check which servers have the bot: ' . $exception->getMessage());
-
-            return [];
-        }
-    }
-
     /** @param array{event: ModerationEvent, author: ?array, historyDays: int}|null $logEvent the one event the logs show instead of the list */
     private function renderSection(string $section, ?array $logEvent = null): void
     {
         $user = $this->requireLogin();
-        $managedServer = $this->managedServer($user);
+        $managedServer = $this->access()->managedServer($user);
         // read after the check above, which takes a server the user can no longer manage off the list
-        $servers = $this->sessionServers();
+        $servers = $this->access()->servers();
 
         // every section but the list of servers is about one server, so it waits until one is chosen there
         if ($section !== 'servers' && $managedServer === null) {
@@ -684,7 +580,7 @@ final class PanelController extends AppController
             'managedServer' => $managedServer,
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'servers' => $section === 'servers'
-                ? $this->serverCards($servers, $this->serverIdsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
+                ? $this->serverCards($servers, $this->access()->idsWithBot($user['platform'], array_column($servers, 'id')), $managedServer)
                 : [],
             'overview' => $section === 'overview' ? $this->overviewData($user['platform'], $managedServer['id']) : null,
             'modelChannels' => $section === 'models' ? $this->modelChannels($user['platform'], $managedServer['id']) : null,
@@ -760,7 +656,7 @@ final class PanelController extends AppController
         foreach ($authors as $index => $author) {
             if (!isset($saved[$author['id']]) && !$isDiscordDown) {
                 try {
-                    $url = $this->discordBot()->fetchAvatarUrl($author['id']);
+                    $url = DiscordBotClient::fromEnvironment()->fetchAvatarUrl($author['id']);
                 } catch (RuntimeException $exception) {
                     error_log('Panel could not read the picture of an author: ' . $exception->getMessage());
                     $url = null;
@@ -1058,7 +954,7 @@ final class PanelController extends AppController
         $language = $connected === [] ? $this->lang()->code() : $connected[0]->getLanguage();
 
         try {
-            $channels = $this->availableChannels($serverId, $connected);
+            $channels = $this->access()->availableChannels($serverId, $connected);
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the channels from Discord: ' . $exception->getMessage());
             $channels = null;
@@ -1069,47 +965,6 @@ final class PanelController extends AppController
             'languages' => $languages,
             'language' => in_array($language, $languages, true) ? $language : ($languages[0] ?? ''),
         ];
-    }
-
-    /**
-     * The server's text channels the bot can see, without those already connected.
-     *
-     * @param list<Channel> $connected
-     * @return list<array{id: string, name: string}>
-     */
-    private function availableChannels(string $serverId, array $connected): array
-    {
-        $connectedIds = array_map(fn(Channel $channel): string => $channel->getPlatformChannelId(), $connected);
-
-        return array_values(array_filter(
-            $this->visibleChannels($serverId),
-            fn(array $channel): bool => !in_array($channel['id'], $connectedIds, true),
-        ));
-    }
-
-    /**
-     * The server's text channels the bot can see. Discord lets the bot ask only 10 times a minute for each server,
-     * so the list is kept in the session for a while.
-     *
-     * @return list<array{id: string, name: string}>
-     */
-    private function visibleChannels(string $serverId): array
-    {
-        $saved = $_SESSION['visibleChannels'] ?? null;
-
-        if (
-            is_array($saved)
-            && ($saved['serverId'] ?? null) === $serverId
-            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::VISIBLE_CHANNELS_SECONDS
-            && is_array($saved['channels'] ?? null)
-        ) {
-            return $saved['channels'];
-        }
-
-        $channels = $this->discordBot()->fetchVisibleTextChannels($serverId);
-        $_SESSION['visibleChannels'] = ['serverId' => $serverId, 'time' => time(), 'channels' => $channels];
-
-        return $channels;
     }
 
     /** @return array{model: string, rules: array<string, array{level: string, action: string}>} the settings of a new channel */

@@ -13,6 +13,7 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
 - `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
 - `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).
+- `src/services/` — logika współdzielona przez akcje kontrolera, np. dostęp do serwerów w panelu, namespace `App\Service`.
 - `bin/` — procesy CLI: bot Discorda, sprawdzanie wiadomości, pomiar modeli, codzienne czyszczenie danych (cron) i uruchamianie testów.
 - `tests/models/` — opisane wiadomości do pomiaru modeli przez `bin/measure.php`; zmiana pytań lub progów w `config/moderation.php` wymaga nowego pomiaru.
 - `tests/` — testy jednostkowe bez zależności, namespace `Tests`; klasa `NazwaTest` rozszerza `TestCase`, a `bin/test.php` uruchamia jej metody `test…`.
