@@ -7,7 +7,7 @@ namespace App;
 final class Lang
 {
     public const SUPPORTED = ['en', 'pl'];
-    public const COOKIE = 'lang';
+    private const COOKIE = 'lang';
     // a year, in seconds
     private const COOKIE_LIFETIME = 365 * 24 * 60 * 60;
     private const FALLBACK = 'en';

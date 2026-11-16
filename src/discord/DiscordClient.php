@@ -10,7 +10,7 @@ use RuntimeException;
 final class DiscordClient
 {
     // the version of the API, the same for the user's requests and the bot's
-    public const API_URL = 'https://discord.com/api/v10';
+    private const API_URL = 'https://discord.com/api/v10';
     // where the user agrees to log in, and a server owner to add the bot
     public const AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
     private const CDN_URL = 'https://cdn.discordapp.com';

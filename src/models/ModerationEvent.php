@@ -29,11 +29,6 @@ final class ModerationEvent
     ) {
     }
 
-    public function getFailure(): ?string
-    {
-        return $this->failure;
-    }
-
     public function getId(): ?int
     {
         return $this->id;
@@ -102,5 +97,10 @@ final class ModerationEvent
     public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getFailure(): ?string
+    {
+        return $this->failure;
     }
 }

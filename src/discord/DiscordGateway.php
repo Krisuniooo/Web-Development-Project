@@ -55,14 +55,14 @@ final class DiscordGateway
 
     /**
      * @param Closure(string, array): void $onEvent gets the event type, such as GUILD_CREATE, and its data
-     * @param (Closure(): ?float)|null $betweenEvents runs between events, such as the moderation queue, and must not wait;
-     *     returns how many seconds may pass before it runs again, or null when it has nothing to do
+     * @param Closure(): float $betweenEvents runs between events, such as the moderation queue, and must not wait;
+     *     returns how many seconds may pass before it runs again
      */
     public function __construct(
         private string $token,
         private string $url,
         private Closure $onEvent,
-        private ?Closure $betweenEvents = null,
+        private Closure $betweenEvents,
     ) {
     }
 
@@ -137,13 +137,7 @@ final class DiscordGateway
                 }
 
                 // waits for an event, but never past the time of the next heartbeat, nor past what the other work asks for
-                $waitSeconds = $nextHeartbeat - microtime(true);
-                $nextRun = $this->betweenEvents === null ? null : ($this->betweenEvents)();
-
-                if ($nextRun !== null) {
-                    $waitSeconds = min($waitSeconds, $nextRun);
-                }
-
+                $waitSeconds = min($nextHeartbeat - microtime(true), ($this->betweenEvents)());
                 $message = $socket->receive($waitSeconds);
 
                 if ($message === null) {

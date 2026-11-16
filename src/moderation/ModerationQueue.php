@@ -38,12 +38,12 @@ final class ModerationQueue
     /**
      * @param Closure(array, array<string, float>, list<string>): void $onBroken gets a message that breaks a rule,
      *     its scores and the categories whose rule it breaks
-     * @param (Closure(array): void)|null $onChecked gets every message the model answered about, for counting; must not throw
+     * @param Closure(array): void $onChecked gets every message the model answered about, for counting; must not throw
      */
     public function __construct(
         private PendingRequests $requests,
         private Closure $onBroken,
-        private ?Closure $onChecked = null,
+        private Closure $onChecked,
     ) {
     }
 
@@ -130,9 +130,7 @@ final class ModerationQueue
             microtime(true) - $sentAt,
         ));
 
-        if ($this->onChecked !== null) {
-            ($this->onChecked)($message);
-        }
+        ($this->onChecked)($message);
 
         if ($broken === []) {
             return;
