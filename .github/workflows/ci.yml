@@ -1,0 +1,26 @@
+# Checks every push without Docker or a database: the PHP syntax and the unit tests, which need neither.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Build the autoloader
+        run: composer dump-autoload
+
+      - name: Check the PHP syntax
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Run the unit tests
+        run: php bin/test.php
