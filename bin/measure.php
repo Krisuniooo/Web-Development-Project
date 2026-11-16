@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Config;
 use App\Moderation\Evaluation;
 use App\Moderation\MessageClassifier;
 
@@ -39,7 +40,7 @@ foreach (array_slice($argv, 3) as $option) {
 }
 
 $messages = require $datasetPath;
-$config = require dirname(__DIR__) . '/config/moderation.php';
+$config = Config::load('moderation');
 
 try {
     $classifier = new MessageClassifier($model, $questions === [] ? [] : [$language => $questions]);

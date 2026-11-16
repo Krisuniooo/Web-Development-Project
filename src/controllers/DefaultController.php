@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Config;
 use App\Lang;
 
 final class DefaultController extends AppController
@@ -12,10 +13,10 @@ final class DefaultController extends AppController
     {
         $this->render('home', [
             'pageTitle' => $this->lang()->text('home.title'),
-            'models' => require dirname(__DIR__, 2) . '/config/models.php',
+            'models' => Config::load('models'),
             'chatMessages' => $this->loadChatMessages(),
             'eyeFrames' => $this->loadEyeFrames(),
-            'platforms' => require dirname(__DIR__, 2) . '/config/platforms.php',
+            'platforms' => Config::load('platforms'),
             'howItWorks' => $this->loadHowItWorks(),
         ]);
     }
@@ -48,9 +49,8 @@ final class DefaultController extends AppController
     /** A legal page from config/legal/, in the page's language, with the name, operator and contact filled in. */
     private function renderLegal(string $document, string $titleKey): void
     {
-        $configPath = dirname(__DIR__, 2) . '/config';
-        $legal = require "$configPath/legal/$document.php";
-        $app = require "$configPath/app.php";
+        $legal = Config::load("legal/$document");
+        $app = Config::load('app');
         // a value not set yet stands out on the page instead of leaving a gap
         $missing = '[' . $this->lang()->text('legal.missing') . ']';
         $fill = fn(string $text): string => strtr($text, [
@@ -73,7 +73,7 @@ final class DefaultController extends AppController
             'updated' => $legal['updated'],
             'sections' => $sections,
             // for the header, which lists them
-            'platforms' => require "$configPath/platforms.php",
+            'platforms' => Config::load('platforms'),
         ]);
     }
 
@@ -81,7 +81,7 @@ final class DefaultController extends AppController
     {
         $this->render('status', [
             'pageTitle' => $this->lang()->text('status.title'),
-            'platforms' => require dirname(__DIR__, 2) . '/config/platforms.php',
+            'platforms' => Config::load('platforms'),
         ]);
     }
 
@@ -132,7 +132,7 @@ final class DefaultController extends AppController
 
     private function loadChatMessages(): array
     {
-        $messages = require dirname(__DIR__, 2) . '/config/chat-messages.php';
+        $messages = Config::load('chat-messages');
 
         return array_map(fn(array $message): array => isset($message['category'])
             ? [...$message, 'category' => $this->lang()->text($message['category'])]
@@ -141,7 +141,7 @@ final class DefaultController extends AppController
 
     private function loadHowItWorks(): array
     {
-        $howItWorks = require dirname(__DIR__, 2) . '/config/how-it-works.php';
+        $howItWorks = Config::load('how-it-works');
 
         $translateName = fn(array $item): array => [...$item, 'name' => $this->lang()->text($item['name'])];
 
@@ -167,13 +167,10 @@ final class DefaultController extends AppController
 
     private function loadEyeFrames(): array
     {
-        $configPath = dirname(__DIR__, 2) . '/config';
-        $frames = require $configPath . '/eye.php';
-
         return array_map(fn(array $frame): array => [
             'duration' => $frame['duration'],
             'closed' => $frame['closed'] ?? false,
-            'lines' => array_map('rtrim', file($configPath . '/eye/' . $frame['file'])),
-        ], $frames);
+            'lines' => array_map('rtrim', file(Config::path('eye/' . $frame['file']))),
+        ], Config::load('eye'));
     }
 }

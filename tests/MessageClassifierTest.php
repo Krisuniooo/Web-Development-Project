@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use App\Config;
 use App\Moderation\MessageClassifier;
 use RuntimeException;
 
@@ -100,7 +101,7 @@ final class MessageClassifierTest extends TestCase
     /** Read from the config, so tuning the thresholds does not break the tests. */
     private function threshold(string $category, string $level): float
     {
-        $models = require dirname(__DIR__) . '/config/moderation.php';
+        $models = Config::load('moderation');
 
         return $models[self::MODEL]['thresholds'][self::LANGUAGE][$category][$level];
     }

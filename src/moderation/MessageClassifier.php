@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Moderation;
 
+use App\Config;
 use CurlHandle;
 use RuntimeException;
 
@@ -28,7 +29,7 @@ final class MessageClassifier
      */
     public function __construct(private string $modelName, array $questions = [])
     {
-        $models = require dirname(__DIR__, 2) . '/config/moderation.php';
+        $models = Config::load('moderation');
 
         if (!isset($models[$modelName])) {
             throw new RuntimeException("config/moderation.php has no model $modelName");

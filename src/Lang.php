@@ -58,6 +58,6 @@ final class Lang
 
     private static function load(string $code): array
     {
-        return require dirname(__DIR__) . '/config/lang/' . $code . '.php';
+        return Config::load('lang/' . $code);
     }
 }

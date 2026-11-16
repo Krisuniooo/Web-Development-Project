@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Config;
 use App\Moderation\MessageClassifier;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
@@ -18,7 +19,7 @@ if ($language === '' || $text === '') {
     exit(1);
 }
 
-$model = (require dirname(__DIR__) . '/config/channel-defaults.php')['model'];
+$model = Config::load('channel-defaults')['model'];
 
 try {
     $classifier = new MessageClassifier($model);

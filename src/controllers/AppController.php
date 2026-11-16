@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Config;
 use App\Lang;
 
 abstract class AppController
@@ -152,7 +153,7 @@ abstract class AppController
         $lang = $this->lang();
         $t = $lang->html(...);
         $e = static fn(mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
-        $app = require dirname(__DIR__, 2) . '/config/app.php';
+        $app = Config::load('app');
         $currentPath = $_SERVER['REQUEST_URI'];
 
         extract($variables, EXTR_SKIP);

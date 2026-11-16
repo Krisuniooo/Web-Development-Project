@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Discord;
 
+use App\Config;
 use App\Database;
 use App\Moderation\ModerationQueue;
 use App\Repository\ChannelRepository;
@@ -32,7 +33,7 @@ final class DiscordEvents
 
     public function __construct(private Database $database, private ModerationQueue $queue)
     {
-        $this->defaults = require dirname(__DIR__, 2) . '/config/channel-defaults.php';
+        $this->defaults = Config::load('channel-defaults');
     }
 
     public function handle(string $type, array $data): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Config;
 use App\Database;
 use App\Discord\DiscordBotClient;
 use App\Discord\DiscordClient;
@@ -546,8 +547,8 @@ final class PanelController extends AppController
             $this->redirect('/app/servers');
         }
 
-        $navigation = require dirname(__DIR__, 2) . '/config/panel-navigation.php';
-        $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
+        $navigation = Config::load('panel-navigation');
+        $platforms = Config::load('platforms');
 
         foreach ($navigation as $key => $item) {
             $navigation[$key]['locked'] = $key !== 'servers' && $managedServer === null;
@@ -613,7 +614,7 @@ final class PanelController extends AppController
             return null;
         }
 
-        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
+        $offers = array_column(Config::load('models'), null, 'slug');
 
         return array_map(fn(Channel $channel): array => [
             'channel' => $channel,
@@ -691,7 +692,7 @@ final class PanelController extends AppController
 
         $history = (new ModerationEventRepository($this->database()))
             ->topAuthors($platform, $serverId, self::AUTHOR_HISTORY_DAYS, 1, $id)[0] ?? null;
-        $platforms = require dirname(__DIR__, 2) . '/config/platforms.php';
+        $platforms = Config::load('platforms');
         $profileUrl = array_column($platforms, 'profileUrl', 'slug')[$platform] ?? null;
 
         return $this->withAvatars([[
@@ -714,7 +715,7 @@ final class PanelController extends AppController
     /** @return list<string> the models the bot can ask: those with settings in config/moderation.php */
     private function availableModels(): array
     {
-        return array_keys(require dirname(__DIR__, 2) . '/config/moderation.php');
+        return array_keys(Config::load('moderation'));
     }
 
     /**
@@ -742,7 +743,7 @@ final class PanelController extends AppController
     {
         $days = filter_var($_GET['days'] ?? null, FILTER_VALIDATE_INT);
         $days = in_array($days, self::OVERVIEW_PERIODS, true) ? $days : self::OVERVIEW_PERIODS[0];
-        $offers = array_column(require dirname(__DIR__, 2) . '/config/models.php', null, 'slug');
+        $offers = array_column(Config::load('models'), null, 'slug');
         $models = $this->availableModels();
         $isBotConnected = null;
         $stats = null;
@@ -959,7 +960,7 @@ final class PanelController extends AppController
     /** @return array{model: string, rules: array<string, array{level: string, action: string}>} the settings of a new channel */
     private function channelDefaults(): array
     {
-        return require dirname(__DIR__, 2) . '/config/channel-defaults.php';
+        return Config::load('channel-defaults');
     }
 
     /** The model of the test box: the one new channels get, as bin/check-message.php uses too. */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Discord;
 
+use App\Config;
 use CurlHandle;
 use RuntimeException;
 
@@ -23,7 +24,7 @@ final class DiscordBotClient
             throw new RuntimeException('DISCORD_BOT_TOKEN is empty');
         }
 
-        $this->userAgent = sprintf(self::USER_AGENT, (require dirname(__DIR__, 2) . '/config/app.php')['repository']);
+        $this->userAgent = sprintf(self::USER_AGENT, Config::load('app')['repository']);
     }
 
     /** The bot with the token from .env, for the panel; throws when the token is empty. */
