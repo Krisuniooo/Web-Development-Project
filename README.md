@@ -46,6 +46,7 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 - **Sesja.** Sesja należy do jednego konta: nowe logowanie zastępuje całą sesję, a jej identyfikator zmienia się przy logowaniu. Sesja nieużywana przez godzinę wygasa. Ciasteczko sesji jest niedostępne dla skryptów (`HttpOnly`), ma `SameSite=Lax`, a gdy strona działa po HTTPS, także `Secure`. Za serwerem pośredniczącym, który sam obsługuje HTTPS, decyduje o tym `APP_URL` zaczynający się od `https://`.
 - **Formularze.** Każdy formularz POST jest sprawdzany pod kątem pochodzenia (`Sec-Fetch-Site` albo `Origin`).
 - **Dostęp.** Dostęp do serwera jest sprawdzany na Discordzie przed każdą zmianą (`src/services/ServerAccess.php`).
+- **Porty.** Baza, pgAdmin i Mailpit są wystawione tylko na `127.0.0.1`, więc z sieci widać wyłącznie stronę. Modele nie mają żadnego portu poza siecią Dockera.
 
 Po zmianie `nginx.conf` albo `app.ini` obrazy trzeba zbudować ponownie: `docker compose up --build -d`.
 
