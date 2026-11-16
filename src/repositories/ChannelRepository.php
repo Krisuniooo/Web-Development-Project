@@ -13,8 +13,6 @@ final class ChannelRepository
 {
     // the places for channels on one server, as the CHECK on channels.slot in the first migration allows
     public const SLOTS = [1, 2];
-    // as the channel_status type in the first migration; the bot skips a paused channel
-    public const STATUSES = ['active', 'paused'];
 
     public function __construct(private PDO $pdo)
     {

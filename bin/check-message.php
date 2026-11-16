@@ -6,7 +6,8 @@ use App\Moderation\MessageClassifier;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Checks one message with the model and shows what each level would decide, for trying the questions and thresholds:
+// Checks one message with the model new channels get and shows what each level would decide,
+// for trying the questions and thresholds:
 // docker compose exec php php bin/check-message.php pl "zamknij się"
 
 $language = $argv[1] ?? '';
@@ -17,8 +18,10 @@ if ($language === '' || $text === '') {
     exit(1);
 }
 
+$model = (require dirname(__DIR__) . '/config/channel-defaults.php')['model'];
+
 try {
-    $classifier = new MessageClassifier('basal-mini');
+    $classifier = new MessageClassifier($model);
     $scores = $classifier->scores($text, $language);
 } catch (RuntimeException $error) {
     fwrite(STDERR, $error->getMessage() . "\n");
@@ -29,8 +32,6 @@ foreach ($scores as $category => $score) {
     printf("%-11s %.4f\n", $category, $score);
 }
 
-foreach (MessageClassifier::LEVELS as $level) {
-    // every rule at this level, as if the channel had them all set the same
-    $broken = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
+foreach ($classifier->brokenRulesByLevel($scores, $language) as $level => $broken) {
     printf("%-9s %s\n", $level . ':', $broken === [] ? 'allowed' : 'breaks ' . implode(', ', $broken));
 }

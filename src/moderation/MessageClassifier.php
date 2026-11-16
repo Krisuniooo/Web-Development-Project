@@ -10,8 +10,9 @@ use RuntimeException;
 /** Asks a moderation model how strongly a message breaks each rule, and compares the answers with the thresholds. */
 final class MessageClassifier
 {
-    // from the fewest blocked messages to the most; off is not a level here, it skips the rule
+    // from the fewest blocked messages to the most; off is not one of them, it skips the rule
     public const LEVELS = ['relaxed', 'balanced', 'strict'];
+    public const LEVEL_OFF = 'off';
     // the model answers in 2 to 3 seconds, longer when other messages wait in its queue
     private const TIMEOUT_SECONDS = 60;
     // a model that is up answers at once
@@ -128,9 +129,9 @@ final class MessageClassifier
         $broken = [];
 
         foreach ($scores as $category => $score) {
-            $level = $levels[$category] ?? 'off';
+            $level = $levels[$category] ?? self::LEVEL_OFF;
 
-            if ($level === 'off') {
+            if ($level === self::LEVEL_OFF) {
                 continue;
             }
 
@@ -140,12 +141,35 @@ final class MessageClassifier
                 throw new RuntimeException("The model $this->modelName has no $level threshold for $category in $language");
             }
 
-            if ($score >= $threshold) {
+            if (self::breaks($score, $threshold)) {
                 $broken[] = $category;
             }
         }
 
         return $broken;
+    }
+
+    /**
+     * What each level would decide, as if the channel had every rule at that level: for trying a message.
+     *
+     * @param array<string, float> $scores from scores()
+     * @return array<string, list<string>> the broken categories, by level
+     */
+    public function brokenRulesByLevel(array $scores, string $language): array
+    {
+        $byLevel = [];
+
+        foreach (self::LEVELS as $level) {
+            $byLevel[$level] = $this->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
+        }
+
+        return $byLevel;
+    }
+
+    /** A message breaks a rule when the model's answer reaches the threshold; measuring uses the same rule. */
+    public static function breaks(float $score, float $threshold): bool
+    {
+        return $score >= $threshold;
     }
 
     /** @return array<string, string> the questions in this language, by category */

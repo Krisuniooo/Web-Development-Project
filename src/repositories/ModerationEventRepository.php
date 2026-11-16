@@ -10,6 +10,10 @@ use PDO;
 
 final class ModerationEventRepository
 {
+    // how long the text and the author of a moderated message are kept; bin/cleanup.php removes them after that,
+    // and the rest of the event stays for statistics
+    public const KEEP_CONTENT_DAYS = 30;
+
     public function __construct(private PDO $pdo)
     {
     }
@@ -131,7 +135,7 @@ final class ModerationEventRepository
 
     /**
      * The authors who broke the rules most often on one server in the last $days days, with the name they used last
-     * and the rule they broke most. An author removed after 30 days by bin/cleanup.php no longer counts.
+     * and the rule they broke most. An author removed by bin/cleanup.php after KEEP_CONTENT_DAYS no longer counts.
      * With $authorPlatformId only that author, as a list of one, or of none when they broke no rule then.
      *
      * @return list<array{id: string, name: string, events: int, category: string}>

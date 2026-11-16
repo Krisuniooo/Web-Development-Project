@@ -27,16 +27,15 @@ final class PanelController extends AppController
         | DiscordPermissions::MANAGE_MESSAGES
         | DiscordPermissions::MODERATE_MEMBERS
         | DiscordPermissions::BAN_MEMBERS;
-    // the model of the test box, until a channel can choose its own
-    private const TEST_MODEL = 'basal-mini';
     // the longest message Discord allows without Nitro
     private const TEST_MAX_LENGTH = 2000;
-    // for one login, because the bot uses the same model
-    private const TEST_CHECKS_PER_MINUTE = 10;
+    // at most this many checks in the test box in this many seconds, for one login, because the bot uses the same model
+    private const TEST_CHECKS_LIMIT = 10;
+    private const TEST_LIMIT_SECONDS = 60;
     // how long the channels from Discord are used before asking again: 2 times a minute of the 10 Discord allows
     private const VISIBLE_CHANNELS_SECONDS = 30;
     // the actions the bot performs now; timeout and ban come later
-    private const RULE_ACTIONS = ['flag', 'delete'];
+    private const RULE_ACTIONS = [ChannelRule::ACTION_FLAG, ChannelRule::ACTION_DELETE];
     // events on one page of the logs
     private const LOG_PAGE_SIZE = 50;
     // how long Discord's answer that the user may manage the server is trusted before asking again
@@ -53,7 +52,7 @@ final class PanelController extends AppController
     // how long the picture of an author from Discord is used before asking again
     private const AVATAR_SECONDS = 3600;
     // how far back the page of an event counts what its author did: as long as authors are kept
-    private const AUTHOR_HISTORY_DAYS = 30;
+    private const AUTHOR_HISTORY_DAYS = ModerationEventRepository::KEEP_CONTENT_DAYS;
 
     private ?PDO $pdo = null;
 
@@ -185,7 +184,7 @@ final class PanelController extends AppController
 
             // only a channel of the chosen server, and only a status the database knows
             foreach ($repository->findForServer($user['platform'], $managedServer['id']) as $channel) {
-                if ($channel->getId() === $channelId && in_array($status, ChannelRepository::STATUSES, true)) {
+                if ($channel->getId() === $channelId && in_array($status, Channel::STATUSES, true)) {
                     $repository->setStatus($channelId, $status);
                     $isSaved = true;
                 }
@@ -195,7 +194,7 @@ final class PanelController extends AppController
         }
 
         $_SESSION['notice'] = $isSaved
-            ? ['text' => $status === 'paused' ? 'channels.paused' : 'channels.resumed', 'isError' => false]
+            ? ['text' => $status === Channel::STATUS_PAUSED ? 'channels.paused' : 'channels.resumed', 'isError' => false]
             : ['text' => 'channels.status_error', 'isError' => true];
 
         $this->redirect('/app/channels');
@@ -350,7 +349,7 @@ final class PanelController extends AppController
 
         try {
             $repository = new ChannelRepository($this->database());
-            $ownIds = array_map(fn(Channel $channel): ?int => $channel->getId(), $repository->findForServer($user['platform'], $managedServer['id']));
+            $ownIds = array_map(fn(Channel $channel): int => $channel->getId(), $repository->findForServer($user['platform'], $managedServer['id']));
 
             // only a channel of the chosen server
             if ($rules !== null && in_array($channelId, $ownIds, true)) {
@@ -382,7 +381,7 @@ final class PanelController extends AppController
         // the session is only read here, so the user's other tabs need not wait for the model
         session_write_close();
 
-        if (!(new MessageClassifier(self::TEST_MODEL))->isReady()) {
+        if (!$this->testClassifier()->isReady()) {
             $this->json(['ready' => false, 'error' => $this->lang()->text('check.error.model')], 503);
             return;
         }
@@ -413,7 +412,7 @@ final class PanelController extends AppController
             return;
         }
 
-        $classifier = new MessageClassifier(self::TEST_MODEL);
+        $classifier = $this->testClassifier();
         $request = json_decode((string) file_get_contents('php://input'), true);
         $text = is_array($request) ? ($request['text'] ?? null) : null;
         $language = is_array($request) ? ($request['language'] ?? null) : null;
@@ -428,14 +427,14 @@ final class PanelController extends AppController
             return;
         }
 
-        // the checks of the last minute; a request turned down above does not count
+        // the checks within the limit's time; a request turned down above does not count
         $now = time();
         $times = is_array($_SESSION['messageChecks'] ?? null) ? $_SESSION['messageChecks'] : [];
-        $recent = array_values(array_filter($times, fn(mixed $time): bool => is_int($time) && $time > $now - 60));
+        $recent = array_values(array_filter($times, fn(mixed $time): bool => is_int($time) && $time > $now - self::TEST_LIMIT_SECONDS));
 
-        if (count($recent) >= self::TEST_CHECKS_PER_MINUTE) {
-            // seconds until the oldest of them is a minute old
-            header('Retry-After: ' . ($recent[0] + 60 - $now));
+        if (count($recent) >= self::TEST_CHECKS_LIMIT) {
+            // seconds until the oldest of them falls out of the limit's time
+            header('Retry-After: ' . ($recent[0] + self::TEST_LIMIT_SECONDS - $now));
             $this->json(['error' => $lang->text('check.error.limit')], 429);
             return;
         }
@@ -454,13 +453,7 @@ final class PanelController extends AppController
             return;
         }
 
-        $brokenByLevel = [];
-
-        foreach (MessageClassifier::LEVELS as $level) {
-            // every rule at this level, as if the channel had them all set the same
-            $brokenByLevel[$level] = $classifier->brokenRules($scores, $language, array_fill_keys(array_keys($scores), $level));
-        }
-
+        $brokenByLevel = $classifier->brokenRulesByLevel($scores, $language);
         $categories = [];
 
         foreach ($scores as $category => $score) {
@@ -785,7 +778,7 @@ final class PanelController extends AppController
                 'avatarUrl' => is_string($url) ? $url : null,
                 'initials' => $this->initials($author['name']),
                 // from the ID, so the same person keeps the same colour from page to page
-                'tone' => (int) substr($author['id'], -3) % self::AVATAR_TONES,
+                'tone' => crc32($author['id']) % self::AVATAR_TONES,
             ];
         }
 
@@ -938,7 +931,8 @@ final class PanelController extends AppController
 
                 foreach ($this->ruleCategories() as $category) {
                     // a category the channel has no rule for yet shows as off; saving adds the rule
-                    $rules[$category] = $saved[$category] ?? new ChannelRule($channel->getId(), $category, 'off', 'delete');
+                    $rules[$category] = $saved[$category]
+                        ?? new ChannelRule($channel->getId(), $category, MessageClassifier::LEVEL_OFF, ChannelRule::ACTION_DELETE);
                 }
 
                 $channels[] = ['channel' => $channel, 'rules' => $rules];
@@ -1022,7 +1016,7 @@ final class PanelController extends AppController
     /** @return list<string> off, and then from the fewest blocked messages to the most */
     private function ruleLevels(): array
     {
-        return ['off', ...MessageClassifier::LEVELS];
+        return [MessageClassifier::LEVEL_OFF, ...MessageClassifier::LEVELS];
     }
 
     /**
@@ -1124,6 +1118,12 @@ final class PanelController extends AppController
         return require dirname(__DIR__, 2) . '/config/channel-defaults.php';
     }
 
+    /** The model of the test box: the one new channels get, as bin/check-message.php uses too. */
+    private function testClassifier(): MessageClassifier
+    {
+        return new MessageClassifier($this->channelDefaults()['model']);
+    }
+
     /** @return list<string> the languages a model has questions in; none for a model without settings in config/moderation.php */
     private function modelLanguages(string $model): array
     {
@@ -1151,7 +1151,7 @@ final class PanelController extends AppController
         }
 
         return [
-            'languages' => (new MessageClassifier(self::TEST_MODEL))->languages(),
+            'languages' => $this->testClassifier()->languages(),
             'language' => $language ?? $this->lang()->code(),
             'levels' => MessageClassifier::LEVELS,
             'maxLength' => self::TEST_MAX_LENGTH,

@@ -6,6 +6,7 @@ namespace App\Discord;
 
 use App\Database;
 use App\Log;
+use App\Model\ChannelRule;
 use App\Model\ModerationEvent;
 use App\Moderation\PendingRequests;
 use App\Repository\ChannelRepository;
@@ -22,7 +23,12 @@ use Throwable;
 final class DiscordModerator
 {
     // when a message breaks several rules, the strongest action wins
-    private const STRENGTH = ['flag' => 1, 'delete' => 2, 'timeout' => 3, 'ban' => 4];
+    private const STRENGTH = [
+        ChannelRule::ACTION_FLAG => 1,
+        ChannelRule::ACTION_DELETE => 2,
+        ChannelRule::ACTION_TIMEOUT => 3,
+        ChannelRule::ACTION_BAN => 4,
+    ];
     // the longest reason of a failed action that is kept
     private const FAILURE_LENGTH = 200;
 
@@ -48,9 +54,9 @@ final class DiscordModerator
             <=> [self::STRENGTH[$rules[$a]['action']], $scores[$a]]);
         $category = $broken[0];
 
-        if ($rules[$category]['action'] === 'flag') {
+        if ($rules[$category]['action'] === ChannelRule::ACTION_FLAG) {
             Log::line(sprintf('Message %s flagged for %s', $message['id'], $category));
-            $this->save($message, $category, 'flag', $scores[$category]);
+            $this->save($message, $category, ChannelRule::ACTION_FLAG, $scores[$category]);
             return;
         }
 
@@ -63,12 +69,12 @@ final class DiscordModerator
                 } catch (Throwable $error) {
                     Log::line(sprintf('Message %s not deleted: %s', $message['id'], $error->getMessage()));
                     // saved too, with Discord's reason, so the panel shows that the message is still there and why
-                    $this->save($message, $category, 'delete', $scores[$category], $error->getMessage());
+                    $this->save($message, $category, ChannelRule::ACTION_DELETE, $scores[$category], $error->getMessage());
                     return;
                 }
 
                 Log::line(sprintf('Message %s deleted for %s', $message['id'], $category));
-                $this->save($message, $category, 'delete', $scores[$category]);
+                $this->save($message, $category, ChannelRule::ACTION_DELETE, $scores[$category]);
             },
         );
     }

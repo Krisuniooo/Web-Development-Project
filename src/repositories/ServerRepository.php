@@ -8,6 +8,10 @@ use PDO;
 
 final class ServerRepository
 {
+    // how long the channels, rules and events of a server are kept after the bot left it, in case it comes back;
+    // bin/cleanup.php deletes them after that
+    public const KEEP_REMOVED_DAYS = 30;
+
     public function __construct(private PDO $pdo)
     {
     }

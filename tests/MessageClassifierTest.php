@@ -73,6 +73,20 @@ final class MessageClassifierTest extends TestCase
         $this->assertThrows(RuntimeException::class, fn() => new MessageClassifier('no-such-model'));
     }
 
+    public function testEachLevelDecidesAsIfEveryRuleWereSetToIt(): void
+    {
+        // breaks racism at strict only, and harassment at every level
+        $scores = [
+            'racism' => $this->threshold('racism', 'strict'),
+            'harassment' => $this->threshold('harassment', 'relaxed'),
+        ];
+
+        $this->assertSame(
+            ['relaxed' => ['harassment'], 'balanced' => ['harassment'], 'strict' => ['racism', 'harassment']],
+            (new MessageClassifier(self::MODEL))->brokenRulesByLevel($scores, self::LANGUAGE),
+        );
+    }
+
     /**
      * @param array<string, float> $scores
      * @param array<string, string> $levels

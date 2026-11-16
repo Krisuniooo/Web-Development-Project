@@ -6,11 +6,17 @@ namespace App\Model;
 
 final class ChannelRule
 {
+    // as the moderation_action type in the first migration
+    public const ACTION_FLAG = 'flag';
+    public const ACTION_DELETE = 'delete';
+    public const ACTION_TIMEOUT = 'timeout';
+    public const ACTION_BAN = 'ban';
+
     public function __construct(
         private int $channelId,
         private string $category, // racism | harassment | profanity
         private string $level, // off | relaxed | balanced | strict
-        private string $action, // flag | delete | timeout | ban
+        private string $action, // one of the ACTION_ constants
     ) {
     }
 

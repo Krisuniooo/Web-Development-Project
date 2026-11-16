@@ -10,7 +10,9 @@ namespace App\Moderation;
  */
 final class Evaluation
 {
-    // the thresholds tried, as in the config: 0.05 apart
+    // the thresholds tried: from the lowest to the highest, one step apart, as in the config
+    private const LOWEST = 0.05;
+    private const HIGHEST = 0.95;
     private const STEP = 0.05;
 
     /**
@@ -23,8 +25,8 @@ final class Evaluation
         $result = ['caught' => 0, 'violations' => 0, 'blocked' => 0, 'clean' => 0];
 
         foreach ($cases as $case) {
-            // the same rule as MessageClassifier::brokenRules(); a little room, so 0.70 is not missed as 0.69999
-            $isAbove = $case['score'] >= $threshold - 1e-9;
+            // decided as the bot decides
+            $isAbove = MessageClassifier::breaks($case['score'], $threshold);
 
             if ($case['breaks']) {
                 $result['violations']++;
@@ -45,18 +47,20 @@ final class Evaluation
     }
 
     /**
-     * The threshold with the fewest mistakes, from 0.05 to 0.95. On a tie the higher one wins,
+     * The threshold with the fewest mistakes. On a tie the higher one wins,
      * since it blocks fewer clean messages for the same number of mistakes.
      *
      * @param list<array{score: float, breaks: bool}> $cases
      */
     public static function bestThreshold(array $cases): float
     {
-        $best = null;
+        $best = self::LOWEST;
         $fewest = PHP_INT_MAX;
+        $steps = (int) round((self::HIGHEST - self::LOWEST) / self::STEP);
 
-        for ($step = 1; $step <= 19; $step++) {
-            $threshold = round($step * self::STEP, 2);
+        for ($step = 0; $step <= $steps; $step++) {
+            // rounded, so 0.70 is exactly the 0.70 of the config and not 0.7000000000000001
+            $threshold = round(self::LOWEST + $step * self::STEP, 2);
             $mistakes = self::mistakes(self::count($cases, $threshold));
 
             if ($mistakes <= $fewest) {

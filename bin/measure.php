@@ -131,7 +131,7 @@ foreach ($asked as $category => $question) {
     );
 
     foreach ($cases as $index => $case) {
-        $isAbove = $case['score'] >= $thresholds[$category]['balanced'] - 1e-9;
+        $isAbove = MessageClassifier::breaks($case['score'], $thresholds[$category]['balanced']);
 
         if ($isAbove !== $case['breaks']) {
             $mistakes[] = sprintf(
