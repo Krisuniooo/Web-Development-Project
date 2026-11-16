@@ -75,6 +75,22 @@ abstract class AppController
         ];
     }
 
+    /**
+     * The logged-in user; anyone else is sent to the login page.
+     *
+     * @return array{platform: string, id: string, name: string, avatarUrl: ?string}
+     */
+    protected function requireLogin(): array
+    {
+        $user = $this->loggedInUser();
+
+        if ($user === null) {
+            $this->redirect('/login');
+        }
+
+        return $user;
+    }
+
     /** Whether a form came from this site. Every change sent by POST is checked with it. */
     protected function isSameOriginRequest(): bool
     {

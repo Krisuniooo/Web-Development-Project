@@ -9,7 +9,7 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - `public/css/`, `public/js/` — style i skrypty pod tą samą ścieżką co widok, który je dołącza (np. `views/panel/logs.html.php` → `css/panel/logs.css`); wspólne style panelu w `css/panel.css`, globalne w `css/style.css`.
 - `config/` — dane dla widoków i ustawienia; kod czyta je przez `App\Config::load('nazwa')`.
 - `src/Routing.php` — dopasowanie tras i uruchamianie kontrolerów.
-- `src/controllers/` — kontrolery w namespace `App\Controller`.
+- `src/controllers/` — kontrolery w namespace `App\Controller`; panel dzieli się na strony (`PanelController`), formularze kanałów (`ChannelController`) i test wiadomości (`MessageCheckController`), ze wspólną bazą `AbstractPanelController`.
 - `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
 - `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
 - `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).

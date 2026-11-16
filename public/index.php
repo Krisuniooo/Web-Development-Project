@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Controller\AuthController;
+use App\Controller\ChannelController;
 use App\Controller\DefaultController;
+use App\Controller\MessageCheckController;
 use App\Controller\PanelController;
 use App\Routing;
 
@@ -24,16 +26,16 @@ $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/servers', PanelController::class, 'servers');
 $routing->post('/app/manage', PanelController::class, 'manage');
 $routing->get('/app/channels', PanelController::class, 'channels');
-$routing->post('/app/channels/language', PanelController::class, 'setChannelLanguage');
-$routing->post('/app/channels/status', PanelController::class, 'setChannelStatus');
-$routing->post('/app/channels/connect', PanelController::class, 'connectChannel');
-$routing->post('/app/channels/change', PanelController::class, 'changeChannel');
+$routing->post('/app/channels/language', ChannelController::class, 'setLanguage');
+$routing->post('/app/channels/status', ChannelController::class, 'setStatus');
+$routing->post('/app/channels/connect', ChannelController::class, 'connect');
+$routing->post('/app/channels/change', ChannelController::class, 'change');
 $routing->get('/app/models', PanelController::class, 'models');
-$routing->post('/app/models/model', PanelController::class, 'setChannelModel');
+$routing->post('/app/models/model', ChannelController::class, 'setModel');
 $routing->get('/app/limits', PanelController::class, 'limits');
-$routing->post('/app/limits/rules', PanelController::class, 'saveRules');
-$routing->get('/app/model-status', PanelController::class, 'modelStatus');
-$routing->post('/app/check-message', PanelController::class, 'checkMessage');
+$routing->post('/app/limits/rules', ChannelController::class, 'saveRules');
+$routing->get('/app/model-status', MessageCheckController::class, 'modelStatus');
+$routing->post('/app/check-message', MessageCheckController::class, 'check');
 $routing->get('/app/logs', PanelController::class, 'logs');
 $routing->get('/app/logs/{id}', PanelController::class, 'logEvent');
 
