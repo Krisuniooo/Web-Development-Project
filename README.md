@@ -38,6 +38,17 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 | `pgadmin-wdpai` | pgAdmin | http://localhost:5050 |
 | `mailpit` | skrzynka testowa | http://localhost:8025 |
 
+## Bezpieczeństwo
+
+- **Nagłówki HTTP.** nginx (`docker/nginx/nginx.conf`) dodaje do każdej odpowiedzi Content-Security-Policy, która dopuszcza tylko skrypty, style i fonty z tej strony oraz obrazki z Discorda. Wysyła też `X-Frame-Options: DENY`, więc panelu nie da się osadzić w ramce na obcej stronie, a do tego `X-Content-Type-Options`, `Referrer-Policy` i `Permissions-Policy`.
+- **PHP.** `docker/php/app.ini` wyłącza pokazywanie błędów na stronach (trafiają do `docker compose logs`) i ukrywa wersję PHP.
+- **Ikony.** Font Awesome jest serwowany z `public/assets/fontawesome/`, więc na stronach nie działa żaden skrypt z innej domeny.
+- **Sesja.** Sesja należy do jednego konta: nowe logowanie zastępuje całą sesję, a jej identyfikator zmienia się przy logowaniu. Sesja nieużywana przez godzinę wygasa.
+- **Formularze.** Każdy formularz POST jest sprawdzany pod kątem pochodzenia (`Sec-Fetch-Site` albo `Origin`).
+- **Dostęp.** Dostęp do serwera jest sprawdzany na Discordzie przed każdą zmianą (`src/services/ServerAccess.php`).
+
+Po zmianie `nginx.conf` albo `app.ini` obrazy trzeba zbudować ponownie: `docker compose up --build -d`.
+
 ## Migracje bazy
 
 Schemat bazy powstaje z plików `database/migrations/*.sql`, wykonywanych w kolejności numerów. `bin/migrate.php` uruchamia każdy plik tylko raz, w osobnej transakcji, i zapisuje go w tabeli `schema_migrations`. Nieudana migracja niczego nie zmienia, a usługi czekające na `migrate` się nie uruchamiają.
@@ -56,7 +67,7 @@ Baza utworzona wcześniej ze starego `database/schema.sql` ma już schemat pierw
 docker compose exec php php bin/check-message.php pl "treść wiadomości"
 ```
 
-Polecenie pokazuje oceny modelu i decyzję dla każdego poziomu.
+Polecenie pokazuje oceny modelu, którego dostają nowe kanały (`config/channel-defaults.php`), i decyzję dla każdego poziomu.
 
 ## Pomiar modeli
 
@@ -89,7 +100,7 @@ Historia moderacji zawiera treść wiadomości i dane ich autorów, więc nie je
 - usuwa treść oraz autora ze zdarzeń starszych niż 30 dni; kategoria, akcja, wynik modelu i czas zostają do statystyk,
 - usuwa serwery, z których bot został usunięty ponad 30 dni temu, razem z ich kanałami, zasadami i zdarzeniami (`ON DELETE CASCADE`).
 
-Harmonogram jest zapisany w `docker-compose.yaml` jako `15 3 * * *`. Każde uruchomienie zapisuje jedną linię z liczbą zmienionych zdarzeń i usuniętych serwerów, widoczną w `docker compose logs cron`. Ponowne uruchomienie niczego nie zmienia, bo oczyszczone zdarzenia i usunięte serwery nie spełniają już warunków.
+Okresy przechowywania są ustawione w kodzie obok danych: `ModerationEventRepository::KEEP_CONTENT_DAYS` i `ServerRepository::KEEP_REMOVED_DAYS`. Harmonogram jest zapisany w `docker-compose.yaml` jako `15 3 * * *`. Każde uruchomienie zapisuje jedną linię z liczbą zmienionych zdarzeń i usuniętych serwerów, widoczną w `docker compose logs cron`. Ponowne uruchomienie niczego nie zmienia, bo oczyszczone zdarzenia i usunięte serwery nie spełniają już warunków.
 
 Testowanie bez czekania na harmonogram:
 
