@@ -35,6 +35,18 @@ final class RoutingTest extends TestCase
         }
     }
 
+    public function testHeadIsAnsweredLikeGet(): void
+    {
+        $this->assertSame(true, self::routing()->dispatch('HEAD', '/app/logs/42'));
+        $this->assertSame(['logEvent', 42], RecordingController::$lastCall);
+    }
+
+    public function testPathWithATrailingNewlineMatchesNothing(): void
+    {
+        $this->assertSame(false, self::routing()->dispatch('GET', "/app/logs\n"));
+        $this->assertSame(false, self::routing()->dispatch('GET', "/app/logs/42\n"));
+    }
+
     public function testOtherMethodOrUnknownPathMatchesNothing(): void
     {
         $this->assertSame(false, self::routing()->dispatch('POST', '/app/logs'));

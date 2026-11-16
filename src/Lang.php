@@ -8,7 +8,8 @@ final class Lang
 {
     public const SUPPORTED = ['en', 'pl'];
     public const COOKIE = 'lang';
-    private const COOKIE_LIFETIME = 31536000; // a year
+    // a year, in seconds
+    private const COOKIE_LIFETIME = 365 * 24 * 60 * 60;
     private const FALLBACK = 'en';
 
     private function __construct(private string $code, private array $messages)

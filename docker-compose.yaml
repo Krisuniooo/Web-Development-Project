@@ -152,7 +152,7 @@ services:
 
 networks:
   pg-network:
-  
+
 volumes:
   pg-data:
   # model files from Hugging Face, downloaded once

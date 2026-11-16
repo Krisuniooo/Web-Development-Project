@@ -17,6 +17,27 @@ final class WebSocketClient
     private const TIMEOUT_SECONDS = 10;
     // a bigger message is treated as an error, so a broken server cannot use up the memory
     private const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
+    // the same for the headers of the server's answer to the handshake
+    private const MAX_HANDSHAKE_BYTES = 16 * 1024;
+    // how much is read from the connection at once
+    private const READ_CHUNK_BYTES = 64 * 1024;
+    // how much of a refused handshake's status line goes into the error
+    private const STATUS_LINE_LENGTH = 100;
+
+    // the first two bytes of a frame (RFC 6455, section 5.2): the final flag, the reserved bits and the type,
+    // then the mask flag and the length
+    private const HEADER_BYTES = 2;
+    private const FINAL_BIT = 0x80;
+    private const RESERVED_BITS = 0x70;
+    private const OPCODE_BITS = 0x0F;
+    private const MASK_BIT = 0x80;
+    private const LENGTH_BITS = 0x7F;
+    // these lengths say that the real one follows in the next 2 or 8 bytes
+    private const LENGTH_16_BIT = 126;
+    private const LENGTH_64_BIT = 127;
+    private const MAX_16_BIT_LENGTH = 0xFFFF;
+    // a client masks every frame it sends with this many random bytes
+    private const MASK_BYTES = 4;
 
     private const OPCODE_CONTINUATION = 0x0;
     private const OPCODE_TEXT = 0x1;
@@ -89,9 +110,9 @@ final class WebSocketClient
         $response = '';
 
         while (!str_contains($response, "\r\n\r\n")) {
-            $chunk = fread($socket, 4096);
+            $chunk = fread($socket, self::READ_CHUNK_BYTES);
 
-            if ($chunk === false || $chunk === '') {
+            if ($chunk === false || $chunk === '' || strlen($response) > self::MAX_HANDSHAKE_BYTES) {
                 fclose($socket);
                 throw new RuntimeException('The server did not finish the WebSocket handshake');
             }
@@ -105,7 +126,7 @@ final class WebSocketClient
 
         if (!preg_match('~^HTTP/1\.1 101\b~', $lines[0])) {
             fclose($socket);
-            throw new RuntimeException('The server refused the WebSocket upgrade: ' . substr($lines[0], 0, 100));
+            throw new RuntimeException('The server refused the WebSocket upgrade: ' . substr($lines[0], 0, self::STATUS_LINE_LENGTH));
         }
 
         $accept = null;
@@ -222,41 +243,36 @@ final class WebSocketClient
      */
     private function takeFrame(): ?array
     {
-        if (strlen($this->buffer) < 2) {
+        if (strlen($this->buffer) < self::HEADER_BYTES) {
             return null;
         }
 
         $first = ord($this->buffer[0]);
         $second = ord($this->buffer[1]);
 
-        if (($first & 0x70) !== 0) {
+        if (($first & self::RESERVED_BITS) !== 0) {
             throw new RuntimeException('The server used a WebSocket extension that was not agreed on');
         }
 
-        if (($second & 0x80) !== 0) {
+        if (($second & self::MASK_BIT) !== 0) {
             throw new RuntimeException('The server masked a frame, which only clients may do');
         }
 
-        $isFinal = ($first & 0x80) !== 0;
-        $opcode = $first & 0x0F;
-        $length = $second & 0x7F;
-        $headerLength = 2;
+        $isFinal = ($first & self::FINAL_BIT) !== 0;
+        $opcode = $first & self::OPCODE_BITS;
+        $length = $second & self::LENGTH_BITS;
+        $headerLength = self::HEADER_BYTES;
 
-        // 126 and 127 mean the real length follows in the next 2 or 8 bytes
-        if ($length === 126) {
-            if (strlen($this->buffer) < 4) {
+        // a longer payload gives its real length in the next 2 or 8 bytes, as a big-endian number
+        if ($length === self::LENGTH_16_BIT || $length === self::LENGTH_64_BIT) {
+            [$format, $size] = $length === self::LENGTH_16_BIT ? ['n', 2] : ['J', 8];
+
+            if (strlen($this->buffer) < $headerLength + $size) {
                 return null;
             }
 
-            $length = unpack('n', $this->buffer, 2)[1];
-            $headerLength = 4;
-        } elseif ($length === 127) {
-            if (strlen($this->buffer) < 10) {
-                return null;
-            }
-
-            $length = unpack('J', $this->buffer, 2)[1];
-            $headerLength = 10;
+            $length = unpack($format, $this->buffer, $headerLength)[1];
+            $headerLength += $size;
         }
 
         // checked before waiting for the payload, so a huge length is refused at once
@@ -283,7 +299,7 @@ final class WebSocketClient
             }
 
             // reading comes first: TLS can hold bytes that stream_select does not see
-            $chunk = fread($this->socket, 65536);
+            $chunk = fread($this->socket, self::READ_CHUNK_BYTES);
 
             if ($chunk === false) {
                 throw new RuntimeException('Reading from the connection failed');
@@ -324,21 +340,21 @@ final class WebSocketClient
         }
 
         $length = strlen($payload);
-        // 0x80 marks the last frame of a message: messages are never split when sending
-        $header = chr(0x80 | $opcode);
+        // messages are never split when sending, so every frame is the last of its message
+        $header = chr(self::FINAL_BIT | $opcode);
 
-        // the 0x80 in the second byte says the payload is masked, which a client must always do
-        if ($length < 126) {
-            $header .= chr(0x80 | $length);
-        } elseif ($length < 65536) {
-            $header .= chr(0x80 | 126) . pack('n', $length);
+        // and every frame is masked, which a client must always do
+        if ($length < self::LENGTH_16_BIT) {
+            $header .= chr(self::MASK_BIT | $length);
+        } elseif ($length <= self::MAX_16_BIT_LENGTH) {
+            $header .= chr(self::MASK_BIT | self::LENGTH_16_BIT) . pack('n', $length);
         } else {
-            $header .= chr(0x80 | 127) . pack('J', $length);
+            $header .= chr(self::MASK_BIT | self::LENGTH_64_BIT) . pack('J', $length);
         }
 
-        // every byte of the payload is mixed with these 4 random bytes, in turn
-        $mask = random_bytes(4);
-        $masked = $payload ^ str_repeat($mask, intdiv($length + 3, 4));
+        // every byte of the payload is mixed with the random bytes of the mask, in turn
+        $mask = random_bytes(self::MASK_BYTES);
+        $masked = $payload ^ str_repeat($mask, intdiv($length + self::MASK_BYTES - 1, self::MASK_BYTES));
 
         self::writeAll($this->socket, $header . $mask . $masked);
     }
