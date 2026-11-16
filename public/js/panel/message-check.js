@@ -2,7 +2,6 @@
     const box = document.querySelector(".message-check");
     if (!box) return;
 
-    // how often to ask again while the model is not ready
     const STATUS_RETRY_MS = 5000;
 
     const texts = box.dataset;
@@ -54,7 +53,7 @@
         statusTimer = setTimeout(askStatus, STATUS_RETRY_MS);
     };
 
-    // GET: whether the model can check a message now; asked again until it can
+    // GET, asked again until the model is ready
     const askStatus = async () => {
         try {
             const response = await fetch(texts.statusUrl, { headers: { Accept: "application/json" } });

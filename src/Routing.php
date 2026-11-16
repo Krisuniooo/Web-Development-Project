@@ -67,10 +67,7 @@ final class Routing
         ];
     }
 
-    /**
-     * Turns a path into a regular expression: the plain parts stay as they are, and a part in braces,
-     * such as {id}, becomes a named parameter of digits only, so /app/logs/abc does not match /app/logs/{id}.
-     */
+    /** A part in braces, such as {id}, accepts digits only, so /app/logs/abc does not match /app/logs/{id}. */
     private function createPattern(string $path): string
     {
         $parts = array_map(

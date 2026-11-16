@@ -54,8 +54,7 @@ abstract class AppController
             return null;
         }
 
-        // a session unused for longer than PHP keeps sessions ends now, even if the garbage collector,
-        // which runs only now and then, has not removed it yet
+        // ended here, since PHP's garbage collector removes old sessions only now and then
         $lastActivity = $_SESSION['lastActivity'] ?? null;
 
         if (is_int($lastActivity) && $lastActivity < time() - (int) ini_get('session.gc_maxlifetime')) {

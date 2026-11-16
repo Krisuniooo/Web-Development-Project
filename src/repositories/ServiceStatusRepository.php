@@ -15,7 +15,6 @@ final class ServiceStatusRepository
     {
     }
 
-    /** Notes that the service works now. */
     public function report(string $service): void
     {
         $statement = $this->pdo->prepare(

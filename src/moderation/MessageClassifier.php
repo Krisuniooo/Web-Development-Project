@@ -179,7 +179,6 @@ final class MessageClassifier
             ?? throw new RuntimeException("The model $this->modelName has no questions in the language $language");
     }
 
-    /** A request that sends the body as JSON by POST, or asks by GET when there is no body. */
     private function prepare(string $path, ?array $body, int $timeoutSeconds): CurlHandle
     {
         $request = curl_init($this->model['url'] . $path);

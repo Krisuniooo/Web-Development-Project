@@ -12,10 +12,9 @@ use PDO;
 use RuntimeException;
 
 /**
- * Which servers the logged-in user may manage in the panel, and which of their channels the bot can see.
- * The platform decides, never the session alone: the list comes from the login, and Discord is asked again
- * before the chosen server is used, so someone who left, was banned or lost the permission loses it too.
- * Discord's answers are kept in the session for a short while, since Discord limits how often the bot may ask.
+ * Which servers the logged-in user may manage, and which of their channels the bot can see.
+ * The platform decides, not the session: Discord is asked again before the chosen server is used,
+ * and its answers are kept in the session only briefly, since Discord limits how often the bot may ask.
  */
 final class ServerAccess
 {
@@ -114,8 +113,8 @@ final class ServerAccess
     }
 
     /**
-     * Asks Discord whether the user may manage the server now, and trusts a yes for a while.
-     * Someone who left, was banned or lost the permission also loses the server from their list.
+     * Asks Discord whether the user may still manage the server and trusts a yes for a while.
+     * A no, after a ban, leaving or a lost permission, also takes the server off the list.
      */
     private function canStillManage(string $userId, string $serverId): bool
     {

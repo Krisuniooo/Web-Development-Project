@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-// The frames of the eye on the home page, from config/eye/, with how long each shows in milliseconds:
-// the open eye first, then the blink; "closed" marks the frame with the eye shut, where the iris is not drawn.
+// The eye on the home page: the open frame first, then the blink, each shown for "duration" milliseconds;
+// "closed" is the frame with the eye shut, where no iris is drawn.
 return [
     ["file" => "frame-01.txt", "duration" => 2200],
     ["file" => "frame-02.txt", "duration" => 40],

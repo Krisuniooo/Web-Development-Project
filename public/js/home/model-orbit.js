@@ -8,7 +8,6 @@
     const MAX_RADIUS = 250;
     const FULL_TURN_MS = 30000;
     const TAU = Math.PI * 2;
-    // the items are spread evenly around the full circle
     const ANGLE_STEP = TAU / modelScene.length;
     const ANGLE_PER_MS = TAU / FULL_TURN_MS;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");

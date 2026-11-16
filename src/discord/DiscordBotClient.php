@@ -7,12 +7,12 @@ namespace App\Discord;
 use CurlHandle;
 use RuntimeException;
 
-/** Talks to Discord as the bot: what it can see on a server, so the panel sees the same channels, who may manage it, and deleting messages. */
+/** Discord's API as the bot, so the panel sees what the bot sees: channels, who may manage a server, deletions. */
 final class DiscordBotClient
 {
     private const TIMEOUT_SECONDS = 5;
     private const CONNECT_TIMEOUT_SECONDS = 3;
-    // Discord asks bots to name themselves this way: the address of their code and their version
+    // the form Discord asks bots to use: the address of their code and their version
     private const USER_AGENT = 'DiscordBot (%s, 1.0)';
 
     private string $userAgent;

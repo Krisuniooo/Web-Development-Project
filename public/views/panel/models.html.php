@@ -46,7 +46,7 @@ $stylesheets[] = '/css/panel/models.css';
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <?php // just saved: the text moves aside for a tick for a moment, the button keeps its width ?>
+                                <?php // just saved: a tick replaces the text for a moment ?>
                                 <button type="submit" class="panel-button is-tonal<?= $isSaved ? ' is-saved' : '' ?>">
                                     <span class="panel-button--text"><?= $t('channels.save') ?></span>
                                     <i class="fa-solid fa-check panel-button--check" aria-hidden="true"></i>

@@ -375,7 +375,6 @@
   }
 }
 
-/* for screen readers only, such as "saved" next to the tick or the name of an icon */
 /* the picture of a chat author, in the overview and on the page of an event */
 .panel-avatar {
   --tone: var(--color-accent);
@@ -411,6 +410,7 @@
   --tone: var(--color-model-basal-pico);
 }
 
+/* for screen readers only, such as "saved" next to the tick or the name of an icon */
 .panel-hidden {
   position: absolute;
   width: 1px;

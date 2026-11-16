@@ -14,7 +14,6 @@ $statusLines = [[
     ['ok' => null, 'down' => 'status.bot.down_hint', 'unknown' => 'status.unknown_hint'][$bot],
 ]];
 
-// one line for each model the channels use
 foreach ($overview['models'] as $model) {
     $statusLines[] = [
         'fa-microchip',
@@ -31,7 +30,6 @@ $stats = $overview['stats'];
 
 <p class="panel-content--description"><?= $t('overview.lead') ?></p>
 
-<?php // two cards side by side: whether everything works on the left, the numbers of the period on the right ?>
 <div class="overview-top">
     <?php // no visible title: the dots say enough, and a screen reader still hears what the group is ?>
     <section class="overview-card is-status" aria-label="<?= $t('status.heading') ?>">
@@ -45,7 +43,6 @@ $stats = $overview['stats'];
                     </span>
                     <span class="overview-pill is-<?= $lineState ?>"><?= $t($text) ?></span>
                     <?php if ($hint !== null): ?>
-                        <?php // only when something is wrong: what it means for the chat ?>
                         <span class="overview-service--hint"><?= $t($hint) ?></span>
                     <?php endif; ?>
                 </li>
@@ -116,7 +113,6 @@ $stats = $overview['stats'];
         <?php endif; ?>
     </section>
 
-    <?php // side by side when the page is wide enough ?>
     <div class="overview-columns">
     <section class="overview-section" aria-labelledby="overview-rules-title">
         <h2 id="overview-rules-title" class="overview-title"><?= $t('overview.rules') ?></h2>
@@ -128,7 +124,7 @@ $stats = $overview['stats'];
                 <?php foreach ($stats['categories'] as $category => $count): ?>
                     <li class="overview-row">
                         <span class="overview-row--name"><?= $t('category.' . $category) ?></span>
-                        <?php // the longest bar is the most broken rule; the width is the only style the page sets itself ?>
+                        <?php // the most broken rule has the longest bar ?>
                         <span class="overview-bar" style="--share: <?= round($count / $mostBroken * 100) ?>%" aria-hidden="true"></span>
                         <span class="overview-row--count"><?= (int) $count ?></span>
                     </li>

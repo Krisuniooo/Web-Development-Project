@@ -48,8 +48,6 @@ final class ModerationQueue
     }
 
     /**
-     * Puts a message at the end of the queue.
-     *
      * @param array{id: string, channelId: string, authorId: string, authorName: string, text: string} $message
      * @param array{channelId: int, name: string, model: string, language: string, rules: array<string, array{level: string, action: string}>} $settings
      *     of its channel, as ChannelRepository::moderationSettings() gives them

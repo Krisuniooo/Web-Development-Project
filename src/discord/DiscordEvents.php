@@ -155,7 +155,7 @@ final class DiscordEvents
             return;
         }
 
-        // the name the server shows: the nickname there, or else the display name, or else the username
+        // the name the server shows
         $authorName = $message['member']['nick'] ?? $author['global_name'] ?? $author['username'] ?? null;
 
         $this->queue->add([

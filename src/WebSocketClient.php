@@ -19,7 +19,6 @@ final class WebSocketClient
     private const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
     // the same for the headers of the server's answer to the handshake
     private const MAX_HANDSHAKE_BYTES = 16 * 1024;
-    // how much is read from the connection at once
     private const READ_CHUNK_BYTES = 64 * 1024;
     // how much of a refused handshake's status line goes into the error
     private const STATUS_LINE_LENGTH = 100;
@@ -150,7 +149,6 @@ final class WebSocketClient
         return new self($socket, $rest);
     }
 
-    /** Sends one text message, for example JSON. */
     public function send(string $text): void
     {
         $this->sendFrame(self::OPCODE_TEXT, $text);

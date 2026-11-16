@@ -3,7 +3,7 @@ $stylesheets[] = '/css/panel/message-check.css';
 $scripts[] = '/js/panel/message-check.js';
 ?>
 
-<?php // closed at the start; the script asks about the model only once it is opened. The addresses and the texts it shows on its own come from here ?>
+<?php // closed at the start, so the model is asked about only once someone opens it; the script's addresses and texts come from here ?>
 <details
     class="message-check"
     data-status-url="/app/model-status"
@@ -25,7 +25,6 @@ $scripts[] = '/js/panel/message-check.js';
         <span class="message-check--chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
     </summary>
 
-    <?php // on a wide box the message is on the left and the result on the right, on a narrow one under it ?>
     <div class="message-check--body">
         <div class="message-check--input">
             <form class="message-check--form">

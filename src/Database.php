@@ -8,7 +8,6 @@ use PDO;
 use PDOException;
 use RuntimeException;
 
-/** The PostgreSQL connection, with its settings from the environment (.env through docker-compose.yaml). */
 final class Database
 {
     private string $username;
@@ -42,7 +41,7 @@ final class Database
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $exception) {
-            // PostgreSQL's reason, such as a wrong password or a stopped server, for the log; it never holds the password
+            // PostgreSQL's reason, for the log; it never contains the password
             throw new RuntimeException('Cannot connect to the database: ' . strtok($exception->getMessage(), "\n"), 0, $exception);
         }
     }

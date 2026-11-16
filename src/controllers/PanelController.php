@@ -21,7 +21,6 @@ use RuntimeException;
 
 final class PanelController extends AppController
 {
-    // what the bot needs on a server: see the moderated channels, delete messages, time out and ban authors;
     // asked for all at once, so turning on timeouts or bans later needs no new invite
     private const DISCORD_BOT_PERMISSIONS = DiscordPermissions::VIEW_CHANNEL
         | DiscordPermissions::MANAGE_MESSAGES
@@ -29,24 +28,22 @@ final class PanelController extends AppController
         | DiscordPermissions::BAN_MEMBERS;
     // the longest message Discord allows without Nitro
     private const TEST_MAX_LENGTH = 2000;
-    // at most this many checks in the test box in this many seconds, for one login, because the bot uses the same model
+    // per login, because the bot uses the same model
     private const TEST_CHECKS_LIMIT = 10;
     private const TEST_LIMIT_SECONDS = 60;
     // the actions the bot performs now; timeout and ban come later
     private const RULE_ACTIONS = [ChannelRule::ACTION_FLAG, ChannelRule::ACTION_DELETE];
-    // events on one page of the logs
     private const LOG_PAGE_SIZE = 50;
     // the bot reports about every half a minute; after this long without a report it counts as not connected
     private const BOT_SILENCE_SECONDS = 120;
-    // the periods the overview can count, in days; the first is shown at the start
+    // in days; the first is the default
     private const OVERVIEW_PERIODS = [7, 30];
-    // how many authors the overview lists
     private const TOP_AUTHORS = 5;
-    // how many colours the initials of authors come in, as the is-tone-* classes in css/panel/overview.css
+    // as many as the is-tone-* classes in css/panel.css
     private const AVATAR_TONES = 6;
-    // how long the picture of an author from Discord is used before asking again
+    // how long a picture from Discord stays in the session
     private const AVATAR_SECONDS = 3600;
-    // how far back the page of an event counts what its author did: as long as authors are kept
+    // as long as authors are kept
     private const AUTHOR_HISTORY_DAYS = ModerationEventRepository::KEEP_CONTENT_DAYS;
 
     private ?PDO $pdo = null;
@@ -126,7 +123,6 @@ final class PanelController extends AppController
         $this->redirect('/app');
     }
 
-    /** Saves the language people write in on one channel of the chosen server. */
     public function setChannelLanguage(): void
     {
         [$user, $managedServer] = $this->requireManagedServer();
@@ -312,7 +308,6 @@ final class PanelController extends AppController
         $this->redirect('/app/channels');
     }
 
-    /** Saves the level and the action of every category on one channel of the chosen server. */
     public function saveRules(): void
     {
         [$user, $managedServer] = $this->requireManagedServer();
@@ -422,7 +417,6 @@ final class PanelController extends AppController
         $recent = array_values(array_filter($times, fn(mixed $time): bool => is_int($time) && $time > $now - self::TEST_LIMIT_SECONDS));
 
         if (count($recent) >= self::TEST_CHECKS_LIMIT) {
-            // seconds until the oldest of them falls out of the limit's time
             header('Retry-After: ' . ($recent[0] + self::TEST_LIMIT_SECONDS - $now));
             $this->json(['error' => $lang->text('check.error.limit')], 429);
             return;
@@ -599,9 +593,7 @@ final class PanelController extends AppController
     }
 
     /**
-     * Each channel of the chosen server with the model that checks it: the name and size the home page shows for it,
-     * and the languages it has questions in; and the models to choose from, each with whether it knows the channel's language.
-     * Null when the database does not answer.
+     * Each channel with its model and the models to choose from; null when the database does not answer.
      *
      * @return list<array{
      *     channel: Channel,
@@ -638,10 +630,9 @@ final class PanelController extends AppController
     }
 
     /**
-     * The authors with their picture from Discord, and initials in a colour of their own for when there is none.
-     * The bot stores no pictures, so they are asked for here and kept in the session for a while; a failure too,
-     * so a user Discord does not know is not asked for on every page. After one failure the rest is not asked for,
-     * since a Discord that does not answer would make the page wait for each of them.
+     * Adds each author's picture from Discord, or initials for when there is none. The bot stores no pictures,
+     * so they are kept in the session for a while, an unknown user too. After any other failure the rest
+     * is not asked for, so a Discord that does not answer delays the page only once.
      *
      * @param list<array{id: string, name: string, events: int, category: string}> $authors
      * @return list<array{id: string, name: string, events: int, category: string, avatarUrl: ?string, initials: string, tone: int}>
@@ -727,10 +718,8 @@ final class PanelController extends AppController
     }
 
     /**
-     * What the overview shows about the chosen server: whether the bot and the models of its channels work now,
-     * and for the chosen period what the bot did there. An empty log alone cannot tell a clean chat from a bot
-     * that is not running, so the counts of checked messages sit next to the counts of actions.
-     * ?days= picks the period, from OVERVIEW_PERIODS.
+     * Whether the bot and the models work now, and what the bot did in the period chosen by ?days=.
+     * An empty log alone cannot tell a clean chat from a stopped bot, so checked messages are counted next to actions.
      *
      * @return array{
      *     isBotConnected: ?bool,

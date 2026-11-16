@@ -38,7 +38,7 @@ final class DiscordClient
         return getenv('DISCORD_API_URL') ?: self::API_URL;
     }
 
-    /** Whether this is a Discord id, of a user, server, channel or message: up to 20 digits, so it is safe in an address. */
+    /** Up to 20 digits, like every Discord id, so it is safe in an address. */
     public static function isId(mixed $id): bool
     {
         return is_string($id) && preg_match('/^\d{1,20}$/', $id) === 1;
@@ -90,7 +90,6 @@ final class DiscordClient
         return [
             'id' => $id,
             'name' => $name,
-            // the picture the user chose, or else the default one Discord shows for them
             'avatarUrl' => self::avatarUrl($id, $avatar, $user['discriminator'] ?? '0'),
         ];
     }
@@ -102,7 +101,6 @@ final class DiscordClient
      */
     public static function avatarUrl(string $id, mixed $avatar, mixed $discriminator): string
     {
-        // only a real picture hash goes into the address
         return self::isImageHash($avatar)
             ? self::CDN_URL . "/avatars/$id/$avatar.png?size=" . self::IMAGE_SIZE
             : self::CDN_URL . '/embed/avatars/' . self::defaultAvatar($id, $discriminator) . '.png';
