@@ -4,10 +4,8 @@
 <?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <?php if ($channelSlots === null): ?>
-    <p class="panel-error">
-        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-        <?= $t('channels.load_error') ?>
-    </p>
+    <?php $errorText = 'channels.load_error'; ?>
+    <?php include __DIR__ . '/../components/panel-error.html.php'; ?>
 <?php else: ?>
     <ul class="panel-cards">
         <?php foreach ($channelSlots as $slot => $item): ?>
@@ -25,10 +23,7 @@
                     </div>
                     <?php if ($channelChoice['channels'] === null || $channelChoice['channels'] === []): ?>
                         <div class="panel-card--body">
-                            <p class="panel-card--message<?= $channelChoice['channels'] === null ? ' is-error' : '' ?>">
-                                <i class="fa-solid <?= $channelChoice['channels'] === null ? 'fa-circle-exclamation' : 'fa-eye-slash' ?>" aria-hidden="true"></i>
-                                <span><?= $t($channelChoice['channels'] === null ? 'channels.discord_error' : 'channels.none_visible') ?></span>
-                            </p>
+                            <?php include __DIR__ . '/../components/no-channel-choice.html.php'; ?>
                         </div>
                     <?php else: ?>
                         <form method="post" action="/app/channels/connect" class="panel-card--body">
@@ -37,7 +32,7 @@
                                 <label for="channels-choice-<?= (int) $slot ?>" class="channels-setting--label"><?= $t('channels.choose') ?></label>
                                 <select id="channels-choice-<?= (int) $slot ?>" name="channel" class="channels-setting--select">
                                     <?php foreach ($channelChoice['channels'] as $choice): ?>
-                                        <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>">#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                        <option value="<?= $e($choice['id']) ?>">#<?= $e($choice['name']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -45,7 +40,7 @@
                                 <label for="channels-new-language-<?= (int) $slot ?>" class="channels-setting--label"><?= $t('channels.language') ?></label>
                                 <select id="channels-new-language-<?= (int) $slot ?>" name="language" class="channels-setting--select">
                                     <?php foreach ($channelChoice['languages'] as $code): ?>
-                                        <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"<?= $code === $channelChoice['language'] ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
+                                        <option value="<?= $e($code) ?>"<?= $code === $channelChoice['language'] ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -62,8 +57,8 @@
                 <?php
                 $channel = $item['channel'];
                 $isChanging = $slot === $changingSlot;
-                $status = htmlspecialchars($channel->getStatus(), ENT_QUOTES, 'UTF-8');
-                $name = htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8');
+                $status = $e($channel->getStatus());
+                $name = $e($channel->getName());
                 ?>
                 <li class="panel-card<?= $isChanging ? ' is-changing' : '' ?>">
                     <div class="panel-card--head">
@@ -95,10 +90,7 @@
                         <?php // while changing, the card only asks for the new channel; the language stays as it is ?>
                         <?php if ($channelChoice['channels'] === null || $channelChoice['channels'] === []): ?>
                             <div class="panel-card--body">
-                                <p class="panel-card--message<?= $channelChoice['channels'] === null ? ' is-error' : '' ?>">
-                                <i class="fa-solid <?= $channelChoice['channels'] === null ? 'fa-circle-exclamation' : 'fa-eye-slash' ?>" aria-hidden="true"></i>
-                                <span><?= $t($channelChoice['channels'] === null ? 'channels.discord_error' : 'channels.none_visible') ?></span>
-                            </p>
+                                <?php include __DIR__ . '/../components/no-channel-choice.html.php'; ?>
                                 <div class="panel-card--actions">
                                     <a href="/app/channels" class="panel-button is-quiet"><?= $t('channels.cancel') ?></a>
                                 </div>
@@ -113,7 +105,7 @@
                                     </div>
                                     <select id="channels-change-<?= (int) $slot ?>" name="channel" class="channels-setting--select">
                                         <?php foreach ($channelChoice['channels'] as $choice): ?>
-                                            <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>">#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                                            <option value="<?= $e($choice['id']) ?>">#<?= $e($choice['name']) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
@@ -133,13 +125,13 @@
                         </div>
                     <?php else: ?>
                         <form method="post" action="/app/channels/language" class="panel-card--body">
-                            <input type="hidden" name="channel" value="<?= (int) $channel->getId() ?>" />
+                            <input type="hidden" name="channel" value="<?= $channel->getId() ?>" />
                             <div class="channels-setting">
                                 <label for="channels-language-<?= (int) $slot ?>" class="channels-setting--label"><?= $t('channels.language') ?></label>
                                 <div class="channels-setting--control">
                                     <select id="channels-language-<?= (int) $slot ?>" name="language" class="channels-setting--select">
                                         <?php foreach ($item['languages'] as $code): ?>
-                                            <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"<?= $code === $channel->getLanguage() ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
+                                            <option value="<?= $e($code) ?>"<?= $code === $channel->getLanguage() ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                     <?php $isSaved = $channel->getId() === $savedChannelId; ?>

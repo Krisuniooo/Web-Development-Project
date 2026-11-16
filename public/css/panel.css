@@ -442,6 +442,16 @@
   font-weight: 600;
 }
 
+/* a section about channels while the server has none, with the link to connect one */
+.panel-empty {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-secondary);
+}
+.panel-empty a {
+  color: var(--color-accent-strong);
+  font-weight: 600;
+}
+
 /* a narrow card, as on a phone: less space around, the head's button only as its icon, the buttons across the card */
 @container (max-width: 26rem) {
   .panel-card--head {

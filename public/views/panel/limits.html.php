@@ -4,22 +4,17 @@
 <?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <?php if ($limits['channels'] === null): ?>
-    <p class="panel-error">
-        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-        <?= $t('channels.load_error') ?>
-    </p>
+    <?php $errorText = 'channels.load_error'; ?>
+    <?php include __DIR__ . '/../components/panel-error.html.php'; ?>
 <?php elseif ($limits['channels'] === []): ?>
-    <p class="limits-empty">
-        <?= $t('limits.empty') ?>
-        <a href="/app/channels"><?= $t('limits.empty_link') ?></a>
-    </p>
+    <?php include __DIR__ . '/../components/no-channels.html.php'; ?>
 <?php else: ?>
     <ul class="panel-cards">
         <?php foreach ($limits['channels'] as $item): ?>
             <?php
             $channel = $item['channel'];
-            $channelId = (int) $channel->getId();
-            $name = htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8');
+            $channelId = $channel->getId();
+            $name = $e($channel->getName());
             $isSaved = $channel->getId() === $savedChannelId;
             ?>
             <li class="panel-card">
@@ -45,13 +40,13 @@
                         <span><?= $t('limits.action') ?></span>
                     </div>
                     <?php foreach ($item['rules'] as $category => $rule): ?>
-                        <?php $field = 'rules[' . htmlspecialchars($category, ENT_QUOTES, 'UTF-8') . ']'; ?>
+                        <?php $field = 'rules[' . $e($category) . ']'; ?>
                         <div class="limits-rule">
                             <span class="limits-rule--name"><?= $t('category.' . $category) ?></span>
                             <div class="limits-choices is-level" role="radiogroup" aria-label="<?= $t('category.' . $category) ?>: <?= $t('limits.level') ?>">
                                 <?php foreach ($limits['levels'] as $level): ?>
                                     <label class="limits-choice">
-                                        <input type="radio" name="<?= $field ?>[level]" value="<?= htmlspecialchars($level, ENT_QUOTES, 'UTF-8') ?>"<?= $rule->getLevel() === $level ? ' checked' : '' ?> required />
+                                        <input type="radio" name="<?= $field ?>[level]" value="<?= $e($level) ?>"<?= $rule->getLevel() === $level ? ' checked' : '' ?> required />
                                         <span><?= $t('level.' . $level) ?></span>
                                     </label>
                                 <?php endforeach; ?>
@@ -59,7 +54,7 @@
                             <div class="limits-choices is-action" role="radiogroup" aria-label="<?= $t('category.' . $category) ?>: <?= $t('limits.action') ?>">
                                 <?php foreach ($limits['actions'] as $action): ?>
                                     <label class="limits-choice">
-                                        <input type="radio" name="<?= $field ?>[action]" value="<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?>"<?= $rule->getAction() === $action ? ' checked' : '' ?> required />
+                                        <input type="radio" name="<?= $field ?>[action]" value="<?= $e($action) ?>"<?= $rule->getAction() === $action ? ' checked' : '' ?> required />
                                         <span><?= $t('action.' . $action) ?></span>
                                     </label>
                                 <?php endforeach; ?>

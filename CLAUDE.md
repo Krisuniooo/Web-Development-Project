@@ -22,7 +22,7 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - Zachowuj `declare(strict_types=1)` w plikach PHP.
 - Nie dodawaj frameworków ani zależności bez zgody.
 - Kontroler przygotowuje dane, a widok odpowiada za prezentację.
-- Dane wyświetlane w HTML zabezpieczaj przez `htmlspecialchars()`.
+- Dane wyświetlane w HTML zabezpieczaj w widokach przez `$e()` (`htmlspecialchars()`), a teksty interfejsu przez `$t()`.
 - Nie powielaj danych między PHP a JS: źródłem jest `config/`, a JS dostaje je z widoku przez atrybuty `data-*`.
 - Wprowadzaj małe zmiany i nie modyfikuj plików niezwiązanych z zadaniem.
 

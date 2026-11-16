@@ -10,7 +10,7 @@
     <?php if ($failure !== null): ?>
         <div class="logs-event--failure">
             <dt><?= $t('logs.detail.failure') ?></dt>
-            <dd><?= htmlspecialchars($failure, ENT_QUOTES, 'UTF-8') ?></dd>
+            <dd><?= $e($failure) ?></dd>
         </div>
     <?php endif; ?>
     <div>
@@ -25,7 +25,7 @@
     <?php endif; ?>
     <div>
         <dt><?= $t('logs.detail.channel') ?></dt>
-        <dd>#<?= htmlspecialchars($event->getChannelName(), ENT_QUOTES, 'UTF-8') ?></dd>
+        <dd>#<?= $e($event->getChannelName()) ?></dd>
     </div>
     <?php if (empty($hideAuthor)): ?>
         <div>
@@ -33,7 +33,7 @@
             <?php if ($author === null): ?>
                 <dd><?= $t('logs.no_author') ?></dd>
             <?php else: ?>
-                <dd><?= $author ?> <span class="logs-event--id">ID <?= htmlspecialchars((string) $event->getAuthorPlatformId(), ENT_QUOTES, 'UTF-8') ?></span></dd>
+                <dd><?= $author ?> <span class="logs-event--id">ID <?= $e($event->getAuthorPlatformId()) ?></span></dd>
             <?php endif; ?>
         </div>
     <?php endif; ?>
@@ -45,6 +45,6 @@
     <?php endif; ?>
     <div>
         <dt><?= $t('logs.detail.model') ?></dt>
-        <dd><?= htmlspecialchars($event->getModel(), ENT_QUOTES, 'UTF-8') ?></dd>
+        <dd><?= $e($event->getModel()) ?></dd>
     </div>
 </dl>

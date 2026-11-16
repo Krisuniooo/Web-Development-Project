@@ -3,7 +3,7 @@
 <?php $scripts[] = '/js/home/eye.js'; ?>
 
 <section class="hero">
-    <div class="hero-message-stream" data-messages="<?= htmlspecialchars(json_encode($chatMessages), ENT_QUOTES, 'UTF-8') ?>" data-platforms="<?= htmlspecialchars(json_encode(array_column($platforms, 'slug')), ENT_QUOTES, 'UTF-8') ?>" aria-hidden="true"></div>
+    <div class="hero-message-stream" data-messages="<?= $e(json_encode($chatMessages)) ?>" data-platforms="<?= $e(json_encode(array_column($platforms, 'slug'))) ?>" aria-hidden="true"></div>
     <div class="hero-content">
         <h1 class="hero-title"><?= $t('home.hero.title') ?></h1>
         <p class="hero-description"><?= $t('home.hero.description') ?></p>
@@ -13,7 +13,7 @@
         </div>
     </div>
     <div class="hero-eye" aria-hidden="true">
-        <div class="hero-eye--frame" data-frames="<?= htmlspecialchars(json_encode($eyeFrames), ENT_QUOTES, 'UTF-8') ?>">
+        <div class="hero-eye--frame" data-frames="<?= $e(json_encode($eyeFrames)) ?>">
             <pre class="hero-eye--sclera-layer"></pre>
             <div class="hero-eye--opening">
                 <pre class="hero-eye--iris-layer"></pre>

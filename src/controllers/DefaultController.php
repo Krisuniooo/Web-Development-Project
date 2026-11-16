@@ -70,7 +70,6 @@ final class DefaultController extends AppController
 
         $this->render('legal', [
             'pageTitle' => $this->lang()->text($titleKey),
-            'title' => $this->lang()->text($titleKey),
             'updated' => $legal['updated'],
             'sections' => $sections,
             // for the header, which lists them

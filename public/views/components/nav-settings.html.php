@@ -2,9 +2,9 @@
 
 <div class="nav-settings">
     <form method="post" action="/language" class="available-languages" role="group" aria-label="<?= $t('language.label') ?>">
-        <input type="hidden" name="back" value="<?= htmlspecialchars($currentPath, ENT_QUOTES, 'UTF-8') ?>" />
+        <input type="hidden" name="back" value="<?= $e($currentPath) ?>" />
         <?php foreach (\App\Lang::SUPPORTED as $code): ?>
-            <button type="submit" name="lang" value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>" class="available-language" aria-pressed="<?= $code === $lang->code() ? 'true' : 'false' ?>"><?= htmlspecialchars(strtoupper($code), ENT_QUOTES, 'UTF-8') ?></button>
+            <button type="submit" name="lang" value="<?= $e($code) ?>" class="available-language" aria-pressed="<?= $code === $lang->code() ? 'true' : 'false' ?>"><?= $e(strtoupper($code)) ?></button>
         <?php endforeach; ?>
     </form>
     <div class="toggle-light-mode">

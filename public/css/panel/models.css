@@ -26,8 +26,3 @@
   color: var(--color-muted);
   font-size: var(--font-size-sm);
 }
-
-.models-empty {
-  margin: var(--space-3) 0 0;
-  color: var(--color-text-secondary);
-}

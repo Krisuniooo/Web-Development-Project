@@ -7,7 +7,7 @@
         <span class="CTA-composer--icons">
             <?php foreach ($platforms as $index => $platform): ?>
                 <img
-                    src="/assets/icons/<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>.svg"
+                    src="/assets/icons/<?= $e($platform['slug']) ?>.svg"
                     class="CTA-composer--icon<?= $index === 0 ? ' is-active' : '' ?>"
                     alt=""
                     width="24"

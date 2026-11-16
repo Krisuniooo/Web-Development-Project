@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="<?= htmlspecialchars($lang->code(), ENT_QUOTES, 'UTF-8') ?>">
+<html lang="<?= $e($lang->code()) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-        <?= htmlspecialchars($pageTitle ?? $lang->text('app.name'), ENT_QUOTES, 'UTF-8') ?>
+        <?= $e($pageTitle ?? $lang->text('app.name')) ?>
     </title>
 
     <?php // the icons are served from here, so no script from another site runs on the pages ?>
@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/assets/fontawesome/css/regular.min.css">
     <link rel="stylesheet" href="/css/style.css">
     <?php foreach ($stylesheets ?? [] as $stylesheet): ?>
-        <link rel="stylesheet" href="<?= htmlspecialchars($stylesheet, ENT_QUOTES, 'UTF-8') ?>">
+        <link rel="stylesheet" href="<?= $e($stylesheet) ?>">
     <?php endforeach; ?>
     <script src="/js/themeInit.js"></script>
     <script src="/js/theme.js" defer></script>
@@ -21,7 +21,7 @@
 <body>
     <?= $content ?>
     <?php foreach ($scripts ?? [] as $script): ?>
-        <script src="<?= htmlspecialchars($script, ENT_QUOTES, 'UTF-8') ?>"></script>
+        <script src="<?= $e($script) ?>"></script>
     <?php endforeach; ?>
 </body>
 </html>

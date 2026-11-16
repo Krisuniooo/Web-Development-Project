@@ -8,7 +8,7 @@ $bot = $state($overview['isBotConnected']);
 $statusLines = [[
     'fa-robot',
     $t('status.bot'),
-    htmlspecialchars($currentPlatformName, ENT_QUOTES, 'UTF-8'),
+    $e($currentPlatformName),
     $bot,
     $bot === 'unknown' ? 'status.unknown' : 'status.bot.' . $bot,
     ['ok' => null, 'down' => 'status.bot.down_hint', 'unknown' => 'status.unknown_hint'][$bot],
@@ -18,7 +18,7 @@ $statusLines = [[
 foreach ($overview['models'] as $model) {
     $statusLines[] = [
         'fa-microchip',
-        htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8'),
+        $e($model['label']),
         $t('status.model.kind'),
         $model['isReady'] ? 'ok' : 'down',
         $model['isReady'] ? 'status.model.ok' : 'status.model.down',
@@ -65,10 +65,8 @@ $stats = $overview['stats'];
         </div>
 
         <?php if ($stats === null): ?>
-            <p class="panel-error">
-                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-                <?= $t('overview.load_error') ?>
-            </p>
+            <?php $errorText = 'overview.load_error'; ?>
+            <?php include __DIR__ . '/../components/panel-error.html.php'; ?>
         <?php else: ?>
             <?php
             // each number: its icon, what it counts and the value; a failed action means a bad message is still in the chat
@@ -95,23 +93,20 @@ $stats = $overview['stats'];
     <section class="overview-section" aria-labelledby="overview-channels-title">
         <h2 id="overview-channels-title" class="overview-title"><?= $t('overview.channels') ?></h2>
         <?php if ($stats['channels'] === []): ?>
-            <p class="overview-empty">
-                <?= $t('limits.empty') ?>
-                <a href="/app/channels"><?= $t('limits.empty_link') ?></a>
-            </p>
+            <?php include __DIR__ . '/../components/no-channels.html.php'; ?>
         <?php else: ?>
             <ul class="overview-list">
                 <?php foreach ($stats['channels'] as $item): ?>
                     <?php
                     $channel = $item['channel'];
-                    $name = htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8');
-                    $status = htmlspecialchars($channel->getStatus(), ENT_QUOTES, 'UTF-8');
+                    $name = $e($channel->getName());
+                    $status = $e($channel->getStatus());
                     ?>
                     <li class="overview-row">
                         <span class="overview-row--name" title="#<?= $name ?>">#<?= $name ?></span>
                         <span class="overview-row--meta">
                             <span class="panel-card--status is-<?= $status ?>"><?= $t('channels.status.' . $channel->getStatus()) ?></span>
-                            <span><?= htmlspecialchars($item['model'], ENT_QUOTES, 'UTF-8') ?></span>
+                            <span><?= $e($item['model']) ?></span>
                             <span><?= $t('language.' . $channel->getLanguage()) ?></span>
                         </span>
                         <span class="overview-row--count"><?= sprintf($t('overview.channel_counts'), $item['checked'], $item['acted']) ?></span>
@@ -149,13 +144,13 @@ $stats = $overview['stats'];
         <?php else: ?>
             <ol class="overview-list">
                 <?php foreach ($stats['authors'] as $place => $author): ?>
-                    <?php $authorName = htmlspecialchars($author['name'], ENT_QUOTES, 'UTF-8'); ?>
+                    <?php $authorName = $e($author['name']); ?>
                     <li class="overview-author">
                         <span class="overview-author--place"><?= $place + 1 ?></span>
                         <?php include __DIR__ . '/../components/author-avatar.html.php'; ?>
                         <span class="overview-author--who">
                             <span class="overview-author--name" title="<?= $authorName ?>"><?= $authorName ?></span>
-                            <span class="overview-author--id">ID <?= htmlspecialchars($author['id'], ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="overview-author--id">ID <?= $e($author['id']) ?></span>
                         </span>
                         <span class="overview-author--rule" title="<?= sprintf($t('overview.most_often'), $t('category.' . $author['category'])) ?>"><?= $t('category.' . $author['category']) ?></span>
                         <span class="overview-row--count"><?= sprintf($t($author['events'] === 1 ? 'overview.times_one' : 'overview.times'), $author['events']) ?></span>

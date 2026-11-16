@@ -1,14 +1,5 @@
 /* the rules of each channel; the cards and buttons come from panel.css */
 
-.limits-empty {
-  margin: var(--space-3) 0 0;
-  color: var(--color-muted);
-}
-.limits-empty a {
-  color: var(--color-accent-strong);
-  font-weight: 600;
-}
-
 .limits-language {
   display: inline-flex;
   align-items: center;

@@ -8,22 +8,17 @@ $stylesheets[] = '/css/panel/models.css';
 <?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <?php if ($modelChannels === null): ?>
-    <p class="panel-error">
-        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-        <?= $t('channels.load_error') ?>
-    </p>
+    <?php $errorText = 'channels.load_error'; ?>
+    <?php include __DIR__ . '/../components/panel-error.html.php'; ?>
 <?php elseif ($modelChannels === []): ?>
-    <p class="models-empty">
-        <?= $t('limits.empty') ?>
-        <a href="/app/channels"><?= $t('limits.empty_link') ?></a>
-    </p>
+    <?php include __DIR__ . '/../components/no-channels.html.php'; ?>
 <?php else: ?>
     <ul class="panel-cards">
         <?php foreach ($modelChannels as $item): ?>
             <?php
             $channel = $item['channel'];
-            $channelId = (int) $channel->getId();
-            $name = htmlspecialchars($channel->getName(), ENT_QUOTES, 'UTF-8');
+            $channelId = $channel->getId();
+            $name = $e($channel->getName());
             $isSaved = $channel->getId() === $savedChannelId;
             ?>
             <li class="panel-card">
@@ -46,8 +41,8 @@ $stylesheets[] = '/css/panel/models.css';
                                 <select id="models-model-<?= $channelId ?>" name="model" class="channels-setting--select">
                                     <?php foreach ($item['choices'] as $choice): ?>
                                         <?php // a model without questions in the channel's language cannot be chosen, and says why ?>
-                                        <option value="<?= htmlspecialchars($choice['slug'], ENT_QUOTES, 'UTF-8') ?>"<?= $choice['slug'] === $channel->getModel() ? ' selected' : '' ?><?= $choice['isForLanguage'] ? '' : ' disabled' ?>>
-                                            <?= htmlspecialchars($choice['label'], ENT_QUOTES, 'UTF-8') ?><?= $choice['isForLanguage'] ? '' : ' (' . $t('models.other_language') . ')' ?>
+                                        <option value="<?= $e($choice['slug']) ?>"<?= $choice['slug'] === $channel->getModel() ? ' selected' : '' ?><?= $choice['isForLanguage'] ? '' : ' disabled' ?>>
+                                            <?= $e($choice['label']) ?><?= $choice['isForLanguage'] ? '' : ' (' . $t('models.other_language') . ')' ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -66,9 +61,9 @@ $stylesheets[] = '/css/panel/models.css';
                         <div class="models-detail">
                             <dt><?= $t('models.model') ?></dt>
                             <dd>
-                                <?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') ?>
+                                <?= $e($item['label']) ?>
                                 <?php if ($item['size'] !== null): ?>
-                                    <span class="models-detail--size"><?= htmlspecialchars($item['size'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="models-detail--size"><?= $e($item['size']) ?></span>
                                 <?php endif; ?>
                             </dd>
                         </div>

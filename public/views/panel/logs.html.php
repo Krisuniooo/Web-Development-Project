@@ -6,10 +6,8 @@ $scripts[] = '/js/panel/local-time.js';
 $actionIcons = ['flag' => 'fa-flag', 'delete' => 'fa-trash-can', 'timeout' => 'fa-volume-xmark', 'ban' => 'fa-ban'];
 $filters = $log['filters'];
 // the chosen filters stay in the links to the other pages
-$pageUrl = fn(array $more = []): string => htmlspecialchars(
+$pageUrl = fn(array $more = []): string => $e(
     '/app/logs' . ($filters + $more === [] ? '' : '?' . http_build_query($filters + $more)),
-    ENT_QUOTES,
-    'UTF-8',
 );
 ?>
 
@@ -24,7 +22,7 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
                 <select name="channel" class="logs-filter--select">
                     <option value=""><?= $t('logs.filter.all') ?></option>
                     <?php foreach ($log['choices']['channel'] as $choice): ?>
-                        <option value="<?= htmlspecialchars($choice['id'], ENT_QUOTES, 'UTF-8') ?>"<?= $choice['id'] === ($filters['channel'] ?? null) ? ' selected' : '' ?>>#<?= htmlspecialchars($choice['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                        <option value="<?= $e($choice['id']) ?>"<?= $choice['id'] === ($filters['channel'] ?? null) ? ' selected' : '' ?>>#<?= $e($choice['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
@@ -34,7 +32,7 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
             <select name="category" class="logs-filter--select">
                 <option value=""><?= $t('logs.filter.all') ?></option>
                 <?php foreach ($log['choices']['category'] as $choice): ?>
-                    <option value="<?= htmlspecialchars($choice, ENT_QUOTES, 'UTF-8') ?>"<?= $choice === ($filters['category'] ?? null) ? ' selected' : '' ?>><?= $t('category.' . $choice) ?></option>
+                    <option value="<?= $e($choice) ?>"<?= $choice === ($filters['category'] ?? null) ? ' selected' : '' ?>><?= $t('category.' . $choice) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
@@ -43,7 +41,7 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
             <select name="action" class="logs-filter--select">
                 <option value=""><?= $t('logs.filter.all') ?></option>
                 <?php foreach ($log['choices']['action'] as $choice): ?>
-                    <option value="<?= htmlspecialchars($choice, ENT_QUOTES, 'UTF-8') ?>"<?= $choice === ($filters['action'] ?? null) ? ' selected' : '' ?>><?= $t('logs.action.' . $choice) ?></option>
+                    <option value="<?= $e($choice) ?>"<?= $choice === ($filters['action'] ?? null) ? ' selected' : '' ?>><?= $t('logs.action.' . $choice) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
@@ -60,10 +58,8 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
 <?php endif; ?>
 
 <?php if ($log['events'] === null): ?>
-    <p class="panel-error">
-        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-        <?= $t('logs.load_error') ?>
-    </p>
+    <?php $errorText = 'logs.load_error'; ?>
+    <?php include __DIR__ . '/../components/panel-error.html.php'; ?>
 <?php elseif ($log['events'] === []): ?>
     <p class="logs-empty">
         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
@@ -76,12 +72,12 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
             $action = $event->getAction();
             $createdAt = $event->getCreatedAt()?->setTimezone(new DateTimeZone('UTC'));
             // null once the event is old enough for its text and author to be removed
-            $author = $event->getAuthorName() === null ? null : htmlspecialchars($event->getAuthorName(), ENT_QUOTES, 'UTF-8');
+            $author = $event->getAuthorName() === null ? null : $e($event->getAuthorName());
             // an action the platform refused: the message is still in the chat, so the line says "not deleted" and why
             $failure = $event->getFailure();
             $actionLabel = $t(($failure === null ? 'logs.action.' : 'logs.failed.') . $action);
             ?>
-            <li class="logs-event is-<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?><?= $failure === null ? '' : ' is-failed' ?>">
+            <li class="logs-event is-<?= $e($action) ?><?= $failure === null ? '' : ' is-failed' ?>">
                 <details>
                     <?php // one line: what happened, to whom, the message and when; a click opens the rest ?>
                     <summary class="logs-event--row">
@@ -97,7 +93,7 @@ $pageUrl = fn(array $more = []): string => htmlspecialchars(
                         <?php if ($event->getContent() === null): ?>
                             <span class="logs-event--text is-gone"><?= $t('logs.no_content') ?></span>
                         <?php else: ?>
-                            <span class="logs-event--text"><?= htmlspecialchars($event->getContent(), ENT_QUOTES, 'UTF-8') ?></span>
+                            <span class="logs-event--text"><?= $e($event->getContent()) ?></span>
                         <?php endif; ?>
                         <span class="logs-event--category"><?= $t('category.' . $event->getCategory()) ?></span>
                         <?php if ($createdAt !== null): ?>

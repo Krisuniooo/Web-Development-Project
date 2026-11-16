@@ -13,9 +13,9 @@
             <ul class="available-platforms">
                 <?php foreach ($platforms as $platform): ?>
                     <li>
-                        <a href="<?= htmlspecialchars($platform['loginPath'] ?? '#', ENT_QUOTES, 'UTF-8') ?>" class="available-platform <?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>">
-                            <img src="/assets/icons/<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>.svg" alt="<?= htmlspecialchars($platform['name'], ENT_QUOTES, 'UTF-8') ?>" class="available-platform--img" width="16" height="16" />
-                            <div aria-hidden="true"><?= htmlspecialchars($platform['name'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <a href="<?= $e($platform['loginPath'] ?? '#') ?>" class="available-platform <?= $e($platform['slug']) ?>">
+                            <img src="/assets/icons/<?= $e($platform['slug']) ?>.svg" alt="<?= $e($platform['name']) ?>" class="available-platform--img" width="16" height="16" />
+                            <div aria-hidden="true"><?= $e($platform['name']) ?></div>
                         </a>
                     </li>
                 <?php endforeach; ?>

@@ -2,7 +2,7 @@
 <?php $scripts[] = '/js/home/how-it-works.js'; ?>
 <?php $modelCarousel = array_merge($models, $models); ?>
 
-<section id="how-it-works" class="how-it-works" data-levels="<?= htmlspecialchars(json_encode($howItWorks['levels']), ENT_QUOTES, 'UTF-8') ?>">
+<section id="how-it-works" class="how-it-works" data-levels="<?= $e(json_encode($howItWorks['levels'])) ?>">
     <h2><?= $t('home.how.title') ?></h2>
     <ol class="how-it-works-list">
         <li class="how-it-works--item">
@@ -20,10 +20,10 @@
                     <div class="how-it-works-platform--targets">
                         <?php foreach ($platforms as $index => $platform): ?>
                             <div class="how-it-works-platform--endpoint<?= $index === 0 ? ' is-active' : '' ?>">
-                                <span class="how-it-works-platform--tile is-<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <img src="/assets/icons/<?= htmlspecialchars($platform['slug'], ENT_QUOTES, 'UTF-8') ?>.svg" alt="" width="24" height="24" />
+                                <span class="how-it-works-platform--tile is-<?= $e($platform['slug']) ?>">
+                                    <img src="/assets/icons/<?= $e($platform['slug']) ?>.svg" alt="" width="24" height="24" />
                                 </span>
-                                <span class="how-it-works-platform--name"><?= htmlspecialchars($platform['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="how-it-works-platform--name"><?= $e($platform['name']) ?></span>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -38,14 +38,14 @@
                 <?php foreach ($modelCarousel as $index => $model): ?>
                     <div class="how-it-works-models--item<?= !empty($model['pro']) ? ' is-pro' : '' ?>" data-slot="<?= min(($index + 2) % count($modelCarousel) - 2, 3) ?>">
                         <span class="how-it-works-models--disc">
-                            <img src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>" alt="" class="how-it-works-models--logo" width="64" height="64" />
+                            <img src="<?= $e($model['logo']) ?>" alt="" class="how-it-works-models--logo" width="64" height="64" />
                             <?php if (!empty($model['pro'])): ?>
                                 <span class="how-it-works-models--pro">PRO</span>
                             <?php endif; ?>
                         </span>
                         <span class="how-it-works-models--label">
-                            <?= htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8') ?>
-                            <small><?= htmlspecialchars($model['size'], ENT_QUOTES, 'UTF-8') ?></small>
+                            <?= $e($model['label']) ?>
+                            <small><?= $e($model['size']) ?></small>
                         </span>
                     </div>
                 <?php endforeach; ?>
@@ -80,8 +80,8 @@
                             <div class="how-it-works-limits--status"><?= $t('home.how.watching') ?></div>
                             <?php foreach ($howItWorks['limits'] as $limit): ?>
                                 <div class="how-it-works-limits--slider<?= $limit['value'] === 0 ? ' is-off' : '' ?>" style="--value: <?= (int) $limit['value'] ?>">
-                                    <span class="how-it-works-limits--name"><?= htmlspecialchars($limit['name'], ENT_QUOTES, 'UTF-8') ?></span>
-                                    <span class="how-it-works-limits--level"><?= htmlspecialchars($limit['level'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="how-it-works-limits--name"><?= $e($limit['name']) ?></span>
+                                    <span class="how-it-works-limits--level"><?= $e($limit['level']) ?></span>
                                     <span class="how-it-works-limits--track"><span class="how-it-works-limits--fill"></span></span>
                                 </div>
                             <?php endforeach; ?>

@@ -8,10 +8,10 @@
         <ul class="models-orbit">
             <?php foreach($models as $model): ?>
                 <li class="models-orbit-item<?= !empty($model['pro']) ? ' is-pro' : '' ?>">
-                    <a href="<?= htmlspecialchars($model['github'], ENT_QUOTES, 'UTF-8') ?>" class="models-orbit-item--link" title="<?= $t($model['hint']) ?>" target="_blank" rel="noopener noreferrer">
+                    <a href="<?= $e($model['github']) ?>" class="models-orbit-item--link" title="<?= $t($model['hint']) ?>" target="_blank" rel="noopener noreferrer">
                         <span class="models-orbit-item--media">
                             <img
-                                src="<?= htmlspecialchars($model['logo'], ENT_QUOTES, 'UTF-8') ?>"
+                                src="<?= $e($model['logo']) ?>"
                                 alt=""
                                 class="models-orbit-item--logo"
                                 width="64"
@@ -28,16 +28,16 @@
                             <?php endif; ?>
                         </span>
                         <span class="models-orbit-item--label">
-                            <?= htmlspecialchars($model['label'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= $e($model['label']) ?>
                         </span>
                         <span class="models-orbit-item--size">
-                            <?= htmlspecialchars($model['size'], ENT_QUOTES, 'UTF-8') ?>
+                            <?= $e($model['size']) ?>
                         </span>
                     </a>
                 </li>
             <?php endforeach; ?>
         </ul>
-        <a href="https://github.com/Krisuniooo/Web-Development-Project" class="models-display--center" target="_blank" rel="noopener noreferrer">
+        <a href="<?= $e($app['repository']) ?>" class="models-display--center" target="_blank" rel="noopener noreferrer">
             <img src="/assets/icons/logo.svg" alt="<?= $t('home.models.github') ?>" class="models-display--logo" width="112" height="56" />
         </a>
     </div>

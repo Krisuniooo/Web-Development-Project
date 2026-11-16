@@ -12,14 +12,18 @@ final class DiscordBotClient
 {
     private const TIMEOUT_SECONDS = 5;
     private const CONNECT_TIMEOUT_SECONDS = 3;
-    // Discord asks bots to name themselves this way
-    private const USER_AGENT = 'DiscordBot (https://github.com/Krisuniooo/Web-Development-Project, 1.0)';
+    // Discord asks bots to name themselves this way: the address of their code and their version
+    private const USER_AGENT = 'DiscordBot (%s, 1.0)';
+
+    private string $userAgent;
 
     public function __construct(private string $token, private string $apiUrl)
     {
         if ($token === '') {
             throw new RuntimeException('DISCORD_BOT_TOKEN is empty');
         }
+
+        $this->userAgent = sprintf(self::USER_AGENT, (require dirname(__DIR__, 2) . '/config/app.php')['repository']);
     }
 
     /** The bot with the token from .env, for the panel; throws when the token is empty. */
@@ -115,7 +119,7 @@ final class DiscordBotClient
         $request = curl_init($this->apiUrl . $path);
         curl_setopt_array($request, [
             CURLOPT_HTTPHEADER => ['Authorization: Bot ' . $this->token],
-            CURLOPT_USERAGENT => self::USER_AGENT,
+            CURLOPT_USERAGENT => $this->userAgent,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT_SECONDS,
             CURLOPT_TIMEOUT => self::TIMEOUT_SECONDS,

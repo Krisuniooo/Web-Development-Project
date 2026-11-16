@@ -22,7 +22,6 @@ return [
     "theme.to_light" => "Włącz jasny motyw",
     "theme.to_dark" => "Włącz ciemny motyw",
     "panel.back_home" => "Strona główna",
-    "panel.not_ready" => "Ta sekcja nie jest jeszcze gotowa.",
     "footer.note" => "Decyzje podejmują modele i mogą się mylić.",
     "footer.privacy" => "Prywatność",
     "footer.terms" => "Regulamin",

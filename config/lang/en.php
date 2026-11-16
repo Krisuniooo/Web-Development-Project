@@ -22,7 +22,6 @@ return [
     "theme.to_light" => "Switch to light mode",
     "theme.to_dark" => "Switch to dark mode",
     "panel.back_home" => "Back to home",
-    "panel.not_ready" => "This section is not ready yet.",
     "footer.note" => "Decisions are made by models and can be wrong.",
     "footer.privacy" => "Privacy",
     "footer.terms" => "Terms",

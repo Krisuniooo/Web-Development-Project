@@ -45,7 +45,7 @@ $scripts[] = '/js/panel/message-check.js';
                         <span class="message-check--label"><?= $t('check.language') ?></span>
                         <select name="language" class="message-check--language">
                             <?php foreach ($messageCheck['languages'] as $code): ?>
-                                <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"<?= $code === $messageCheck['language'] ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
+                                <option value="<?= $e($code) ?>"<?= $code === $messageCheck['language'] ? ' selected' : '' ?>><?= $t('language.' . $code) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
@@ -95,7 +95,7 @@ $scripts[] = '/js/panel/message-check.js';
             </td>
             <?php foreach ($messageCheck['levels'] as $level): ?>
                 <?php // the label is shown next to the mark on a narrow box, where the table has no header row ?>
-                <td class="message-check--level" data-level="<?= htmlspecialchars($level, ENT_QUOTES, 'UTF-8') ?>" data-label="<?= $t('level.' . $level) ?>"></td>
+                <td class="message-check--level" data-level="<?= $e($level) ?>" data-label="<?= $t('level.' . $level) ?>"></td>
             <?php endforeach; ?>
         </tr>
     </template>

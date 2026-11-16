@@ -20,26 +20,26 @@ $hideAuthor = true;
     <?= $t('logs.event.back') ?>
 </a>
 
-<article class="logs-event log-event is-<?= htmlspecialchars($action, ENT_QUOTES, 'UTF-8') ?><?= $failure === null ? '' : ' is-failed' ?>">
+<article class="logs-event log-event is-<?= $e($action) ?><?= $failure === null ? '' : ' is-failed' ?>">
     <h2 class="log-event--title"><?= $actionLabel ?> · <?= $t('category.' . $event->getCategory()) ?></h2>
 
     <?php if ($author === null): ?>
         <p class="log-event--author is-gone"><?= $t('logs.event.author_gone') ?></p>
     <?php else: ?>
-        <?php $authorName = htmlspecialchars($author['name'], ENT_QUOTES, 'UTF-8'); ?>
+        <?php $authorName = $e($author['name']); ?>
         <div class="log-event--author">
             <?php include __DIR__ . '/../components/author-avatar.html.php'; ?>
             <div class="log-event--who">
                 <?php if ($author['profileUrl'] === null): ?>
                     <span class="log-event--name"><?= $authorName ?></span>
                 <?php else: ?>
-                    <a href="<?= htmlspecialchars($author['profileUrl'], ENT_QUOTES, 'UTF-8') ?>" class="log-event--name" target="_blank" rel="noopener noreferrer">
+                    <a href="<?= $e($author['profileUrl']) ?>" class="log-event--name" target="_blank" rel="noopener noreferrer">
                         <?= $authorName ?>
                         <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
                         <span class="panel-hidden"><?= $t('logs.event.profile') ?></span>
                     </a>
                 <?php endif; ?>
-                <span class="logs-event--id">ID <?= htmlspecialchars($author['id'], ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="logs-event--id">ID <?= $e($author['id']) ?></span>
             </div>
             <?php // this event included, so the count is at least 1 unless the event is older than the period ?>
             <p class="log-event--history">
@@ -57,7 +57,7 @@ $hideAuthor = true;
     <?php if ($event->getContent() === null): ?>
         <p class="log-event--text is-gone"><?= $t('logs.no_content') ?></p>
     <?php else: ?>
-        <p class="log-event--text"><?= htmlspecialchars($event->getContent(), ENT_QUOTES, 'UTF-8') ?></p>
+        <p class="log-event--text"><?= $e($event->getContent()) ?></p>
     <?php endif; ?>
     <?php include __DIR__ . '/../components/log-event-details.html.php'; ?>
 </article>

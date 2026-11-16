@@ -148,8 +148,12 @@ abstract class AppController
             throw new \RuntimeException('View not found: ' . $template);
         }
 
+        // what every view has: $t for a text in the page's language and $e for any other value, both safe in HTML,
+        // and $app with the settings of the app, such as the address of its repository
         $lang = $this->lang();
         $t = $lang->html(...);
+        $e = static fn(mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        $app = require dirname(__DIR__, 2) . '/config/app.php';
         $currentPath = $_SERVER['REQUEST_URI'];
 
         extract($variables, EXTR_SKIP);
