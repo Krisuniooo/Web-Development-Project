@@ -100,6 +100,12 @@ final class DefaultController extends AppController
 
     public function setLanguage(): void
     {
+        // like every other form: another site cannot change the language for the visitor
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
         Lang::remember($_POST['lang'] ?? null);
 
         $this->redirect($this->localPathOrHome($_POST['back'] ?? null));

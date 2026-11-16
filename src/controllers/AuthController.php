@@ -72,10 +72,15 @@ final class AuthController extends AppController
 
         // a new session id, so a session prepared by someone else cannot become a logged-in one
         session_regenerate_id(true);
-        // the account is kept only here, not in the database
-        $_SESSION['user'] = ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name'], 'avatarUrl' => $user['avatarUrl']];
-        // a snapshot from this login, only for showing the list: access is checked again before any change
-        $_SESSION['servers'] = $servers;
+        // only this login's data: nothing of an account logged in before in this browser stays,
+        // such as its chosen server or its answer from Discord about access
+        $_SESSION = [
+            // the account is kept only here, not in the database
+            'user' => ['platform' => 'discord', 'id' => $user['id'], 'name' => $user['name'], 'avatarUrl' => $user['avatarUrl']],
+            // a snapshot from this login, only for showing the list: access is checked again before any change
+            'servers' => $servers,
+            'lastActivity' => time(),
+        ];
 
         $this->redirect('/app');
     }

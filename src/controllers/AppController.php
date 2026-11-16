@@ -30,8 +30,12 @@ abstract class AppController
         ]);
     }
 
-    /** Looks at the session only if the browser already has one, so other visitors get no cookie. */
-    /** @return array{platform: string, id: string, name: string, avatarUrl: ?string}|null the platform account the session holds */
+    /**
+     * The platform account the session holds. Looks at the session only if the browser already has one,
+     * so other visitors get no cookie.
+     *
+     * @return array{platform: string, id: string, name: string, avatarUrl: ?string}|null
+     */
     protected function loggedInUser(): ?array
     {
         if (!isset($_COOKIE[session_name()])) {
@@ -49,6 +53,18 @@ abstract class AppController
         if (!$isValid) {
             return null;
         }
+
+        // a session unused for longer than PHP keeps sessions ends now, even if the garbage collector,
+        // which runs only now and then, has not removed it yet
+        $lastActivity = $_SESSION['lastActivity'] ?? null;
+
+        if (is_int($lastActivity) && $lastActivity < time() - (int) ini_get('session.gc_maxlifetime')) {
+            $this->endSession();
+
+            return null;
+        }
+
+        $_SESSION['lastActivity'] = time();
 
         return [
             'platform' => $user['platform'],

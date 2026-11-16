@@ -549,8 +549,10 @@ final class PanelController extends AppController
     {
         $saved = $_SESSION['accessCheck'] ?? null;
 
+        // the answer holds only for the same user and server
         if (
             is_array($saved)
+            && ($saved['userId'] ?? null) === $userId
             && ($saved['serverId'] ?? null) === $serverId
             && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::ACCESS_CHECK_SECONDS
         ) {
@@ -567,7 +569,7 @@ final class PanelController extends AppController
         }
 
         if ($canManage) {
-            $_SESSION['accessCheck'] = ['serverId' => $serverId, 'time' => time()];
+            $_SESSION['accessCheck'] = ['userId' => $userId, 'serverId' => $serverId, 'time' => time()];
 
             return true;
         }
