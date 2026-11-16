@@ -9,8 +9,6 @@ use RuntimeException;
 
 final class AuthController extends AppController
 {
-    private const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
-
     /** Sends the browser to Discord, which asks the user for consent. */
     public function discord(): void
     {
@@ -22,7 +20,7 @@ final class AuthController extends AppController
         $this->startSession();
         $_SESSION['oauth_state'] = bin2hex(random_bytes(16));
 
-        $this->redirect(self::DISCORD_AUTHORIZE_URL . '?' . http_build_query([
+        $this->redirect(DiscordClient::AUTHORIZE_URL . '?' . http_build_query([
             'response_type' => 'code',
             'client_id' => getenv('DISCORD_CLIENT_ID'),
             // guilds: the servers the user is on, so the panel can offer to add the bot to them
@@ -107,7 +105,7 @@ final class AuthController extends AppController
             (string) getenv('DISCORD_CLIENT_ID'),
             (string) getenv('DISCORD_CLIENT_SECRET'),
             $this->discordRedirectUri(),
-            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
+            DiscordClient::apiUrl(),
         );
     }
 

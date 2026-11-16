@@ -30,7 +30,7 @@ try {
     $requests = new PendingRequests();
     $moderator = new DiscordModerator(
         $requests,
-        new DiscordBotClient($token, getenv('DISCORD_API_URL') ?: DiscordClient::API_URL),
+        new DiscordBotClient($token, DiscordClient::apiUrl()),
         $database,
     );
     $queue = new ModerationQueue($requests, $moderator->act(...), $moderator->countChecked(...));

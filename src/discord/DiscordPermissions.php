@@ -10,9 +10,14 @@ namespace App\Discord;
  */
 final class DiscordPermissions
 {
+    // the bits of the permissions the app uses, as Discord numbers them
+    public const BAN_MEMBERS = 1 << 2;
     public const ADMINISTRATOR = 1 << 3;
     public const MANAGE_GUILD = 1 << 5;
     public const VIEW_CHANNEL = 1 << 10;
+    public const MANAGE_MESSAGES = 1 << 13;
+    // time out members
+    public const MODERATE_MEMBERS = 1 << 40;
 
     // every permission at once
     private const ALL = PHP_INT_MAX;

@@ -22,6 +22,12 @@ final class DiscordBotClient
         }
     }
 
+    /** The bot with the token from .env, for the panel; throws when the token is empty. */
+    public static function fromEnvironment(): self
+    {
+        return new self(trim((string) getenv('DISCORD_BOT_TOKEN')), DiscordClient::apiUrl());
+    }
+
     /**
      * The server's text channels the bot can see, in the order of Discord's sidebar.
      *
@@ -69,7 +75,7 @@ final class DiscordBotClient
     public function fetchAvatarUrl(string $userId): string
     {
         // the ID goes into the address of the request and of the picture
-        if (!preg_match('/^\d{1,20}$/', $userId)) {
+        if (!DiscordClient::isId($userId)) {
             throw new RuntimeException('Not a Discord user ID');
         }
 

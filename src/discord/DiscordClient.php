@@ -6,13 +6,23 @@ namespace App\Discord;
 
 use RuntimeException;
 
+/** Talks to Discord for the user who logs in, and knows the addresses Discord's pictures and pages have. */
 final class DiscordClient
 {
     // the version of the API, the same for the user's requests and the bot's
     public const API_URL = 'https://discord.com/api/v10';
+    // where the user agrees to log in, and a server owner to add the bot
+    public const AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
+    private const CDN_URL = 'https://cdn.discordapp.com';
+    // the size of avatars and server icons in pixels: the largest the panel shows them
+    private const IMAGE_SIZE = 64;
+    // Discord's default pictures: 5 chosen by the old #1234 tag, 6 by the creation time kept in the id from this bit up
+    private const LEGACY_DEFAULT_AVATARS = 5;
+    private const DEFAULT_AVATARS = 6;
+    private const ID_TIMESTAMP_SHIFT = 22;
     private const TIMEOUT_SECONDS = 10;
-    // ADMINISTRATOR or MANAGE_GUILD: the same rule Discord uses for adding a bot to a server
-    private const CAN_MANAGE_SERVER = (1 << 3) | (1 << 5);
+    // the same rule Discord uses for adding a bot to a server
+    private const CAN_MANAGE_SERVER = DiscordPermissions::ADMINISTRATOR | DiscordPermissions::MANAGE_GUILD;
 
     public function __construct(
         private string $clientId,
@@ -20,6 +30,24 @@ final class DiscordClient
         private string $redirectUri,
         private string $apiUrl,
     ) {
+    }
+
+    /** The API address: Discord's own, or a fake one for tests from DISCORD_API_URL. */
+    public static function apiUrl(): string
+    {
+        return getenv('DISCORD_API_URL') ?: self::API_URL;
+    }
+
+    /** Whether this is a Discord id, of a user, server, channel or message: up to 20 digits, so it is safe in an address. */
+    public static function isId(mixed $id): bool
+    {
+        return is_string($id) && preg_match('/^\d{1,20}$/', $id) === 1;
+    }
+
+    /** Whether this is the hash of an avatar or icon, so it is safe in an address; "a_" marks an animated one. */
+    public static function isImageHash(mixed $hash): bool
+    {
+        return is_string($hash) && preg_match('/^(a_)?[0-9a-f]{32}$/', $hash) === 1;
     }
 
     /** Trades the one-time code from the redirect for an access token. */
@@ -55,7 +83,7 @@ final class DiscordClient
         $avatar = $user['avatar'] ?? null;
 
         // the id becomes part of an image address, so it must be a real Discord id
-        if (!is_string($id) || !preg_match('/^\d{1,20}$/', $id) || !is_string($name) || $name === '') {
+        if (!self::isId($id) || !is_string($name) || $name === '') {
             throw new RuntimeException('Discord user response has no id or name');
         }
 
@@ -75,19 +103,29 @@ final class DiscordClient
     public static function avatarUrl(string $id, mixed $avatar, mixed $discriminator): string
     {
         // only a real picture hash goes into the address
-        return is_string($avatar) && preg_match('/^(a_)?[0-9a-f]{32}$/', $avatar)
-            ? "https://cdn.discordapp.com/avatars/$id/$avatar.png?size=64"
-            : 'https://cdn.discordapp.com/embed/avatars/' . self::defaultAvatar($id, $discriminator) . '.png';
+        return self::isImageHash($avatar)
+            ? self::CDN_URL . "/avatars/$id/$avatar.png?size=" . self::IMAGE_SIZE
+            : self::CDN_URL . '/embed/avatars/' . self::defaultAvatar($id, $discriminator) . '.png';
+    }
+
+    /**
+     * The address of a server's icon, or null when it has none.
+     *
+     * @param string $id digits only, as it becomes part of the address
+     */
+    public static function serverIconUrl(string $id, mixed $icon): ?string
+    {
+        return self::isImageHash($icon) ? self::CDN_URL . "/icons/$id/$icon.png?size=" . self::IMAGE_SIZE : null;
     }
 
     /** Which of Discord's default pictures the user has: by the id for new names, by the old #1234 tag for the rest. */
     private static function defaultAvatar(string $id, mixed $discriminator): int
     {
         if (is_string($discriminator) && preg_match('/^\d{4}$/', $discriminator) && $discriminator !== '0000') {
-            return (int) $discriminator % 5;
+            return (int) $discriminator % self::LEGACY_DEFAULT_AVATARS;
         }
 
-        return ((int) $id >> 22) % 6;
+        return ((int) $id >> self::ID_TIMESTAMP_SHIFT) % self::DEFAULT_AVATARS;
     }
 
     /**
@@ -110,7 +148,7 @@ final class DiscordClient
             $canManage = ($guild['owner'] ?? false) === true
                 || ((int) ($guild['permissions'] ?? 0) & self::CAN_MANAGE_SERVER) !== 0;
 
-            if (!$canManage || !is_string($id) || !preg_match('/^\d{1,20}$/', $id) || !is_string($name) || $name === '') {
+            if (!$canManage || !self::isId($id) || !is_string($name) || $name === '') {
                 continue;
             }
 
@@ -118,7 +156,7 @@ final class DiscordClient
                 'id' => $id,
                 'name' => $name,
                 // the icon becomes part of an image address, so only a real icon hash is kept
-                'icon' => is_string($icon) && preg_match('/^(a_)?[0-9a-f]{32}$/', $icon) ? $icon : null,
+                'icon' => self::isImageHash($icon) ? $icon : null,
             ];
         }
 

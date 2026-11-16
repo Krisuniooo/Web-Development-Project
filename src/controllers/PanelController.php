@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Database;
 use App\Discord\DiscordBotClient;
 use App\Discord\DiscordClient;
+use App\Discord\DiscordPermissions;
 use App\Model\Channel;
 use App\Model\ChannelRule;
 use App\Model\ModerationEvent;
@@ -20,12 +21,12 @@ use RuntimeException;
 
 final class PanelController extends AppController
 {
-    private const DISCORD_INVITE_URL = 'https://discord.com/oauth2/authorize';
+    // what the bot needs on a server: see the moderated channels, delete messages, time out and ban authors;
     // asked for all at once, so turning on timeouts or bans later needs no new invite
-    private const DISCORD_BOT_PERMISSIONS = (1 << 10) // VIEW_CHANNEL: see the moderated channels
-        | (1 << 13) // MANAGE_MESSAGES: delete messages
-        | (1 << 40) // MODERATE_MEMBERS: time out authors
-        | (1 << 2); // BAN_MEMBERS: ban authors
+    private const DISCORD_BOT_PERMISSIONS = DiscordPermissions::VIEW_CHANNEL
+        | DiscordPermissions::MANAGE_MESSAGES
+        | DiscordPermissions::MODERATE_MEMBERS
+        | DiscordPermissions::BAN_MEMBERS;
     // the model of the test box, until a channel can choose its own
     private const TEST_MODEL = 'basal-mini';
     // the longest message Discord allows without Nitro
@@ -591,10 +592,7 @@ final class PanelController extends AppController
 
     private function discordBot(): DiscordBotClient
     {
-        return new DiscordBotClient(
-            trim((string) getenv('DISCORD_BOT_TOKEN')),
-            getenv('DISCORD_API_URL') ?: DiscordClient::API_URL,
-        );
+        return DiscordBotClient::fromEnvironment();
     }
 
     /**
@@ -613,10 +611,8 @@ final class PanelController extends AppController
                 'name' => $server['name'],
                 // shown instead of a missing icon
                 'initials' => $this->initials($server['name']),
-                'iconUrl' => $server['icon'] === null
-                    ? null
-                    : "https://cdn.discordapp.com/icons/{$server['id']}/{$server['icon']}.png?size=64",
-                'inviteUrl' => self::DISCORD_INVITE_URL . '?' . http_build_query([
+                'iconUrl' => DiscordClient::serverIconUrl($server['id'], $server['icon']),
+                'inviteUrl' => DiscordClient::AUTHORIZE_URL . '?' . http_build_query([
                     'client_id' => getenv('DISCORD_CLIENT_ID'),
                     'scope' => 'bot',
                     'permissions' => self::DISCORD_BOT_PERMISSIONS,

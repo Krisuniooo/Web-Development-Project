@@ -62,14 +62,14 @@ final class DiscordEvents
             // READY lists every server the bot is on; one missing here was left while the bot was offline
             $kept = array_filter(
                 array_column(is_array($data['guilds'] ?? null) ? $data['guilds'] : [], 'id'),
-                self::isDiscordId(...),
+                DiscordClient::isId(...),
             );
             $this->servers()->markRemovedExcept(self::PLATFORM, array_values($kept));
         } elseif ($type === 'GUILD_CREATE' || $type === 'GUILD_UPDATE') {
             $id = $data['id'] ?? null;
             $name = $data['name'] ?? null;
 
-            if (self::isDiscordId($id) && is_string($name) && $name !== '' && !self::isOutage($data)) {
+            if (DiscordClient::isId($id) && is_string($name) && $name !== '' && !self::isOutage($data)) {
                 $this->servers()->saveActive(self::PLATFORM, $id, $name);
 
                 // GUILD_UPDATE has no channels in it
@@ -80,7 +80,7 @@ final class DiscordEvents
         } elseif ($type === 'GUILD_DELETE') {
             $id = $data['id'] ?? null;
 
-            if (self::isDiscordId($id) && !self::isOutage($data)) {
+            if (DiscordClient::isId($id) && !self::isOutage($data)) {
                 $this->servers()->markRemoved(self::PLATFORM, $id);
             }
         } elseif ($type === 'MESSAGE_CREATE') {
@@ -145,7 +145,7 @@ final class DiscordEvents
         }
 
         // without a real author there is nobody the event could be about
-        if (!self::isDiscordId($serverId) || !self::isDiscordId($channelId) || !self::isDiscordId($messageId) || !self::isDiscordId($authorId)) {
+        if (!DiscordClient::isId($serverId) || !DiscordClient::isId($channelId) || !DiscordClient::isId($messageId) || !DiscordClient::isId($authorId)) {
             return;
         }
 
@@ -241,11 +241,5 @@ final class DiscordEvents
     private static function isOutage(array $data): bool
     {
         return ($data['unavailable'] ?? false) === true;
-    }
-
-    // ids of servers, channels and messages are all numbers of up to 20 digits
-    private static function isDiscordId(mixed $id): bool
-    {
-        return is_string($id) && preg_match('/^\d{1,20}$/', $id) === 1;
     }
 }

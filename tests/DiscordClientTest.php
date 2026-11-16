@@ -6,7 +6,7 @@ namespace Tests;
 
 use App\Discord\DiscordClient;
 
-/** The address of a user's picture, used at login and for the authors in the overview. */
+/** The addresses of Discord's pictures, used at login, for the servers and for the authors in the overview. */
 final class DiscordClientTest extends TestCase
 {
     private const USER_ID = '359042200778178590';
@@ -46,5 +46,29 @@ final class DiscordClientTest extends TestCase
         $url = DiscordClient::avatarUrl(self::USER_ID, '../../evil', '0');
 
         $this->assertSame(true, str_starts_with($url, 'https://cdn.discordapp.com/embed/avatars/'));
+    }
+
+    public function testServerIconUsesItsHash(): void
+    {
+        $this->assertSame(
+            'https://cdn.discordapp.com/icons/' . self::USER_ID . '/a_3af5f714a6b78164d686f4b0e49af67c.png?size=64',
+            DiscordClient::serverIconUrl(self::USER_ID, 'a_3af5f714a6b78164d686f4b0e49af67c'),
+        );
+    }
+
+    public function testServerWithoutARealIconHasNone(): void
+    {
+        $this->assertSame(null, DiscordClient::serverIconUrl(self::USER_ID, null));
+        $this->assertSame(null, DiscordClient::serverIconUrl(self::USER_ID, '../../evil'));
+    }
+
+    public function testIdIsOnlyDigits(): void
+    {
+        $this->assertSame(true, DiscordClient::isId(self::USER_ID));
+        $this->assertSame(false, DiscordClient::isId('123/../456'));
+        $this->assertSame(false, DiscordClient::isId(''));
+        $this->assertSame(false, DiscordClient::isId(123));
+        // more digits than any Discord id has
+        $this->assertSame(false, DiscordClient::isId(str_repeat('1', 21)));
     }
 }
