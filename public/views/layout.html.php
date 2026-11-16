@@ -7,11 +7,14 @@
         <?= htmlspecialchars($pageTitle ?? $lang->text('app.name'), ENT_QUOTES, 'UTF-8') ?>
     </title>
 
+    <?php // the icons are served from here, so no script from another site runs on the pages ?>
+    <link rel="stylesheet" href="/assets/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome/css/solid.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome/css/regular.min.css">
     <link rel="stylesheet" href="/css/style.css">
     <?php foreach ($stylesheets ?? [] as $stylesheet): ?>
         <link rel="stylesheet" href="<?= htmlspecialchars($stylesheet, ENT_QUOTES, 'UTF-8') ?>">
     <?php endforeach; ?>
-    <script src="https://kit.fontawesome.com/8fd9367667.js" crossorigin="anonymous"></script>
     <script src="/js/themeInit.js"></script>
     <script src="/js/theme.js" defer></script>
 </head>

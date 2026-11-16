@@ -4,34 +4,12 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-RUN apk add --no-cache \
-        zlib \
-        libzip \
-        libpng \
-        libjpeg-turbo \
-        postgresql-libs \
-    && apk add --no-cache --virtual .build-deps \
-        zlib-dev \
-        libzip-dev \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        postgresql-dev \
-        $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
-        opcache \
-        zip \
-        gd \
-        bcmath \
-        pgsql \
-        pdo_pgsql \
+# only what the code uses: PostgreSQL through PDO, and opcache
+RUN apk add --no-cache postgresql-libs \
+    && apk add --no-cache --virtual .build-deps postgresql-dev $PHPIZE_DEPS \
+    && docker-php-ext-install -j"$(nproc)" opcache pgsql pdo_pgsql \
     && apk del .build-deps
 
-RUN { \
-      echo 'memory_limit = -1'; \
-      echo 'upload_max_filesize = 512M'; \
-      echo 'post_max_size = 512M'; \
-      echo 'max_file_uploads = 20'; \
-    } > /usr/local/etc/php/conf.d/mealplanner.ini
+COPY docker/php/app.ini /usr/local/etc/php/conf.d/app.ini
 
 COPY . .

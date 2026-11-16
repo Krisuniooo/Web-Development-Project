@@ -1,5 +1,2 @@
+# the database name, user and password come from .env through docker-compose.yaml
 FROM postgres:latest
-
-ENV POSTGRES_PASSWORD docker
-ENV POSTGRES_DB db
-ENV POSTGRES_USER docker
