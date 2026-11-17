@@ -16,6 +16,11 @@ return [
     "nav.panel" => "Panel",
     "nav.servers" => "Servers",
     "nav.choose_server" => "Choose a server on the Servers tab first",
+    // a text with @ and a platform after its key replaces the plain one in the panel of an account from that platform:
+    // on Twitch a "server" is a channel, and its only "channel" is the chat
+    "nav.servers@twitch" => "Channels",
+    "nav.channels@twitch" => "Chat",
+    "nav.choose_server@twitch" => "Choose a channel on the Channels tab first",
 
     "header.manage" => "Manage $appName",
     "header.manage_on" => "Manage $appName on",
@@ -34,15 +39,20 @@ return [
     "servers.manage" => "Manage",
     "servers.managed" => "Managing",
     "servers.refresh" => "Refresh the list",
+    "servers.connect" => "Connect",
+    "servers.connect_error" => "The channel could not be connected. Refresh the list and try again.",
+    "servers.title@twitch" => "Your channels",
+    "servers.lead@twitch" => "Choose the channel whose chat $appName should watch over.",
     "login.title" => "Log in",
     "login.description" => "Use the account you moderate your community with. There is no separate password.",
     "login.discord" => "Continue with Discord",
-    "login.notice" => "Through Discord we get the ID, name and avatar of your account and the list of servers you can manage. We keep them only in your session, not in a database. By logging in, you accept the %s and the %s.",
+    "login.twitch" => "Continue with Twitch",
+    "login.notice" => "Through the platform you choose we get the ID, name and avatar of your account and the list of servers or channels you can manage. We keep them only in your session, not in a database. By logging in, you accept the %s and the %s.",
     "login.terms_link" => "terms of service",
     "login.privacy_link" => "privacy policy",
     "login.error.cancelled" => "Login was cancelled.",
     "login.error.failed" => "Login failed. Please try again.",
-    "login.error.not_configured" => "Discord login is not set up on this server yet.",
+    "login.error.not_configured" => "Login with this platform is not set up on this server yet.",
     "status.title" => "Server status",
     "status.not_ready" => "This page is not ready yet.",
 
@@ -98,6 +108,8 @@ return [
 
     "channels.lead" => "The bot watches up to two channels on this server. Each has its own language, which decides the questions to the model and the thresholds.",
     "channels.slot" => "Channel %d",
+    "channels.lead@twitch" => "A Twitch channel has one chat. Its language decides the questions to the model and the thresholds.",
+    "channels.slot@twitch" => "Chat",
     "channels.status.active" => "Moderated",
     "channels.status.paused" => "Paused",
     "channels.pause" => "Pause",
@@ -129,6 +141,7 @@ return [
     "action.delete" => "Delete",
 
     "models.lead" => "Which model checks each channel of this server. A model must understand the language of the channel.",
+    "models.lead@twitch" => "Which model checks the chat of this channel. A model must understand the language of the chat.",
     "models.choose" => "Which model should check this channel?",
     "models.other_language" => "does not understand the channel's language",
     "models.saved" => "The channel model is saved.",
@@ -162,6 +175,7 @@ return [
     "exemptions.roles_error" => "The roles could not be loaded from Discord. Refresh the page in a moment.",
 
     "logs.lead" => "What the bot did with messages on the channels of this server, newest first.",
+    "logs.lead@twitch" => "What the bot did with messages in the chat of this channel, newest first.",
     "logs.action.flag" => "Flagged",
     "logs.action.delete" => "Deleted",
     "logs.action.timeout" => "Timed out",
@@ -173,6 +187,7 @@ return [
     "logs.detail.failure" => "Why it failed",
     "status.heading" => "Is it working?",
     "overview.lead" => "What the bot does on this server, and whether everything works.",
+    "overview.lead@twitch" => "What the bot does on this channel, and whether everything works.",
     "overview.periods" => "Period",
     "overview.period_title" => "Last %d days",
     "overview.days" => "%d days",

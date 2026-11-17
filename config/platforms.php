@@ -24,6 +24,11 @@ return [
     [
         "name" => "Twitch",
         "slug" => "twitch",
+        "loginPath" => "/login",
+        "authPath" => "/auth/twitch",
+        "connect" => "panel",
+        "channelSlots" => 1,
+        "exemptions" => false,
         "ctaMessage" => "cta.twitch",
     ],
     [

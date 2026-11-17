@@ -94,6 +94,11 @@ final class DefaultController extends AppController
         $this->render('login', [
             'pageTitle' => $this->lang()->text('login.title'),
             'loginError' => $this->loginErrorKey(),
+            // those with a login of their own
+            'loginPlatforms' => array_values(array_filter(
+                Config::load('platforms'),
+                fn(array $platform): bool => isset($platform['authPath']),
+            )),
         ]);
     }
 

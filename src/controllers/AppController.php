@@ -67,10 +67,13 @@ abstract class AppController
             return null;
         }
 
-        // ended here, since PHP's garbage collector removes old sessions only now and then
+        // ended here, since PHP's garbage collector removes old sessions only now and then;
+        // a login that holds a platform's token also ends when the token does
         $lastActivity = $_SESSION['lastActivity'] ?? null;
+        $expiresAt = $_SESSION['expiresAt'] ?? null;
+        $isIdle = is_int($lastActivity) && $lastActivity < time() - (int) ini_get('session.gc_maxlifetime');
 
-        if (is_int($lastActivity) && $lastActivity < time() - (int) ini_get('session.gc_maxlifetime')) {
+        if ($isIdle || (is_int($expiresAt) && $expiresAt <= time())) {
             $this->endSession();
 
             return null;

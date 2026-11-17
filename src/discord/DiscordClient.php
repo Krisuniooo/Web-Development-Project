@@ -140,7 +140,7 @@ final class DiscordClient
     /**
      * The servers the user owns or can manage, sorted by name.
      *
-     * @return list<array{id: string, name: string, icon: ?string}>
+     * @return list<array{id: string, name: string, iconUrl: ?string}>
      */
     public function fetchManagedServers(string $accessToken): array
     {
@@ -164,8 +164,8 @@ final class DiscordClient
             $servers[] = [
                 'id' => $id,
                 'name' => $name,
-                // the icon becomes part of an image address, so only a real icon hash is kept
-                'icon' => self::isImageHash($icon) ? $icon : null,
+                // the icon becomes part of an image address, so only a real icon hash makes one
+                'iconUrl' => self::serverIconUrl($id, $icon),
             ];
         }
 

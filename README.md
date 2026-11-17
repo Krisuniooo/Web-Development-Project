@@ -24,6 +24,16 @@ Logowanie do panelu i bot wymagają aplikacji w [Discord Developer Portal](https
 
 Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmianie `.env` uruchom kontenery ponownie: `docker compose up -d`.
 
+## Twitch
+
+Logowanie przez Twitcha wymaga aplikacji w [Twitch Developer Console](https://dev.twitch.tv/console/apps). W `.env` uzupełnij `TWITCH_CLIENT_ID` i `TWITCH_CLIENT_SECRET`, a w konsoli dodaj adres powrotu `APP_URL/auth/twitch/callback`. Bez tych ustawień przycisk logowania przez Twitcha pokazuje, że logowanie nie jest skonfigurowane.
+
+Na razie działa logowanie i panel; bot, który czyta czat Twitcha, jeszcze nie istnieje. Różnice względem Discorda:
+
+- **Kanał to „serwer”.** Lista po zalogowaniu to własny kanał osoby oraz kanały, które moderuje (zakres `user:read:moderated_channels`). Kanał podłącza się przyciskiem „Podłącz”, bo na Twitchu nie ma zaproszenia bota. Ma jeden czat, więc zakładka Kanały pokazuje jedną kartę, a język startowy to ten, który właściciel ustawił na Twitchu.
+- **Token zostaje w sesji.** Na Twitchu tylko token samego użytkownika mówi, czy nadal moderuje dany kanał, więc token dostępu leży w sesji na serwerze (nie w bazie ani w ciasteczku) i nie trafia do strony. Przed każdą zmianą aplikacja pyta Twitcha o uprawnienia, jak na Discordzie. Logowanie kończy się razem z tokenem (około czterech godzin), a odrzucony przez Twitcha token kończy je od razu. Tokenu odświeżania aplikacja nie przechowuje.
+- **Bez wyjątków dla ról.** Karty „Kogo bot pomija” nie ma, bo na Twitchu nie ma ról serwera; moderatorów i właściciela kanału bot ma pomijać po odznakach czatu.
+
 ## Usługi
 
 | Usługa | Rola | Adres |
@@ -42,6 +52,7 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 
 - **Nagłówki HTTP.** nginx (`docker/nginx/nginx.conf`) dodaje do każdej odpowiedzi Content-Security-Policy, która dopuszcza tylko skrypty, style i fonty z tej strony oraz obrazki z Discorda. Wysyła też `X-Frame-Options: DENY`, więc panelu nie da się osadzić w ramce na obcej stronie, a do tego `X-Content-Type-Options`, `Referrer-Policy` i `Permissions-Policy`.
 - **PHP.** `docker/php/app.ini` wyłącza pokazywanie błędów na stronach (trafiają do `docker compose logs`) i ukrywa wersję PHP.
+- **Obrazki.** Content-Security-Policy dopuszcza obrazki tylko z tej strony, z Discorda i z `static-cdn.jtvnw.net` (zdjęcia profilowe z Twitcha); adres obrazka z innego hosta jest odrzucany, zanim trafi do strony.
 - **Ikony.** Font Awesome jest serwowany z `public/assets/fontawesome/`, więc na stronach nie działa żaden skrypt z innej domeny.
 - **Sesja.** Sesja należy do jednego konta: nowe logowanie zastępuje całą sesję, a jej identyfikator zmienia się przy logowaniu. Sesja nieużywana przez godzinę wygasa. Ciasteczko sesji jest niedostępne dla skryptów (`HttpOnly`), ma `SameSite=Lax`, a gdy strona działa po HTTPS, także `Secure`. Za serwerem pośredniczącym, który sam obsługuje HTTPS, decyduje o tym `APP_URL` zaczynający się od `https://`.
 - **Formularze.** Każdy formularz POST jest sprawdzany pod kątem pochodzenia (`Sec-Fetch-Site` albo `Origin`).
@@ -90,7 +101,7 @@ docker compose exec -T php php bin/test.php
 docker compose exec -T php php bin/test.php Permissions
 ```
 
-Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, rozpoznawanie administratorów serwera, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
+Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, rozpoznawanie administratorów serwera, adresy i obrazki z Twitcha, wersje tekstów dla platformy, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
 
 Te same testy i sprawdzenie składni wszystkich plików PHP uruchamia GitHub Actions przy każdym pushu (`.github/workflows/ci.yml`), bez Dockera i bazy.
 

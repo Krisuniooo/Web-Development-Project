@@ -1,6 +1,7 @@
 <?php $stylesheets[] = '/css/panel/servers.css'; ?>
 
 <p class="panel-content--description"><?= $t('servers.lead') ?></p>
+<?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <section class="servers" aria-labelledby="servers-title">
     <div class="servers-header">
@@ -10,7 +11,7 @@
                 <span class="servers-count">· <?= count($servers) ?></span>
             <?php endif; ?>
         </h2>
-        <a href="/auth/discord" class="servers-refresh">
+        <a href="<?= $e($refreshPath) ?>" class="servers-refresh">
             <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
             <?= $t('servers.refresh') ?>
         </a>
@@ -37,11 +38,20 @@
                             <input type="hidden" name="server" value="<?= $e($server['id']) ?>" />
                             <button type="submit" class="servers-card--manage"><?= $t('servers.manage') ?></button>
                         </form>
-                    <?php else: ?>
+                    <?php elseif ($server['inviteUrl'] !== null): ?>
                         <a href="<?= $e($server['inviteUrl']) ?>" class="servers-card--invite" target="_blank" rel="noopener noreferrer">
                             <?= $t('servers.add_bot') ?>
                             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
                         </a>
+                    <?php else: ?>
+                        <?php // no invite on this platform: the panel connects the server itself ?>
+                        <form method="post" action="/app/servers/connect" class="servers-card--form">
+                            <input type="hidden" name="server" value="<?= $e($server['id']) ?>" />
+                            <button type="submit" class="servers-card--invite">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                <?= $t('servers.connect') ?>
+                            </button>
+                        </form>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>

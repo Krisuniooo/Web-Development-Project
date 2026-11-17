@@ -7,18 +7,20 @@ namespace App\Service;
 use App\Discord\DiscordBotClient;
 use App\Model\Channel;
 use App\Repository\ServerRepository;
+use App\Twitch\TwitchClient;
 use Closure;
 use PDO;
 use RuntimeException;
 
 /**
  * Which servers the logged-in user may manage, and which of their channels and roles the bot can see.
- * The platform decides, not the session: Discord is asked again before the chosen server is used,
- * and its answers are kept in the session only briefly, since Discord limits how often the bot may ask.
+ * The platform decides, not the session: it is asked again before the chosen server is used,
+ * and its answers are kept in the session only briefly, since platforms limit how often they may be asked.
+ * Discord is asked through the bot; Twitch has no bot that could know, so the user's own token from the login is used.
  */
 final class ServerAccess
 {
-    // how long Discord's answer that the user may manage the server is trusted before asking again
+    // how long the platform's answer that the user may manage the server is trusted before asking again
     private const ACCESS_CHECK_SECONDS = 60;
     // how long the channels and the roles from Discord are used before asking again: 2 times a minute of the 10 Discord allows
     private const DISCORD_LIST_SECONDS = 30;
@@ -28,7 +30,7 @@ final class ServerAccess
     {
     }
 
-    /** @return list<array{id: string, name: string, icon: ?string}> the servers the user could manage at login */
+    /** @return list<array{id: string, name: string, iconUrl: ?string}> the servers the user could manage at login */
     public function servers(): array
     {
         $servers = $_SESSION['servers'] ?? [];
@@ -49,7 +51,7 @@ final class ServerAccess
 
         foreach ($this->servers() as $server) {
             if ($server['id'] === $id) {
-                return $this->idsWithBot($user['platform'], [$id]) === [$id] && $this->canStillManage($user['id'], $id)
+                return $this->idsWithBot($user['platform'], [$id]) === [$id] && $this->canStillManage($user, $id)
                     ? ['id' => $server['id'], 'name' => $server['name']]
                     : null;
             }
@@ -70,6 +72,45 @@ final class ServerAccess
 
         if ($isOwnServer && $this->idsWithBot($user['platform'], [$serverId]) === [$serverId]) {
             $_SESSION['managedServerId'] = $serverId;
+        }
+    }
+
+    /**
+     * A server from the user's list that the platform says they may manage now, whether the bot is on it or not;
+     * for connecting one in the panel. Null for any other server.
+     *
+     * @param array{platform: string, id: string} $user
+     * @return array{id: string, name: string}|null
+     */
+    public function confirmedServer(array $user, mixed $serverId): ?array
+    {
+        foreach ($this->servers() as $server) {
+            if ($server['id'] === $serverId) {
+                return $this->canStillManage($user, $serverId) ? ['id' => $server['id'], 'name' => $server['name']] : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The language the server's owner set on the platform, when the platform can be asked with the user's token;
+     * null otherwise, and when it does not answer.
+     *
+     * @param array{platform: string} $user
+     */
+    public function serverLanguage(array $user, string $serverId): ?string
+    {
+        if ($user['platform'] !== 'twitch') {
+            return null;
+        }
+
+        try {
+            return TwitchClient::fromEnvironment()->fetchChannelLanguage($this->platformToken(), $serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the language of a channel: ' . $exception->getMessage());
+
+            return null;
         }
     }
 
@@ -128,11 +169,14 @@ final class ServerAccess
     }
 
     /**
-     * Asks Discord whether the user may still manage the server and trusts a yes for a while.
+     * Asks the platform whether the user may still manage the server and trusts a yes for a while.
      * A no, after a ban, leaving or a lost permission, also takes the server off the list.
+     *
+     * @param array{platform: string, id: string} $user
      */
-    private function canStillManage(string $userId, string $serverId): bool
+    private function canStillManage(array $user, string $serverId): bool
     {
+        $userId = $user['id'];
         $saved = $_SESSION['accessCheck'] ?? null;
 
         // the answer holds only for the same user and server
@@ -146,10 +190,17 @@ final class ServerAccess
         }
 
         try {
-            $canManage = DiscordBotClient::fromEnvironment()->canManageServer($serverId, $userId);
+            $canManage = $user['platform'] === 'twitch'
+                ? TwitchClient::fromEnvironment()->canManageChannel($this->platformToken(), $userId, $serverId)
+                : DiscordBotClient::fromEnvironment()->canManageServer($serverId, $userId);
         } catch (RuntimeException $exception) {
-            // without an answer nobody gets in, but the server stays on the list for when Discord answers again
+            // without an answer nobody gets in, but the server stays on the list for when the platform answers again
             error_log('Panel could not check the access to a server: ' . $exception->getMessage());
+
+            // a user's token Twitch no longer takes cannot answer later either, so the next page asks to log in again
+            if ($user['platform'] === 'twitch' && TwitchClient::isUnauthorized($exception)) {
+                $_SESSION['expiresAt'] = time();
+            }
 
             return false;
         }
@@ -167,6 +218,14 @@ final class ServerAccess
         ));
 
         return false;
+    }
+
+    /** The user's token from the login, for a platform that is asked with it; empty when the session has none. */
+    private function platformToken(): string
+    {
+        $token = $_SESSION['platformToken'] ?? null;
+
+        return is_string($token) ? $token : '';
     }
 
     /**

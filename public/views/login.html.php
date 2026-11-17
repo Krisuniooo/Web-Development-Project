@@ -11,10 +11,12 @@
         <?php if ($loginError !== null): ?>
             <p class="login-error" role="alert"><?= $t($loginError) ?></p>
         <?php endif; ?>
-        <a href="/auth/discord" class="login-platform">
-            <img src="/assets/icons/discord.svg" alt="" class="login-platform--icon" width="20" height="20" />
-            <?= $t('login.discord') ?>
-        </a>
+        <?php foreach ($loginPlatforms as $platform): ?>
+            <a href="<?= $e($platform['authPath']) ?>" class="login-platform">
+                <img src="/assets/icons/<?= $e($platform['slug']) ?>.svg" alt="" class="login-platform--icon" width="20" height="20" />
+                <?= $t('login.' . $platform['slug']) ?>
+            </a>
+        <?php endforeach; ?>
         <?php // what logging in hands over, said before it happens ?>
         <p class="login-notice">
             <?= sprintf(

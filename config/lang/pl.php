@@ -16,6 +16,11 @@ return [
     "nav.panel" => "Panel",
     "nav.servers" => "Serwery",
     "nav.choose_server" => "Najpierw wybierz serwer w zakładce Serwery",
+    // a text with @ and a platform after its key replaces the plain one in the panel of an account from that platform:
+    // on Twitch a "server" is a channel, and its only "channel" is the chat
+    "nav.servers@twitch" => "Kanały",
+    "nav.channels@twitch" => "Czat",
+    "nav.choose_server@twitch" => "Najpierw wybierz kanał w zakładce Kanały",
 
     "header.manage" => "Zarządzaj $appName",
     "header.manage_on" => "Zarządzaj $appName na",
@@ -34,15 +39,20 @@ return [
     "servers.manage" => "Zarządzaj",
     "servers.managed" => "Zarządzasz",
     "servers.refresh" => "Odśwież listę",
+    "servers.connect" => "Podłącz",
+    "servers.connect_error" => "Nie udało się podłączyć kanału. Odśwież listę i spróbuj ponownie.",
+    "servers.title@twitch" => "Twoje kanały",
+    "servers.lead@twitch" => "Wybierz kanał, którego czat ma pilnować $appName.",
     "login.title" => "Logowanie",
     "login.description" => "Użyj konta, którym moderujesz swoją społeczność. Nie ma osobnego hasła.",
     "login.discord" => "Kontynuuj przez Discorda",
-    "login.notice" => "Przez Discorda dostajemy identyfikator, nazwę i awatar Twojego konta oraz listę serwerów, którymi możesz zarządzać. Trzymamy je tylko w sesji, nie w bazie danych. Logując się, akceptujesz %s i %s.",
+    "login.twitch" => "Kontynuuj przez Twitcha",
+    "login.notice" => "Przez wybraną platformę dostajemy identyfikator, nazwę i awatar Twojego konta oraz listę serwerów albo kanałów, którymi możesz zarządzać. Trzymamy je tylko w sesji, nie w bazie danych. Logując się, akceptujesz %s i %s.",
     "login.terms_link" => "regulamin",
     "login.privacy_link" => "politykę prywatności",
     "login.error.cancelled" => "Logowanie zostało anulowane.",
     "login.error.failed" => "Logowanie się nie udało. Spróbuj ponownie.",
-    "login.error.not_configured" => "Logowanie przez Discorda nie jest jeszcze skonfigurowane na tym serwerze.",
+    "login.error.not_configured" => "Logowanie przez tę platformę nie jest jeszcze skonfigurowane na tym serwerze.",
     "status.title" => "Status serwerów",
     "status.not_ready" => "Ta strona nie jest jeszcze gotowa.",
 
@@ -98,6 +108,8 @@ return [
 
     "channels.lead" => "Bot pilnuje na tym serwerze najwyżej dwóch kanałów. Każdy ma własny język, a od niego zależą pytania do modelu i progi.",
     "channels.slot" => "Kanał %d",
+    "channels.lead@twitch" => "Kanał na Twitchu ma jeden czat. Jego język decyduje o pytaniach do modelu i progach.",
+    "channels.slot@twitch" => "Czat",
     "channels.status.active" => "Moderowany",
     "channels.status.paused" => "Wstrzymany",
     "channels.pause" => "Wstrzymaj",
@@ -129,6 +141,7 @@ return [
     "action.delete" => "Usuń",
 
     "models.lead" => "Który model sprawdza każdy kanał tego serwera. Model musi rozumieć język kanału.",
+    "models.lead@twitch" => "Który model sprawdza czat tego kanału. Model musi rozumieć język czatu.",
     "models.choose" => "Który model ma sprawdzać ten kanał?",
     "models.other_language" => "nie rozumie języka kanału",
     "models.saved" => "Zapisano model kanału.",
@@ -162,6 +175,7 @@ return [
     "exemptions.roles_error" => "Nie udało się pobrać ról z Discorda. Odśwież stronę za chwilę.",
 
     "logs.lead" => "Co bot zrobił z wiadomościami na kanałach tego serwera, od najnowszych.",
+    "logs.lead@twitch" => "Co bot zrobił z wiadomościami na czacie tego kanału, od najnowszych.",
     "logs.action.flag" => "Oznaczono",
     "logs.action.delete" => "Usunięto",
     "logs.action.timeout" => "Wyciszono",
@@ -173,6 +187,7 @@ return [
     "logs.detail.failure" => "Dlaczego się nie udało",
     "status.heading" => "Czy wszystko działa?",
     "overview.lead" => "Co bot robi na tym serwerze i czy wszystko działa.",
+    "overview.lead@twitch" => "Co bot robi na tym kanale i czy wszystko działa.",
     "overview.periods" => "Okres",
     "overview.period_title" => "Ostatnie %d dni",
     "overview.days" => "%d dni",

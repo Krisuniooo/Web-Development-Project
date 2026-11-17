@@ -77,6 +77,10 @@
   text-decoration: none;
   transition: border-color 0.2s;
 }
+/* the next platform comes right under the one before */
+.login-platform + .login-platform {
+  margin-top: var(--space-1);
+}
 .login-platform:hover {
   border-color: var(--color-accent);
 }

@@ -52,7 +52,9 @@ final class PanelController extends AbstractPanelController
         $idsWithBot = $this->access()->idsWithBot($user['platform'], array_column($servers, 'id'));
 
         $this->renderSection('servers', $user, $managedServer, [
-            'servers' => $this->serverCards($servers, $idsWithBot, $managedServer),
+            'servers' => $this->serverCards($user['platform'], $servers, $idsWithBot, $managedServer),
+            // logging in again reads the list anew
+            'refreshPath' => $this->platform($user['platform'])['authPath'],
         ]);
     }
 
@@ -65,6 +67,59 @@ final class PanelController extends AbstractPanelController
         }
 
         $this->access()->choose($this->requireLogin(), $_POST['server'] ?? null);
+
+        $this->redirect('/app');
+    }
+
+    /**
+     * Connects a server on a platform where no bot is invited, such as a Twitch channel, and chooses it.
+     * The server is its own only chat, so it gets that channel at once, with the default settings.
+     * One connected before keeps the settings it had.
+     */
+    public function connect(): void
+    {
+        if (!$this->isSameOriginRequest()) {
+            http_response_code(403);
+            return;
+        }
+
+        $user = $this->requireLogin();
+        $platform = $user['platform'];
+        // only a server on the user's list, and only after the platform said again that they may manage it
+        $server = $this->platform($platform)['connect'] === 'panel'
+            ? $this->access()->confirmedServer($user, $_POST['server'] ?? null)
+            : null;
+        $isConnected = false;
+
+        if ($server !== null) {
+            $defaults = $this->channelDefaults();
+            // Polish only when the owner set it on the platform and the model has questions in it, as for a Discord server
+            $language = $this->access()->serverLanguage($user, $server['id']) === 'pl'
+                && in_array('pl', $this->modelLanguages($defaults['model']), true) ? 'pl' : 'en';
+
+            try {
+                (new ServerRepository($this->database()))->saveActive($platform, $server['id'], $server['name']);
+                (new ChannelRepository($this->database()))->createFirst(
+                    $platform,
+                    $server['id'],
+                    $server['id'],
+                    $server['name'],
+                    $defaults['model'],
+                    $language,
+                    $defaults['rules'],
+                );
+                $isConnected = true;
+            } catch (RuntimeException $exception) {
+                error_log('Panel could not connect a server: ' . $exception->getMessage());
+            }
+        }
+
+        if (!$isConnected) {
+            $_SESSION['notice'] = ['text' => 'servers.connect_error', 'isError' => true];
+            $this->redirect('/app/servers');
+        }
+
+        $this->access()->choose($user, $server['id']);
 
         $this->redirect('/app');
     }
@@ -217,23 +272,28 @@ final class PanelController extends AbstractPanelController
     }
 
     /**
-     * Each server with a link that invites the bot, whether the bot is already there and whether it is the chosen one.
+     * Each server with whether the bot is already there and whether it is the chosen one, and for a server without
+     * the bot the link that invites it; on a platform without invites the link is null and the panel connects the server.
      *
      * @param list<string> $idsWithBot
-     * @return list<array{id: string, name: string, initials: string, iconUrl: ?string, inviteUrl: string, hasBot: bool, isManaged: bool}>
+     * @return list<array{id: string, name: string, initials: string, iconUrl: ?string, inviteUrl: ?string, hasBot: bool, isManaged: bool}>
      */
-    private function serverCards(array $servers, array $idsWithBot, ?array $managedServer): array
+    private function serverCards(string $platform, array $servers, array $idsWithBot, ?array $managedServer): array
     {
+        $hasInvites = $this->platform($platform)['connect'] === 'invite';
         $list = [];
 
         foreach ($servers as $server) {
+            $iconUrl = $server['iconUrl'] ?? null;
+
             $list[] = [
                 'id' => $server['id'],
                 'name' => $server['name'],
                 // shown instead of a missing icon
                 'initials' => $this->initials($server['name']),
-                'iconUrl' => DiscordClient::serverIconUrl($server['id'], $server['icon']),
-                'inviteUrl' => DiscordClient::AUTHORIZE_URL . '?' . http_build_query([
+                'iconUrl' => is_string($iconUrl) ? $iconUrl : null,
+                // only Discord has invites so far
+                'inviteUrl' => !$hasInvites ? null : DiscordClient::AUTHORIZE_URL . '?' . http_build_query([
                     'client_id' => getenv('DISCORD_CLIENT_ID'),
                     'scope' => 'bot',
                     'permissions' => self::DISCORD_BOT_PERMISSIONS,
