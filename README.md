@@ -28,11 +28,28 @@ Bez tokenu bot się nie uruchamia, a panel nie otwiera ustawień serwera. Po zmi
 
 Logowanie przez Twitcha wymaga aplikacji w [Twitch Developer Console](https://dev.twitch.tv/console/apps). W `.env` uzupełnij `TWITCH_CLIENT_ID` i `TWITCH_CLIENT_SECRET`, a w konsoli dodaj adres powrotu `APP_URL/auth/twitch/callback`. Bez tych ustawień przycisk logowania przez Twitcha pokazuje, że logowanie nie jest skonfigurowane.
 
-Na razie działa logowanie i panel; bot, który czyta czat Twitcha, jeszcze nie istnieje. Różnice względem Discorda:
+### Konto bota
+
+Bot Twitcha działa jako zwykłe konto na Twitchu, osobne od Twojego, np. `ChatWardenBot`. Konto zakładasz sam, a potem:
+
+1. Wpisz jego login (nazwę z adresu) w `.env` jako `TWITCH_BOT_LOGIN` i uruchom kontenery ponownie: `docker compose up -d`.
+2. Zaloguj się na Twitchu tym kontem (najlepiej w oknie prywatnym) i otwórz `APP_URL/auth/twitch/bot`. Twitch pyta o zgodę na odczyt czatu i usuwanie wiadomości. Zapisane zostanie tylko konto o loginie z `TWITCH_BOT_LOGIN`, więc nikt inny nie może zostać botem.
+3. Usługa `twitch-bot` sama zauważy konto (do minuty) i zacznie słuchać czatów podłączonych kanałów; nie trzeba jej restartować.
+4. Na każdym kanale ktoś musi wpisać na czacie `/mod ChatWardenBot` (z nazwą Twojego konta; panel podaje ją w zakładce Czat). Bez tego bot czyta czat, ale Twitch nie pozwala mu usuwać wiadomości, a powód widać w logach panelu.
+
+Tokeny konta bota leżą w bazie (`bot_accounts`), zaszyfrowane kluczem wyprowadzonym z `APP_KEY` (`src/Secrets.php`), więc sama kopia bazy nie wystarcza, żeby ich użyć. Kto ma i bazę, i `APP_KEY`, może je odczytać, więc `APP_KEY` chroń jak hasło do bazy, a po jego zmianie konto bota trzeba autoryzować od nowa. Bot odświeża token sam, na pięć minut przed wygaśnięciem, i co godzinę pyta Twitcha, czy token nadal działa.
+
+### Jak działa bot
+
+Bot łączy się z EventSub Twitcha (`wss://eventsub.wss.twitch.tv/ws`) tylko wtedy, gdy ma jakiś kanał do słuchania, i subskrybuje czat każdego aktywnego kanału. Nowy kanał podłączony w panelu bot wykrywa przy najbliższej synchronizacji, czyli najpóźniej po minucie. Gdy Twitch każe przejść na inny serwer, bot otwiera nowe połączenie, zanim zamknie stare, więc żadna wiadomość nie przepada; po zerwaniu łączy się ponownie z coraz dłuższą przerwą. Twitch dopuszcza 300 subskrypcji na jedno połączenie, a ta liczba kanałów jest na razie górną granicą.
+
+Bot pomija wiadomości właściciela kanału, moderatorów, własne oraz te, które w czacie współdzielonym zostały wysłane na innym kanale (ocenia je moderacja tamtego kanału). Resztę ocenia model tak samo jak na Discordzie, z ustawieniami kanału z panelu. Usuwanie wiadomości działa, a wyciszenia i bany jeszcze nie (jak na Discordzie wiadomość jest wtedy usuwana).
+
+Różnice w panelu względem Discorda:
 
 - **Kanał to „serwer”.** Lista po zalogowaniu to własny kanał osoby oraz kanały, które moderuje (zakres `user:read:moderated_channels`). Kanał podłącza się przyciskiem „Podłącz”, bo na Twitchu nie ma zaproszenia bota. Ma jeden czat, więc zakładka Kanały pokazuje jedną kartę, a język startowy to ten, który właściciel ustawił na Twitchu.
 - **Token zostaje w sesji.** Na Twitchu tylko token samego użytkownika mówi, czy nadal moderuje dany kanał, więc token dostępu leży w sesji na serwerze (nie w bazie ani w ciasteczku) i nie trafia do strony. Przed każdą zmianą aplikacja pyta Twitcha o uprawnienia, jak na Discordzie. Logowanie kończy się razem z tokenem (około czterech godzin), a odrzucony przez Twitcha token kończy je od razu. Tokenu odświeżania aplikacja nie przechowuje.
-- **Bez wyjątków dla ról.** Karty „Kogo bot pomija” nie ma, bo na Twitchu nie ma ról serwera; moderatorów i właściciela kanału bot ma pomijać po odznakach czatu.
+- **Bez wyjątków dla ról.** Karty „Kogo bot pomija” nie ma, bo na Twitchu nie ma ról serwera; moderatorów i właściciela kanału bot pomija po odznakach czatu.
 
 ## Usługi
 
@@ -40,6 +57,7 @@ Na razie działa logowanie i panel; bot, który czyta czat Twitcha, jeszcze nie 
 | --- | --- | --- |
 | `server`, `php` | strona i panel | http://localhost:8080 |
 | `discord-bot` | bot, logi: `docker compose logs -f discord-bot` | — |
+| `twitch-bot` | bot Twitcha, czeka sam na autoryzację konta bota, logi: `docker compose logs -f twitch-bot` | — |
 | `cron` | codzienne czyszczenie danych, logi: `docker compose logs cron` | — |
 | `basal-mini` | model moderacji dla polskiego i angielskiego, dostępny tylko dla kontenerów | — |
 | `basal-pico` | mniejszy i szybszy model moderacji, tylko angielski | — |
@@ -101,7 +119,7 @@ docker compose exec -T php php bin/test.php
 docker compose exec -T php php bin/test.php Permissions
 ```
 
-Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, rozpoznawanie administratorów serwera, adresy i obrazki z Twitcha, wersje tekstów dla platformy, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
+Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, rozpoznawanie administratorów serwera, adresy i obrazki z Twitcha, rozpoznawanie wiadomości z czatu Twitcha, szyfrowanie tokenów, wersje tekstów dla platformy, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
 
 Te same testy i sprawdzenie składni wszystkich plików PHP uruchamia GitHub Actions przy każdym pushu (`.github/workflows/ci.yml`), bez Dockera i bazy.
 

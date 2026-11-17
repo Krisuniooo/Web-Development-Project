@@ -82,6 +82,25 @@ services:
     networks:
       - pg-network
 
+  # the bot that moderates the chats of Twitch channels; it waits by itself until the account it acts as is authorized
+  twitch-bot:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: php bin/twitch-bot.php
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # passes the stop signal on to PHP, so the container stops at once
+    init: true
+    # starts again after a crash, but not when the bot stops on purpose
+    restart: on-failure
+    volumes:
+      - .:/app
+    networks:
+      - pg-network
+
   # runs bin/cleanup.php every day at 03:15 UTC
   cron:
     build:

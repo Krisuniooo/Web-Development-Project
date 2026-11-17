@@ -7,7 +7,7 @@ namespace App;
 use RuntimeException;
 
 /**
- * A small WebSocket client (RFC 6455), enough for the Discord Gateway.
+ * A small WebSocket client (RFC 6455), enough for the Discord Gateway and Twitch's EventSub.
  * It sends text messages and receives text and binary ones.
  */
 final class WebSocketClient

@@ -11,11 +11,11 @@ ChatWarden: bot moderujący czat (na razie Discord) i panel WWW do jego ustawie�
 - `src/Routing.php` — dopasowanie tras i uruchamianie kontrolerów.
 - `src/controllers/` — kontrolery w namespace `App\Controller`; panel dzieli się na strony (`PanelController`), formularze kanałów (`ChannelController`) i test wiadomości (`MessageCheckController`), ze wspólną bazą `AbstractPanelController`.
 - `src/discord/` — Discord: logowanie, REST, Gateway i uprawnienia, namespace `App\Discord`.
-- `src/twitch/` — Twitch: logowanie i lista kanałów użytkownika, namespace `App\Twitch`; `config/platforms.php` mówi, czym platforma różni się w panelu (zaproszenie czy przycisk „Podłącz”, liczba czatów, wyjątki).
-- `src/moderation/` — kolejka i pytania do modelu, wspólne dla platform, namespace `App\Moderation`.
+- `src/twitch/` — Twitch: logowanie, lista kanałów użytkownika i bot (EventSub, token konta bota), namespace `App\Twitch`; `config/platforms.php` mówi, czym platforma różni się w panelu (zaproszenie czy przycisk „Podłącz”, liczba czatów, wyjątki).
+- `src/moderation/` — kolejka i pytania do modelu oraz `Moderator` (co robić z wiadomością łamiącą zasadę), wspólne dla platform, namespace `App\Moderation`; platforma podaje tylko, jak usunąć wiadomość.
 - `src/repositories/` — zapytania SQL, namespace `App\Repository`; modele w `src/models/` (`App\Model`).
 - `src/services/` — logika współdzielona przez akcje kontrolera, np. dostęp do serwerów w panelu, namespace `App\Service`.
-- `bin/` — procesy CLI: bot Discorda, sprawdzanie wiadomości, pomiar modeli, codzienne czyszczenie danych (cron) i uruchamianie testów.
+- `bin/` — procesy CLI: boty Discorda i Twitcha, sprawdzanie wiadomości, pomiar modeli, codzienne czyszczenie danych (cron) i uruchamianie testów.
 - `tests/models/` — opisane wiadomości do pomiaru modeli przez `bin/measure.php`; zmiana pytań lub progów w `config/moderation.php` wymaga nowego pomiaru.
 - `tests/` — testy jednostkowe bez zależności, namespace `Tests`; klasa `NazwaTest` rozszerza `TestCase`, a `bin/test.php` uruchamia jej metody `test…`.
 

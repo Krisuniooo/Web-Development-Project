@@ -214,6 +214,24 @@ final class ChannelRepository
         ];
     }
 
+    /**
+     * The ids on the platform of the channels the bot moderates now: not paused, on a server the bot is on.
+     * A bot that listens to chats, such as Twitch's, asks for them to know which chats to follow.
+     *
+     * @return list<string>
+     */
+    public function activeChannelIds(string $platform): array
+    {
+        $statement = $this->pdo->prepare(
+            "SELECT channels.platform_channel_id FROM channels JOIN servers ON servers.id = channels.server_id
+             WHERE servers.platform = :platform AND servers.status = 'active' AND channels.status = 'active'
+             ORDER BY channels.id",
+        );
+        $statement->execute(['platform' => $platform]);
+
+        return $statement->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     /** The language of the server's first channel, or null while the server has no channel. */
     public function firstLanguage(string $platform, string $platformServerId): ?string
     {
