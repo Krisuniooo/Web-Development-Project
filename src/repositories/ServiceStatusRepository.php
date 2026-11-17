@@ -9,6 +9,9 @@ use PDO;
 /** When each background service last said it was working, so the panel can tell a clean chat from a stopped bot. */
 final class ServiceStatusRepository
 {
+    // how often a bot tells the panel it works; the panel counts a bot that was quiet for several times as long as not connected
+    public const REPORT_SECONDS = 30;
+
     /** The name the bot of a platform reports under, such as "discord-bot". */
     public static function bot(string $platform): string
     {

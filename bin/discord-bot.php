@@ -10,6 +10,7 @@ use App\Discord\DiscordGateway;
 use App\Discord\DiscordModerator;
 use App\Moderation\ModerationQueue;
 use App\Moderation\PendingRequests;
+use App\Repository\ServiceStatusRepository;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -44,7 +45,7 @@ try {
         function () use ($events, $queue): float {
             $events->reportAlive();
 
-            return min($queue->tick() ?? DiscordEvents::REPORT_SECONDS, DiscordEvents::REPORT_SECONDS);
+            return min($queue->tick() ?? ServiceStatusRepository::REPORT_SECONDS, ServiceStatusRepository::REPORT_SECONDS);
         },
     );
     $gateway->run();
