@@ -14,6 +14,7 @@ use App\Model\ModerationEvent;
 use App\Moderation\MessageClassifier;
 use App\Repository\ChannelRepository;
 use App\Repository\ModerationEventRepository;
+use App\Repository\ServerRepository;
 use App\Repository\ServiceStatusRepository;
 use RuntimeException;
 
@@ -109,8 +110,12 @@ final class PanelController extends AbstractPanelController
     {
         [$user, $managedServer] = $this->requireManagedServer();
 
+        $limits = $this->channelLimits($user['platform'], $managedServer['id']);
+
         $this->renderSection('limits', $user, $managedServer, [
-            'limits' => $this->channelLimits($user['platform'], $managedServer['id']),
+            'limits' => $limits,
+            // Discord is asked for the roles only when the server has a channel to leave someone alone on
+            'exemptions' => empty($limits['channels']) ? null : $this->exemptions($user['platform'], $managedServer['id']),
             'messageCheck' => $this->messageCheck($user['platform'], $managedServer['id']),
         ]);
     }
@@ -347,6 +352,58 @@ final class PanelController extends AbstractPanelController
         }
 
         return ['channels' => $channels, 'levels' => $this->ruleLevels(), 'actions' => self::RULE_ACTIONS];
+    }
+
+    /**
+     * Whom the bot leaves alone on the chosen server: whether the owner and administrators, the roles that are exempt
+     * and the roles that can still be added. Null when the database does not answer; the roles alone are null
+     * when Discord does not, since only Discord knows their names.
+     *
+     * @return array{
+     *     admins: bool,
+     *     roles: array{
+     *         exempt: list<array{id: string, name: ?string, color: ?string}>,
+     *         choices: list<array{id: string, name: string, color: ?string}>,
+     *     }|null,
+     * }|null
+     *     name: null for a role deleted on Discord since; color: as in CSS, or null for a role without one
+     */
+    private function exemptions(string $platform, string $serverId): ?array
+    {
+        try {
+            $saved = (new ServerRepository($this->database()))->findExemptions($platform, $serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the exemptions: ' . $exception->getMessage());
+            $saved = null;
+        }
+
+        if ($saved === null) {
+            return null;
+        }
+
+        try {
+            $roles = $this->access()->roles($serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the roles from Discord: ' . $exception->getMessage());
+
+            return ['admins' => $saved['admins'], 'roles' => null];
+        }
+
+        $isExempt = fn(array $role): bool => in_array($role['id'], $saved['roleIds'], true);
+        $exempt = array_values(array_filter($roles, $isExempt));
+
+        // a role deleted on Discord has no name any more, but still shows, so it can be taken off the list
+        foreach (array_diff($saved['roleIds'], array_column($roles, 'id')) as $deletedId) {
+            $exempt[] = ['id' => $deletedId, 'name' => null, 'color' => null];
+        }
+
+        return [
+            'admins' => $saved['admins'],
+            'roles' => [
+                'exempt' => $exempt,
+                'choices' => array_values(array_filter($roles, fn(array $role): bool => !$isExempt($role))),
+            ],
+        ];
     }
 
     /**

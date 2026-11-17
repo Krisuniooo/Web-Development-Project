@@ -6,15 +6,21 @@ namespace App\Controller;
 
 use App\Model\Channel;
 use App\Model\ChannelRule;
+use App\Discord\DiscordClient;
 use App\Repository\ChannelRepository;
+use App\Repository\ServerRepository;
 use RuntimeException;
 
 /**
- * The forms of the panel that change the channels of the chosen server. Each one checks again that the form came
- * from this site, that the user may manage the server and that the channel belongs to it, then goes back to its section.
+ * The forms of the panel that change the channels of the chosen server, and whom the bot leaves alone on them.
+ * Each one checks again that the form came from this site, that the user may manage the server and that the channel
+ * it names belongs to it, then goes back to its section.
  */
 final class ChannelController extends AbstractPanelController
 {
+    // back to the card of the exemptions, which is below the channels, so the page does not jump to its top
+    private const EXEMPTIONS_URL = '/app/limits#exemptions';
+
     public function setLanguage(): void
     {
         [$user, $managedServer] = $this->requireForm();
@@ -222,6 +228,62 @@ final class ChannelController extends AbstractPanelController
         }
 
         $this->redirect('/app/limits');
+    }
+
+    /** Turns on or off that the bot leaves the owner and administrators of the chosen server alone. */
+    public function setAdminsExempt(): void
+    {
+        [$user, $managedServer] = $this->requireForm();
+
+        // a checkbox, so it is sent only while ticked
+        $isExempt = isset($_POST['exempt']);
+        $isSaved = false;
+
+        try {
+            (new ServerRepository($this->database()))->setAdminsExempt($user['platform'], $managedServer['id'], $isExempt);
+            $isSaved = true;
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save the exemption of administrators: ' . $exception->getMessage());
+        }
+
+        $_SESSION['notice'] = $isSaved
+            ? ['text' => $isExempt ? 'exemptions.admins_on' : 'exemptions.admins_off', 'isError' => false]
+            : ['text' => 'exemptions.save_error', 'isError' => true];
+
+        $this->redirect(self::EXEMPTIONS_URL);
+    }
+
+    /** Adds a role of the chosen server to those the bot leaves alone, or takes one off the list. */
+    public function setRoleExempt(): void
+    {
+        [$user, $managedServer] = $this->requireForm();
+
+        $roleId = $_POST['role'] ?? null;
+        $isExempt = ($_POST['exempt'] ?? null) === '1';
+        $isSaved = false;
+
+        try {
+            $repository = new ServerRepository($this->database());
+
+            if (!$isExempt && DiscordClient::isId($roleId)) {
+                // Discord is not asked, so a role deleted there can still be taken off
+                $repository->removeExemptRole($user['platform'], $managedServer['id'], $roleId);
+                $isSaved = true;
+            } elseif ($isExempt && in_array($roleId, array_column($this->access()->roles($managedServer['id']), 'id'), true)) {
+                // only a role the server has now
+                $repository->addExemptRole($user['platform'], $managedServer['id'], $roleId);
+                $isSaved = true;
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not save an exempt role: ' . $exception->getMessage());
+        }
+
+        // the list shows the change itself, so only a failure gets a notice
+        if (!$isSaved) {
+            $_SESSION['notice'] = ['text' => 'exemptions.save_error', 'isError' => true];
+        }
+
+        $this->redirect(self::EXEMPTIONS_URL);
     }
 
     /**

@@ -71,4 +71,22 @@ final class DiscordClientTest extends TestCase
         // more digits than any Discord id has
         $this->assertSame(false, DiscordClient::isId(str_repeat('1', 21)));
     }
+
+    public function testRoleColourBecomesACssColour(): void
+    {
+        $this->assertSame('#e91e63', DiscordClient::cssColor(0xE91E63));
+        // short numbers keep their leading zeros
+        $this->assertSame('#0000ff', DiscordClient::cssColor(255));
+        $this->assertSame('#ffffff', DiscordClient::cssColor(0xFFFFFF));
+    }
+
+    public function testRoleWithoutAColourOrWithABrokenOneHasNone(): void
+    {
+        // 0 is how Discord says a role has no colour
+        $this->assertSame(null, DiscordClient::cssColor(0));
+        $this->assertSame(null, DiscordClient::cssColor(null));
+        $this->assertSame(null, DiscordClient::cssColor('#e91e63'));
+        $this->assertSame(null, DiscordClient::cssColor(-1));
+        $this->assertSame(null, DiscordClient::cssColor(0x1000000));
+    }
 }

@@ -12,7 +12,7 @@ use PDO;
 use RuntimeException;
 
 /**
- * Which servers the logged-in user may manage, and which of their channels the bot can see.
+ * Which servers the logged-in user may manage, and which of their channels and roles the bot can see.
  * The platform decides, not the session: Discord is asked again before the chosen server is used,
  * and its answers are kept in the session only briefly, since Discord limits how often the bot may ask.
  */
@@ -20,8 +20,8 @@ final class ServerAccess
 {
     // how long Discord's answer that the user may manage the server is trusted before asking again
     private const ACCESS_CHECK_SECONDS = 60;
-    // how long the channels from Discord are used before asking again: 2 times a minute of the 10 Discord allows
-    private const VISIBLE_CHANNELS_SECONDS = 30;
+    // how long the channels and the roles from Discord are used before asking again: 2 times a minute of the 10 Discord allows
+    private const DISCORD_LIST_SECONDS = 30;
 
     /** @param Closure(): PDO $database the request's connection, opened when first needed */
     public function __construct(private Closure $database)
@@ -113,6 +113,21 @@ final class ServerAccess
     }
 
     /**
+     * The server's roles that can be chosen as exempt from moderation, highest first.
+     *
+     * @return list<array{id: string, name: string, color: ?string}>
+     * @throws RuntimeException when Discord does not answer
+     */
+    public function roles(string $serverId): array
+    {
+        return $this->remembered(
+            'serverRoles',
+            $serverId,
+            fn(): array => DiscordBotClient::fromEnvironment()->fetchRoles($serverId),
+        );
+    }
+
+    /**
      * Asks Discord whether the user may still manage the server and trusts a yes for a while.
      * A no, after a ban, leaving or a lost permission, also takes the server off the list.
      */
@@ -145,7 +160,7 @@ final class ServerAccess
             return true;
         }
 
-        unset($_SESSION['managedServerId'], $_SESSION['accessCheck'], $_SESSION['visibleChannels']);
+        unset($_SESSION['managedServerId'], $_SESSION['accessCheck'], $_SESSION['visibleChannels'], $_SESSION['serverRoles']);
         $_SESSION['servers'] = array_values(array_filter(
             $this->servers(),
             fn(array $server): bool => $server['id'] !== $serverId,
@@ -155,26 +170,40 @@ final class ServerAccess
     }
 
     /**
-     * The server's text channels the bot can see, kept in the session for a while.
+     * The server's text channels the bot can see.
      *
      * @return list<array{id: string, name: string}>
      */
     private function visibleChannels(string $serverId): array
     {
-        $saved = $_SESSION['visibleChannels'] ?? null;
+        return $this->remembered(
+            'visibleChannels',
+            $serverId,
+            fn(): array => DiscordBotClient::fromEnvironment()->fetchVisibleTextChannels($serverId),
+        );
+    }
+
+    /**
+     * A list Discord gave about the server, kept in the session under $key for a while; after that $fetch asks Discord again.
+     *
+     * @param Closure(): array $fetch
+     */
+    private function remembered(string $key, string $serverId, Closure $fetch): array
+    {
+        $saved = $_SESSION[$key] ?? null;
 
         if (
             is_array($saved)
             && ($saved['serverId'] ?? null) === $serverId
-            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::VISIBLE_CHANNELS_SECONDS
-            && is_array($saved['channels'] ?? null)
+            && is_int($saved['time'] ?? null) && $saved['time'] > time() - self::DISCORD_LIST_SECONDS
+            && is_array($saved['list'] ?? null)
         ) {
-            return $saved['channels'];
+            return $saved['list'];
         }
 
-        $channels = DiscordBotClient::fromEnvironment()->fetchVisibleTextChannels($serverId);
-        $_SESSION['visibleChannels'] = ['serverId' => $serverId, 'time' => time(), 'channels' => $channels];
+        $list = $fetch();
+        $_SESSION[$key] = ['serverId' => $serverId, 'time' => time(), 'list' => $list];
 
-        return $channels;
+        return $list;
     }
 }

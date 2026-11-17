@@ -1,6 +1,6 @@
 # ChatWarden
 
-Bot moderujący czat i panel WWW do jego ustawień. Bot czyta wiadomości na wybranych kanałach Discorda, pyta lokalnie uruchomiony model, czy łamią zasady kanału, i oznacza je albo usuwa. W panelu osoba zarządzająca serwerem wybiera kanały, język, poziomy i akcje oraz przegląda historię działań bota.
+Bot moderujący czat i panel WWW do jego ustawień. Bot czyta wiadomości na wybranych kanałach Discorda, pyta lokalnie uruchomiony model, czy łamią zasady kanału, i oznacza je albo usuwa. W panelu osoba zarządzająca serwerem wybiera kanały, język, poziomy i akcje, wskazuje, kogo bot ma pomijać (właściciel i administratorzy albo wybrane role), oraz przegląda historię działań bota.
 
 Aplikacja jest napisana w PHP 8.3 bez frameworka, z własnym routingiem i MVC, i korzysta z PostgreSQL.
 

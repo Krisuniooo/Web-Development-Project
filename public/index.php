@@ -34,6 +34,8 @@ $routing->get('/app/models', PanelController::class, 'models');
 $routing->post('/app/models/model', ChannelController::class, 'setModel');
 $routing->get('/app/limits', PanelController::class, 'limits');
 $routing->post('/app/limits/rules', ChannelController::class, 'saveRules');
+$routing->post('/app/limits/exempt-admins', ChannelController::class, 'setAdminsExempt');
+$routing->post('/app/limits/exempt-role', ChannelController::class, 'setRoleExempt');
 $routing->get('/app/model-status', MessageCheckController::class, 'modelStatus');
 $routing->post('/app/check-message', MessageCheckController::class, 'check');
 $routing->get('/app/logs', PanelController::class, 'logs');

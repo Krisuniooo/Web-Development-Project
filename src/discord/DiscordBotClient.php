@@ -8,7 +8,7 @@ use App\Config;
 use CurlHandle;
 use RuntimeException;
 
-/** Discord's API as the bot, so the panel sees what the bot sees: channels, who may manage a server, deletions. */
+/** Discord's API as the bot, so the panel sees what the bot sees: channels, roles, who may manage a server, deletions. */
 final class DiscordBotClient
 {
     private const TIMEOUT_SECONDS = 5;
@@ -52,6 +52,32 @@ final class DiscordBotClient
             $this->request("/guilds/$serverId/members/$botUserId"),
             $this->request("/guilds/$serverId/channels"),
         );
+    }
+
+    /**
+     * The server's roles a person can have, highest first as in Discord's settings: without @everyone,
+     * which all members have, and without the roles Discord makes for bots, since bots are never moderated.
+     *
+     * @return list<array{id: string, name: string, color: ?string}> color: as in CSS, or null for a role without one
+     */
+    public function fetchRoles(string $serverId): array
+    {
+        $roles = array_filter(
+            $this->request("/guilds/$serverId/roles"),
+            fn(mixed $role): bool => is_array($role)
+                && DiscordClient::isId($role['id'] ?? null)
+                && is_string($role['name'] ?? null)
+                // @everyone is the role with the id of the server
+                && $role['id'] !== $serverId
+                && !isset($role['tags']['bot_id']),
+        );
+        usort($roles, fn(array $a, array $b): int => (int) ($b['position'] ?? 0) <=> (int) ($a['position'] ?? 0));
+
+        return array_map(fn(array $role): array => [
+            'id' => $role['id'],
+            'name' => $role['name'],
+            'color' => DiscordClient::cssColor($role['color'] ?? null),
+        ], $roles);
     }
 
     /**

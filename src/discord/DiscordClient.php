@@ -20,6 +20,8 @@ final class DiscordClient
     private const LEGACY_DEFAULT_AVATARS = 5;
     private const DEFAULT_AVATARS = 6;
     private const ID_TIMESTAMP_SHIFT = 22;
+    // the largest colour of a role
+    private const WHITE = 0xFFFFFF;
     private const TIMEOUT_SECONDS = 10;
     // the same rule Discord uses for adding a bot to a server
     private const CAN_MANAGE_SERVER = DiscordPermissions::ADMINISTRATOR | DiscordPermissions::MANAGE_GUILD;
@@ -48,6 +50,15 @@ final class DiscordClient
     public static function isImageHash(mixed $hash): bool
     {
         return is_string($hash) && preg_match('/^(a_)?[0-9a-f]{32}$/', $hash) === 1;
+    }
+
+    /**
+     * The colour of a role as CSS writes it, or null for a role without one.
+     * Discord sends it as one number, red, green and blue together, and 0 when the role has none.
+     */
+    public static function cssColor(mixed $color): ?string
+    {
+        return is_int($color) && $color > 0 && $color <= self::WHITE ? sprintf('#%06x', $color) : null;
     }
 
     /** Trades the one-time code from the redirect for an access token. */
