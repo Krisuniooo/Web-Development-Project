@@ -15,7 +15,8 @@ use RuntimeException;
 /**
  * Turns Gateway events into changes in the database: which servers the bot is on,
  * and the first channel with the default settings when a server has none yet.
- * It also puts the messages from the channels the bot moderates in the queue for the model.
+ * It also puts the messages from the channels the bot moderates in the queue for the model,
+ * except those of the people the server's settings tell it to leave alone.
  */
 final class DiscordEvents
 {
@@ -30,10 +31,12 @@ final class DiscordEvents
     private float $reportedAt = 0.0;
     private ?string $botUserId = null;
     private array $defaults;
+    private DiscordAdministrators $administrators;
 
     public function __construct(private Database $database, private ModerationQueue $queue)
     {
         $this->defaults = Config::load('channel-defaults');
+        $this->administrators = new DiscordAdministrators();
     }
 
     public function handle(string $type, array $data): void
@@ -49,6 +52,9 @@ final class DiscordEvents
 
     private function dispatch(string $type, array $data): void
     {
+        // the owner and the roles of each server, for telling an administrator by the roles on a message
+        $this->administrators->update($type, $data);
+
         if ($type === 'READY') {
             // a new database connection for every login: after any error the bot logs in again,
             // so a broken connection is never used twice
@@ -59,6 +65,8 @@ final class DiscordEvents
             // logged in, so the panel hears about it at once
             $this->reportedAt = 0.0;
             $this->botUserId = is_string($data['user']['id'] ?? null) ? $data['user']['id'] : null;
+            // every server comes again after READY, and one the bot left meanwhile does not
+            $this->administrators->forgetAll();
 
             // READY lists every server the bot is on; one missing here was left while the bot was offline
             $kept = array_filter(
@@ -156,6 +164,13 @@ final class DiscordEvents
             return;
         }
 
+        // a message carries its author's roles on the server
+        $roleIds = is_array($message['member']['roles'] ?? null) ? array_filter($message['member']['roles'], 'is_string') : [];
+
+        if ($this->isExempt($serverId, ['user' => ['id' => $authorId], 'roles' => $roleIds])) {
+            return;
+        }
+
         // the name the server shows
         $authorName = $message['member']['nick'] ?? $author['global_name'] ?? $author['username'] ?? null;
 
@@ -166,6 +181,27 @@ final class DiscordEvents
             'authorName' => is_string($authorName) && $authorName !== '' ? $authorName : $authorId,
             'text' => $text,
         ], $settings);
+    }
+
+    /**
+     * Whether the server's settings tell the bot to leave this author alone: someone with a role chosen in the panel,
+     * or the owner and administrators while that is turned on. Their messages never reach the model.
+     *
+     * @param array $member with the user and the role ids
+     */
+    private function isExempt(string $serverId, array $member): bool
+    {
+        $exemptions = $this->servers()->findExemptions(self::PLATFORM, $serverId);
+
+        if ($exemptions === null) {
+            return false;
+        }
+
+        if (array_intersect($member['roles'], $exemptions['roleIds']) !== []) {
+            return true;
+        }
+
+        return $exemptions['admins'] && $this->administrators->includes($serverId, $member);
     }
 
     /**

@@ -90,7 +90,7 @@ docker compose exec -T php php bin/test.php
 docker compose exec -T php php bin/test.php Permissions
 ```
 
-Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
+Testy leżą w `tests/` i sprawdzają logikę, która nie potrzebuje bazy, sieci ani modelu: uprawnienia Discorda, rozpoznawanie administratorów serwera, listę kanałów widocznych dla bota, decyzję, czy wiadomość łamie zasadę, dopasowanie tras oraz sprawdzanie pochodzenia formularzy. Każdy test działa na nowym obiekcie, więc wynik nie zależy od kolejności ani od poprzednich uruchomień. Projekt nie ma zależności testowych: `bin/test.php` uruchamia każdą metodę `test…` z klas `tests/*Test.php`, a kod wyjścia 1 oznacza nieudany test.
 
 Te same testy i sprawdzenie składni wszystkich plików PHP uruchamia GitHub Actions przy każdym pushu (`.github/workflows/ci.yml`), bez Dockera i bazy.
 
