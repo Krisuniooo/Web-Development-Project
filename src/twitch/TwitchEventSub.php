@@ -11,14 +11,16 @@ use RuntimeException;
 
 /**
  * Keeps the bot connected to Twitch's EventSub, where the chat messages of the channels arrive: connects, subscribes to
- * the channels it is told to listen to, and connects again after a drop. Every chat message goes to $onMessage;
- * an error thrown there or in the other closures ends the connection like any other.
+ * the channels it is told to listen to, stops listening to those it no longer is, and connects again after a drop.
+ * Every chat message goes to $onMessage; an error thrown there or in the other closures ends the connection like any other.
  * Twitch closes a connection that has no subscription, so one is open only while there is a channel to listen to.
  */
 final class TwitchEventSub
 {
     // Twitch's own address; a fake one comes from TWITCH_EVENTSUB_URL for tests
     public const URL = 'wss://eventsub.wss.twitch.tv/ws';
+    // the domain of every address Twitch may move the bot to
+    private const TWITCH_DOMAIN = 'twitch.tv';
 
     private const TYPE_CHAT_MESSAGE = 'channel.chat.message';
 
@@ -28,8 +30,12 @@ final class TwitchEventSub
     private const IDLE_CHECK_SECONDS = 5;
     // the longest the loop waits for a message, so the checks between them run at least this often
     private const MAX_WAIT_SECONDS = 1.0;
-    // a subscription is a request to Twitch that takes a moment, so a few at a time, and the connection is read in between
-    private const SUBSCRIBE_PER_ROUND = 10;
+    // subscribing and unsubscribing are requests to Twitch that take a moment, so a few at a time,
+    // and the connection is read in between
+    private const REQUESTS_PER_ROUND = 10;
+    // a channel Twitch refused, such as one beyond the 300 chats Twitch allows on a connection, waits this long
+    // before it is asked for again, so a lasting refusal is not repeated and logged every minute
+    private const REFUSED_RETRY_SECONDS = 300;
     // Twitch says how long it may be quiet in the welcome; until then, and a little longer, it is trusted
     private const DEFAULT_KEEPALIVE_SECONDS = 10;
     private const KEEPALIVE_MARGIN_SECONDS = 5;
@@ -47,7 +53,9 @@ final class TwitchEventSub
 
     /**
      * @param Closure(): list<string> $wantedChannels the ids of the channels to listen to now
-     * @param Closure(string, string): void $subscribe gets the session and a channel's id; throws when Twitch refuses
+     * @param Closure(string, string): string $subscribe gets the session and a channel's id, and gives the id of the
+     *     subscription; throws when Twitch refuses
+     * @param Closure(string): void $unsubscribe gets the id of a subscription; throws when Twitch refuses
      * @param Closure(array): void $onMessage gets the event of each chat message
      * @param Closure(): float $betweenEvents runs between messages, such as the moderation queue, and must not wait;
      *     returns how many seconds may pass before it runs again
@@ -56,9 +64,31 @@ final class TwitchEventSub
         private string $url,
         private Closure $wantedChannels,
         private Closure $subscribe,
+        private Closure $unsubscribe,
         private Closure $onMessage,
         private Closure $betweenEvents,
     ) {
+    }
+
+    /**
+     * Whether the bot may move to this address when Twitch asks it to: one of Twitch's own over TLS, or the host the bot
+     * was started with, such as a fake EventSub for tests. Every chat the bot moderates would come from there.
+     */
+    public static function isTrustedReconnectUrl(string $url, string $startUrl): bool
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        // only the letters a real host name has, so nothing in it can make it look like Twitch's
+        if (preg_match('/^[a-z0-9.-]+\z/', $host) !== 1) {
+            return false;
+        }
+
+        $isTwitch = $scheme === 'wss' && ($host === self::TWITCH_DOMAIN || str_ends_with($host, '.' . self::TWITCH_DOMAIN));
+        $isStartHost = $scheme === strtolower((string) parse_url($startUrl, PHP_URL_SCHEME))
+            && $host === strtolower((string) parse_url($startUrl, PHP_URL_HOST));
+
+        return $isTwitch || $isStartHost;
     }
 
     /** Stays connected for good: whatever goes wrong, it starts again after a pause that grows. */
@@ -112,7 +142,7 @@ final class TwitchEventSub
         }
     }
 
-    /** One connection from start to end. Returns why it ended when Twitch asks the bot to connect again. */
+    /** One connection from start to end. Returns why it ended when there is nothing more to listen to. */
     private function listen(): string
     {
         $socket = WebSocketClient::connect($this->url);
@@ -121,9 +151,13 @@ final class TwitchEventSub
             $sessionId = null;
             $keepaliveSeconds = self::DEFAULT_KEEPALIVE_SECONDS;
             $lastMessageAt = microtime(true);
-            // the channels this connection already listens to, and those still to subscribe to
+            // the channels this connection listens to, with the ids of their subscriptions
             $subscribed = [];
+            // those still to subscribe to, and to unsubscribe from
             $pending = [];
+            $stale = [];
+            // when each channel Twitch refused may be asked for again
+            $retryAt = [];
             $nextSync = 0.0;
             $seen = [];
 
@@ -159,12 +193,29 @@ final class TwitchEventSub
 
                 if ($sessionId !== null) {
                     if (microtime(true) >= $nextSync) {
-                        $pending = array_values(array_diff(($this->wantedChannels)(), array_keys($subscribed)));
+                        $wanted = array_map('strval', ($this->wantedChannels)());
+
+                        // the subscriptions of a connection end with it, so with nothing to listen to it is closed
+                        if ($wanted === []) {
+                            return 'no channel to listen to any more';
+                        }
+
+                        // ids of digits become numbers as keys, so they are made text again
+                        $listening = array_map('strval', array_keys($subscribed));
+                        $pending = array_values(array_filter(
+                            array_diff($wanted, $listening),
+                            fn(string $channelId): bool => ($retryAt[$channelId] ?? 0.0) <= microtime(true),
+                        ));
+                        $stale = array_values(array_diff($listening, $wanted));
                         $nextSync = microtime(true) + self::SYNC_SECONDS;
                     }
 
-                    foreach (array_splice($pending, 0, self::SUBSCRIBE_PER_ROUND) as $channelId) {
-                        $this->listenTo($sessionId, (string) $channelId, $subscribed);
+                    foreach (array_splice($stale, 0, self::REQUESTS_PER_ROUND) as $channelId) {
+                        $this->stopListening($channelId, $subscribed);
+                    }
+
+                    foreach (array_splice($pending, 0, self::REQUESTS_PER_ROUND) as $channelId) {
+                        $this->listenTo($sessionId, $channelId, $subscribed, $retryAt);
                     }
                 }
 
@@ -178,20 +229,49 @@ final class TwitchEventSub
         }
     }
 
-    /** @param array<string, true> $subscribed */
-    private function listenTo(string $sessionId, string $channelId, array &$subscribed): void
+    /**
+     * @param array<string, string> $subscribed
+     * @param array<string, float> $retryAt
+     */
+    private function listenTo(string $sessionId, string $channelId, array &$subscribed, array &$retryAt): void
     {
         try {
-            ($this->subscribe)($sessionId, $channelId);
+            $subscribed[$channelId] = ($this->subscribe)($sessionId, $channelId);
         } catch (RuntimeException $error) {
-            // usually the bot cannot read this chat yet; the channel is tried again at the next sync
-            Log::line("Cannot listen to the chat of channel $channelId: " . $error->getMessage());
+            // usually the bot cannot read this chat yet, or the connection has as many chats as Twitch allows
+            $retryAt[$channelId] = microtime(true) + self::REFUSED_RETRY_SECONDS;
+            Log::line("Cannot listen to the chat of channel $channelId, trying again in " . self::REFUSED_RETRY_SECONDS . ' s: ' . $error->getMessage());
 
             return;
         }
 
-        $subscribed[$channelId] = true;
+        unset($retryAt[$channelId]);
         Log::line("Listening to the chat of channel $channelId");
+    }
+
+    /**
+     * Stops listening to a channel the bot no longer moderates, such as one paused in the panel.
+     *
+     * @param array<string, string> $subscribed
+     */
+    private function stopListening(string $channelId, array &$subscribed): void
+    {
+        // Twitch may have taken the subscription back since the sync
+        if (!isset($subscribed[$channelId])) {
+            return;
+        }
+
+        try {
+            ($this->unsubscribe)($subscribed[$channelId]);
+        } catch (RuntimeException $error) {
+            // tried again at the next sync; until then its messages still come, and are left alone, as the channel is not active
+            Log::line("Cannot stop listening to the chat of channel $channelId: " . $error->getMessage());
+
+            return;
+        }
+
+        unset($subscribed[$channelId]);
+        Log::line("Stopped listening to the chat of channel $channelId");
     }
 
     /**
@@ -205,6 +285,10 @@ final class TwitchEventSub
 
         if (!is_string($url)) {
             throw new RuntimeException('Twitch asked the bot to move without saying where');
+        }
+
+        if (!self::isTrustedReconnectUrl($url, $this->url)) {
+            throw new RuntimeException('Twitch asked the bot to move to an address that is not Twitch\'s, so it connects anew instead');
         }
 
         $socket = WebSocketClient::connect($url);

@@ -7,8 +7,9 @@ namespace App\Twitch;
 /** What a chat message from Twitch is to the bot: whether it is the bot's business at all, and in the form the queue takes. */
 final class TwitchChat
 {
-    // the badges of people the bot leaves alone: the owner of the channel and its moderators
-    private const EXEMPT_BADGES = ['broadcaster', 'moderator'];
+    // the badges of people the bot leaves alone: the owner of the channel and its moderators; a lead moderator
+    // shows a badge of their own instead of the moderator's, since a chatter shows one badge of a kind
+    private const EXEMPT_BADGES = ['broadcaster', 'moderator', 'lead_moderator'];
 
     /**
      * The message in the form of ModerationQueue::add(), or null for one the bot does not judge:

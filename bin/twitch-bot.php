@@ -40,6 +40,7 @@ try {
         getenv('TWITCH_EVENTSUB_URL') ?: TwitchEventSub::URL,
         $events->wantedChannels(...),
         $events->subscribe(...),
+        $events->unsubscribe(...),
         $events->handleMessage(...),
         // between messages: the report for the panel and the queue; an idle queue still wakes the bot in time for the next report
         function () use ($events, $queue): float {

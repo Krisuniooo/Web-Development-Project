@@ -25,6 +25,9 @@ final class BotToken
 
     private ?PDO $pdo = null;
     private int $validatedAt = 0;
+    // whose the token is, asked of every chat message, so it is kept from the last read of the account instead of read
+    // each time; the bot reads the account at least with every report for the panel, so this follows a replaced one
+    private ?string $userId = null;
 
     public function __construct(private Database $database, private TwitchClient $twitch, private Secrets $secrets)
     {
@@ -39,7 +42,7 @@ final class BotToken
     /** @throws RuntimeException when the account is not authorized yet */
     public function userId(): string
     {
-        return $this->account()['userId'];
+        return $this->userId ?? $this->account()['userId'];
     }
 
     /**
@@ -112,7 +115,10 @@ final class BotToken
     private function read(): ?array
     {
         try {
-            return (new BotAccountRepository($this->connection()))->find(self::PLATFORM);
+            $account = (new BotAccountRepository($this->connection()))->find(self::PLATFORM);
+            $this->userId = $account['userId'] ?? null;
+
+            return $account;
         } catch (PDOException $error) {
             // a new connection at the next use, so a broken one is not kept
             $this->pdo = null;

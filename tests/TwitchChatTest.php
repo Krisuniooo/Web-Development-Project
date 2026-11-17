@@ -40,6 +40,11 @@ final class TwitchChatTest extends TestCase
         $this->assertSame(null, TwitchChat::messageFromEvent($this->event(['badges' => [['set_id' => 'subscriber', 'id' => '1', 'info' => ''], ['set_id' => 'moderator', 'id' => '1', 'info' => '']]]), self::BOT_ID));
     }
 
+    public function testLeadModeratorIsLeftAloneThoughWithoutTheModeratorBadge(): void
+    {
+        $this->assertSame(null, TwitchChat::messageFromEvent($this->event(['badges' => [['set_id' => 'lead_moderator', 'id' => '1', 'info' => '']]]), self::BOT_ID));
+    }
+
     public function testBotsOwnMessageIsLeftAlone(): void
     {
         $this->assertSame(null, TwitchChat::messageFromEvent($this->event(['chatter_user_id' => self::BOT_ID]), self::BOT_ID));

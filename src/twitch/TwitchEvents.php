@@ -57,10 +57,19 @@ final class TwitchEvents
         return $this->withDatabase(fn(PDO $pdo): array => (new ChannelRepository($pdo))->activeChannelIds(self::PLATFORM));
     }
 
-    /** @throws \RuntimeException with Twitch's reason when it refuses */
-    public function subscribe(string $sessionId, string $channelId): void
+    /**
+     * @return string the id of the subscription
+     * @throws \RuntimeException with Twitch's reason when it refuses
+     */
+    public function subscribe(string $sessionId, string $channelId): string
     {
-        $this->twitch->subscribeToChat($sessionId, $channelId);
+        return $this->twitch->subscribeToChat($sessionId, $channelId);
+    }
+
+    /** @throws \RuntimeException with Twitch's reason when it refuses */
+    public function unsubscribe(string $subscriptionId): void
+    {
+        $this->twitch->unsubscribe($subscriptionId);
     }
 
     /** Puts a message from a channel the bot moderates in the queue for the model; others are not its business. */

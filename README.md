@@ -43,9 +43,9 @@ Tokeny konta bota leżą w bazie (`bot_accounts`), zaszyfrowane kluczem wyprowad
 
 ### Jak działa bot
 
-Bot łączy się z EventSub Twitcha (`wss://eventsub.wss.twitch.tv/ws`) tylko wtedy, gdy ma jakiś kanał do słuchania, i subskrybuje czat każdego aktywnego kanału. Nowy kanał podłączony w panelu bot wykrywa przy najbliższej synchronizacji, czyli najpóźniej po minucie. Gdy Twitch każe przejść na inny serwer, bot otwiera nowe połączenie, zanim zamknie stare, więc żadna wiadomość nie przepada; po zerwaniu łączy się ponownie z coraz dłuższą przerwą. Twitch dopuszcza 300 subskrypcji na jedno połączenie, a ta liczba kanałów jest na razie górną granicą.
+Bot łączy się z EventSub Twitcha (`wss://eventsub.wss.twitch.tv/ws`) tylko wtedy, gdy ma jakiś kanał do słuchania, i subskrybuje czat każdego aktywnego kanału. Nowy kanał podłączony w panelu bot wykrywa przy najbliższej synchronizacji, czyli najpóźniej po minucie; z kanału wstrzymanego w tym czasie bot się wypisuje, a gdy nie zostaje żaden, zamyka połączenie. Kanał, którego Twitch nie pozwolił subskrybować, bot próbuje ponownie po pięciu minutach. Gdy Twitch każe przejść na inny serwer, bot otwiera nowe połączenie (tylko pod adres w domenie `twitch.tv`), zanim zamknie stare, więc żadna wiadomość nie przepada; po zerwaniu łączy się ponownie z coraz dłuższą przerwą. Twitch dopuszcza 300 subskrypcji na jedno połączenie, a ta liczba kanałów jest na razie górną granicą: kolejne kanały czekają w logach z odpowiedzią HTTP 429.
 
-Bot pomija wiadomości właściciela kanału, moderatorów, własne oraz te, które w czacie współdzielonym zostały wysłane na innym kanale (ocenia je moderacja tamtego kanału). Resztę ocenia model tak samo jak na Discordzie, z ustawieniami kanału z panelu. Usuwanie wiadomości działa, a wyciszenia i bany jeszcze nie (jak na Discordzie wiadomość jest wtedy usuwana).
+Bot pomija wiadomości właściciela kanału, moderatorów (także głównych, z odznaką `lead_moderator`), własne oraz te, które w czacie współdzielonym zostały wysłane na innym kanale (ocenia je moderacja tamtego kanału). Resztę ocenia model tak samo jak na Discordzie, z ustawieniami kanału z panelu. Usuwanie wiadomości działa, a wyciszenia i bany jeszcze nie (jak na Discordzie wiadomość jest wtedy usuwana).
 
 Różnice w panelu względem Discorda:
 
