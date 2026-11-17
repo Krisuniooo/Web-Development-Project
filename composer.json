@@ -7,6 +7,7 @@
       "App\\Moderation\\": "src/moderation/",
       "App\\Repository\\": "src/repositories/",
       "App\\Service\\": "src/services/",
+      "App\\Twitch\\": "src/twitch/",
       "App\\": "src/"
     }
   }
