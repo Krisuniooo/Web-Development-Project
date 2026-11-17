@@ -83,6 +83,44 @@ final class ServerRepository
     }
 
     /**
+     * Writes on which of the platform's active servers the bot is a moderator, for the panel. Only the rows that change,
+     * so updated_at keeps the time of the last real change.
+     *
+     * @param list<string> $moderatedIds digits only, as they go into a Postgres array
+     */
+    public function saveBotModerator(string $platform, array $moderatedIds): void
+    {
+        $statement = $this->pdo->prepare(
+            "UPDATE servers SET bot_is_moderator = checked.is_moderator
+             FROM (
+                 SELECT id, platform_server_id = ANY (CAST(:ids AS TEXT[])) AS is_moderator
+                 FROM servers WHERE platform = :platform AND status = 'active'
+             ) AS checked
+             WHERE servers.id = checked.id AND servers.bot_is_moderator IS DISTINCT FROM checked.is_moderator",
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'ids' => '{' . implode(',', $moderatedIds) . '}',
+        ]);
+    }
+
+    /** Whether the bot is a moderator of the server; null while the bot has not said, and on platforms where it never does. */
+    public function findBotIsModerator(string $platform, string $platformServerId): ?bool
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT bot_is_moderator FROM servers WHERE platform = :platform AND platform_server_id = :platform_server_id',
+        );
+        $statement->execute([
+            'platform' => $platform,
+            'platform_server_id' => $platformServerId,
+        ]);
+        // the whole row, since a column that is false could not be told from no row at all
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $row === false ? null : $row['bot_is_moderator'];
+    }
+
+    /**
      * Whom the bot leaves alone on the server, or null when the server is not saved.
      *
      * @return array{admins: bool, roleIds: list<string>}|null

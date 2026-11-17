@@ -64,8 +64,8 @@ final class TwitchClientTest extends TestCase
         parse_str(parse_url($url, PHP_URL_QUERY), $query);
 
         $this->assertSame('abc123', $query['state']);
-        // to read the chats and to delete messages in them, and nothing else
-        $this->assertSame('user:read:chat moderator:manage:chat_messages', $query['scope']);
+        // to read the chats, to delete messages in them and to know where it is a moderator, and nothing else
+        $this->assertSame('user:read:chat moderator:manage:chat_messages user:read:moderated_channels', $query['scope']);
         // so Twitch shows the consent again, where another account can be chosen
         $this->assertSame('true', $query['force_verify']);
         $this->assertSame(false, str_contains($url, 'the-secret'));

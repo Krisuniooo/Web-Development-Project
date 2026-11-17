@@ -20,8 +20,9 @@ final class TwitchClient
     private const API_URL = 'https://api.twitch.tv/helix';
     // only the list of channels the user moderates; their own name and picture need no permission
     private const SCOPE = 'user:read:moderated_channels';
-    // what the bot's account needs: to read the chat of the channels, and to delete messages in them
-    private const BOT_SCOPE = 'user:read:chat moderator:manage:chat_messages';
+    // what the bot's account needs: to read the chat of the channels, to delete messages in them, and to know where
+    // it is still a moderator, so it stops judging a chat where nobody lets it delete anything
+    private const BOT_SCOPE = 'user:read:chat moderator:manage:chat_messages user:read:moderated_channels';
     // what the owner of a channel agrees to when connecting it: that the bot is made a moderator, once
     private const CONNECT_SCOPE = 'channel:manage:moderators';
     // Twitch keeps profile pictures here, and only a picture from here is shown
