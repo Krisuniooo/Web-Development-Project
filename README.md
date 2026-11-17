@@ -11,6 +11,8 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
+Przed pierwszym startem wpisz do `.env` klucz `APP_KEY`, wygenerowany raz poleceniem `openssl rand -base64 32`. Klucz szyfruje tokeny bota Twitcha w bazie, a aplikacja odrzuca krótszy niż 32 losowe bajty.
+
 Aplikacja będzie dostępna pod adresem http://localhost:8080. Przy każdym starcie usługa `migrate` przygotowuje autoloader Composera i schemat bazy, a aplikacja, bot i cron czekają, aż skończy.
 
 Przy pierwszym starcie kontener `basal-mini` pobiera model z Hugging Face, więc sprawdzanie wiadomości zaczyna działać dopiero po chwili.
