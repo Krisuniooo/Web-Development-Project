@@ -2,17 +2,20 @@
 $stylesheets[] = '/css/panel/overview.css';
 
 // each line: its icon, its name with what it is under it, its state (ok, down or unknown),
-// the short text for that state, and for a state that is not ok what it means for the chat
+// the short text for that state, and for a state that is not ok what it means for the chat, as safe HTML
 $state = fn(?bool $isWorking): string => $isWorking === null ? 'unknown' : ($isWorking ? 'ok' : 'down');
 $bot = $state($overview['isBotConnected']);
-$statusLines = [[
-    'fa-robot',
-    $t('status.bot'),
-    $e($currentPlatformName),
-    $bot,
-    $bot === 'unknown' ? 'status.unknown' : 'status.bot.' . $bot,
-    ['ok' => null, 'down' => 'status.bot.down_hint', 'unknown' => 'status.unknown_hint'][$bot],
-]];
+$botText = $bot === 'unknown' ? 'status.unknown' : 'status.bot.' . $bot;
+$botHint = ['ok' => null, 'down' => $t('status.bot.down_hint'), 'unknown' => $t('status.unknown_hint')][$bot];
+
+// the bot is connected, but on this channel nobody lets it delete anything, so it does not check the chat here
+if ($bot === 'ok' && $botIsModerator === false && $botName !== null) {
+    $bot = 'down';
+    $botText = 'status.bot.not_moderator';
+    $botHint = sprintf($t('status.bot.not_moderator_hint'), $e($botName));
+}
+
+$statusLines = [['fa-robot', $t('status.bot'), $e($currentPlatformName), $bot, $botText, $botHint]];
 
 foreach ($overview['models'] as $model) {
     $statusLines[] = [
@@ -21,7 +24,7 @@ foreach ($overview['models'] as $model) {
         $t('status.model.kind'),
         $model['isReady'] ? 'ok' : 'down',
         $model['isReady'] ? 'status.model.ok' : 'status.model.down',
-        $model['isReady'] ? null : 'status.model.down_hint',
+        $model['isReady'] ? null : $t('status.model.down_hint'),
     ];
 }
 
@@ -43,7 +46,7 @@ $stats = $overview['stats'];
                     </span>
                     <span class="overview-pill is-<?= $lineState ?>"><?= $t($text) ?></span>
                     <?php if ($hint !== null): ?>
-                        <span class="overview-service--hint"><?= $t($hint) ?></span>
+                        <span class="overview-service--hint"><?= $hint ?></span>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>

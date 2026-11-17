@@ -1,7 +1,13 @@
 <?php $stylesheets[] = '/css/panel/channels.css'; ?>
 
 <p class="panel-content--description"><?= $t('channels.lead') ?></p>
-<?php if ($botName !== null): ?>
+<?php if ($botName !== null && $botIsModerator === false): ?>
+    <?php // someone took the moderator away from the bot, or never gave it: the bot does not listen to the chat until then ?>
+    <p class="panel-error" role="alert">
+        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+        <?= sprintf($t('channels.bot_not_moderator'), $e($botName)) ?>
+    </p>
+<?php elseif ($botName !== null): ?>
     <?php // the bot is an account: it deletes only where a moderator of the channel made it one ?>
     <p class="panel-content--description"><?= sprintf($t('channels.bot_hint'), $e($botName)) ?></p>
 <?php endif; ?>

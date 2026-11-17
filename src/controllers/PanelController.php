@@ -179,6 +179,9 @@ final class PanelController extends AbstractPanelController
 
         $this->renderSection('overview', $user, $managedServer, [
             'overview' => $this->overviewData($user['platform'], $managedServer['id']),
+            // a bot that must be made a moderator, as on Twitch, and is not one here, checks nothing on this server
+            'botName' => $this->botName($user['platform']),
+            'botIsModerator' => $this->botIsModerator($user['platform'], $managedServer['id']),
         ]);
     }
 
@@ -197,6 +200,7 @@ final class PanelController extends AbstractPanelController
             'channelSlots' => $channelSlots,
             'canChange' => $canChange,
             'botName' => $this->botName($user['platform']),
+            'botIsModerator' => $this->botIsModerator($user['platform'], $managedServer['id']),
             'changingSlot' => $changingSlot,
             // Discord is asked only when there is a channel to choose: for a free slot or a change
             'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
@@ -503,6 +507,25 @@ final class PanelController extends AbstractPanelController
             return (new BotAccountRepository($this->database()))->findName($platform);
         } catch (RuntimeException $exception) {
             error_log('Panel could not read the name of the bot account: ' . $exception->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
+     * Whether the bot is a moderator of the server, as the bot last checked, where it is an account that must be made
+     * one, such as on Twitch; null on other platforms, and while it is not known.
+     */
+    private function botIsModerator(string $platform, string $serverId): ?bool
+    {
+        if (!$this->platform($platform)['botIsAccount']) {
+            return null;
+        }
+
+        try {
+            return (new ServerRepository($this->database()))->findBotIsModerator($platform, $serverId);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read whether the bot is a moderator: ' . $exception->getMessage());
 
             return null;
         }
