@@ -105,7 +105,7 @@ final class AuthController extends AppController
 
     /**
      * Sends the owner of a channel to Twitch to agree that the bot is made a moderator of it: the step after "Connect"
-     * in the panel, which has put the channel in the session. It works once, right after that form, so for anyone
+     * in the panel, which has put the channel in the session. It works once, right after that step, so for anyone
      * else, and for a link from another site later, this address does nothing.
      */
     public function twitchConnect(): void

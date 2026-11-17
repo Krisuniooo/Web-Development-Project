@@ -82,24 +82,27 @@ final class PanelController extends AbstractPanelController
 
     /**
      * The first step of connecting a channel on a platform where no bot is invited, such as Twitch. Only the owner of
-     * the channel may, since connecting makes the bot a moderator there, which only the owner can allow.
-     * It sends them on to the platform to agree, and connected() does the rest.
+     * the channel may, since connecting makes the bot a moderator there, which only the owner can allow, so it is
+     * always the user's own channel. It sends them on to the platform to agree, and connected() does the rest.
+     *
+     * A link, not a form: the way ends on the platform's consent, and browsers hold every redirect after a form to the
+     * page's form-action, which allows only this site. Only a click on a page of this site starts it, so a link from
+     * another site cannot connect anyone's channel.
      */
     public function connect(): void
     {
-        if (!$this->isSameOriginRequest()) {
-            http_response_code(403);
-            return;
+        $user = $this->requireLogin();
+
+        // the browser says where the click came from; a link on another site, or an address typed in, is not this page
+        if (($_SERVER['HTTP_SEC_FETCH_SITE'] ?? null) !== 'same-origin') {
+            $this->redirect('/app/servers');
         }
 
-        $user = $this->requireLogin();
         $platform = $this->platform($user['platform']);
-        $serverId = $_POST['server'] ?? null;
 
         // only the user's own channel, from their list, which the platform still says is theirs
         $canConnect = $platform['connect'] === 'panel'
-            && $serverId === $user['id']
-            && $this->access()->confirmedServer($user, $serverId) !== null;
+            && $this->access()->confirmedServer($user, $user['id']) !== null;
 
         if (!$canConnect) {
             $_SESSION['notice'] = ['text' => 'servers.connect_error', 'isError' => true];
@@ -112,7 +115,7 @@ final class PanelController extends AbstractPanelController
             $this->redirect('/app/servers');
         }
 
-        // what only this form can set, so the address of the next step does nothing for anyone else
+        // what only this step can set, so the address of the next step does nothing for anyone else
         $_SESSION['pendingConnect'] = $user['id'];
 
         $this->redirect($platform['authPath'] . '/connect');

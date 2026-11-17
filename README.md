@@ -72,7 +72,7 @@ Różnice w panelu względem Discorda:
 
 ## Bezpieczeństwo
 
-- **Nagłówki HTTP.** nginx (`docker/nginx/nginx.conf`) dodaje do każdej odpowiedzi Content-Security-Policy, która dopuszcza tylko skrypty, style i fonty z tej strony oraz obrazki z Discorda. Wysyła też `X-Frame-Options: DENY`, więc panelu nie da się osadzić w ramce na obcej stronie, a do tego `X-Content-Type-Options`, `Referrer-Policy` i `Permissions-Policy`.
+- **Nagłówki HTTP.** nginx (`docker/nginx/nginx.conf`) dodaje do każdej odpowiedzi Content-Security-Policy, która dopuszcza tylko skrypty, style i fonty z tej strony oraz obrazki z Discorda. Formularze trafiają tylko na tę stronę (`form-action 'self'`), a przeglądarka sprawdza tak też każde przekierowanie po formularzu; dlatego „Podłącz” przy kanale Twitcha, które kończy się na stronie zgody Twitcha, jest linkiem, a nie formularzem, i serwer przyjmuje je tylko po kliknięciu na tej stronie (`Sec-Fetch-Site: same-origin`). Wysyła też `X-Frame-Options: DENY`, więc panelu nie da się osadzić w ramce na obcej stronie, a do tego `X-Content-Type-Options`, `Referrer-Policy` i `Permissions-Policy`.
 - **PHP.** `docker/php/app.ini` wyłącza pokazywanie błędów na stronach (trafiają do `docker compose logs`) i ukrywa wersję PHP.
 - **Obrazki.** Content-Security-Policy dopuszcza obrazki tylko z tej strony, z Discorda i z `static-cdn.jtvnw.net` (zdjęcia profilowe z Twitcha); adres obrazka z innego hosta jest odrzucany, zanim trafi do strony.
 - **Ikony.** Font Awesome jest serwowany z `public/assets/fontawesome/`, więc na stronach nie działa żaden skrypt z innej domeny.

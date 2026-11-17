@@ -30,7 +30,7 @@ $routing->post('/logout', AuthController::class, 'logout');
 $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/servers', PanelController::class, 'servers');
 $routing->post('/app/manage', PanelController::class, 'manage');
-$routing->post('/app/servers/connect', PanelController::class, 'connect');
+$routing->get('/app/servers/connect', PanelController::class, 'connect');
 $routing->get('/app/servers/connected', PanelController::class, 'connected');
 $routing->get('/app/channels', PanelController::class, 'channels');
 $routing->post('/app/channels/language', ChannelController::class, 'setLanguage');
