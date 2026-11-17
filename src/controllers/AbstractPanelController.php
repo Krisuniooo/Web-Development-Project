@@ -67,7 +67,7 @@ abstract class AbstractPanelController extends AppController
     /**
      * How the panel differs for a platform someone can log in with, from config/platforms.php.
      *
-     * @return array{name: string, slug: string, authPath: string, connect: string, channelSlots: int, exemptions: bool}
+     * @return array{name: string, slug: string, authPath: string, connect: string, channelSlots: int, exemptions: bool, botIsAccount: bool}
      */
     protected function platform(string $slug): array
     {

@@ -12,6 +12,7 @@ use App\Model\Channel;
 use App\Model\ChannelRule;
 use App\Model\ModerationEvent;
 use App\Moderation\MessageClassifier;
+use App\Repository\BotAccountRepository;
 use App\Repository\ChannelRepository;
 use App\Repository\ModerationEventRepository;
 use App\Repository\ServerRepository;
@@ -147,6 +148,7 @@ final class PanelController extends AbstractPanelController
         $this->renderSection('channels', $user, $managedServer, [
             'channelSlots' => $channelSlots,
             'canChange' => $canChange,
+            'botName' => $this->botName($user['platform']),
             'changingSlot' => $changingSlot,
             // Discord is asked only when there is a channel to choose: for a free slot or a change
             'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
@@ -420,6 +422,25 @@ final class PanelController extends AbstractPanelController
         }
 
         return ['channels' => $channels, 'levels' => $this->ruleLevels(), 'actions' => self::RULE_ACTIONS];
+    }
+
+    /**
+     * The name of the bot's account when the bot is one that a moderator must be made of, such as on Twitch;
+     * null on other platforms, and when it is not known.
+     */
+    private function botName(string $platform): ?string
+    {
+        if (!$this->platform($platform)['botIsAccount']) {
+            return null;
+        }
+
+        try {
+            return (new BotAccountRepository($this->database()))->findName($platform);
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the name of the bot account: ' . $exception->getMessage());
+
+            return null;
+        }
     }
 
     /**

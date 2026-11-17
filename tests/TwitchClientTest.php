@@ -58,6 +58,26 @@ final class TwitchClientTest extends TestCase
         $this->assertSame(false, str_contains($url, 'the-secret'));
     }
 
+    public function testBotsAccountIsAskedForTheScopesOfTheBotAndToChooseTheAccount(): void
+    {
+        $url = $this->client()->botAuthorizeUrl('abc123');
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame('abc123', $query['state']);
+        // to read the chats and to delete messages in them, and nothing else
+        $this->assertSame('user:read:chat moderator:manage:chat_messages', $query['scope']);
+        // so Twitch shows the consent again, where another account can be chosen
+        $this->assertSame('true', $query['force_verify']);
+        $this->assertSame(false, str_contains($url, 'the-secret'));
+    }
+
+    public function testLoginDoesNotForceTheConsentAgain(): void
+    {
+        parse_str(parse_url($this->client()->authorizeUrl('abc123'), PHP_URL_QUERY), $query);
+
+        $this->assertSame(false, isset($query['force_verify']));
+    }
+
     public function testAnExpiredTokenIsToldFromOtherErrors(): void
     {
         $this->assertSame(true, TwitchClient::isUnauthorized(new RuntimeException('Twitch request failed: HTTP 401', 401)));

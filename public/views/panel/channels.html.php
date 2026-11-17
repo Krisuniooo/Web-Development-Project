@@ -1,6 +1,10 @@
 <?php $stylesheets[] = '/css/panel/channels.css'; ?>
 
 <p class="panel-content--description"><?= $t('channels.lead') ?></p>
+<?php if ($botName !== null): ?>
+    <?php // the bot is an account: it deletes only where a moderator of the channel made it one ?>
+    <p class="panel-content--description"><?= sprintf($t('channels.bot_hint'), $e($botName)) ?></p>
+<?php endif; ?>
 <?php include __DIR__ . '/../components/panel-notice.html.php'; ?>
 
 <?php if ($channelSlots === null): ?>

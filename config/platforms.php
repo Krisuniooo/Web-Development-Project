@@ -8,6 +8,7 @@ declare(strict_types=1);
 //   or "panel", with a button on the list of servers
 // - "channelSlots": how many chats of one server the bot can moderate; with one, the server is its own only chat
 // - "exemptions": whether the panel can exempt the server's administrators and roles from moderation
+// - "botIsAccount": whether the bot is an account of its own, which someone who manages the server must make a moderator
 return [
     [
         "name" => "Discord",
@@ -19,6 +20,7 @@ return [
         "connect" => "invite",
         "channelSlots" => 2,
         "exemptions" => true,
+        "botIsAccount" => false,
         "ctaMessage" => "cta.discord",
     ],
     [
@@ -29,6 +31,7 @@ return [
         "connect" => "panel",
         "channelSlots" => 1,
         "exemptions" => false,
+        "botIsAccount" => true,
         "ctaMessage" => "cta.twitch",
     ],
     [

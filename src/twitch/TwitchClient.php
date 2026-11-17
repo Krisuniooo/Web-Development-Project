@@ -10,6 +10,7 @@ use RuntimeException;
  * Talks to Twitch for the user who logs in: who they are and which channels they may manage,
  * their own and those they moderate. On Twitch no bot can answer that, only the user's own token,
  * so the token is asked at login and again whenever the panel checks the access.
+ * The same client also authorizes the bot's own account and keeps its token fresh.
  */
 final class TwitchClient
 {
@@ -18,6 +19,8 @@ final class TwitchClient
     private const API_URL = 'https://api.twitch.tv/helix';
     // only the list of channels the user moderates; their own name and picture need no permission
     private const SCOPE = 'user:read:moderated_channels';
+    // what the bot's account needs: to read the chat of the channels, and to delete messages in them
+    private const BOT_SCOPE = 'user:read:chat moderator:manage:chat_messages';
     // Twitch keeps profile pictures here, and only a picture from here is shown
     private const PICTURE_URL = 'https://static-cdn.jtvnw.net/';
     // the most channels or users Twitch gives in one answer
@@ -73,41 +76,74 @@ final class TwitchClient
     /** Where the browser goes for the user to agree; $state comes back with them. */
     public function authorizeUrl(string $state): string
     {
-        return $this->authUrl . '/authorize?' . http_build_query([
-            'response_type' => 'code',
-            'client_id' => $this->clientId,
-            'scope' => self::SCOPE,
-            'redirect_uri' => $this->redirectUri,
-            'state' => $state,
-        ]);
+        return $this->buildAuthorizeUrl($state, self::SCOPE, false);
+    }
+
+    /**
+     * Where the browser goes for the bot's own account to agree. Twitch asks again even of an account that agreed
+     * before, and lets the person pick another account, since the bot is rarely the one logged in to Twitch.
+     */
+    public function botAuthorizeUrl(string $state): string
+    {
+        return $this->buildAuthorizeUrl($state, self::BOT_SCOPE, true);
     }
 
     /**
      * Trades the one-time code from the redirect for an access token.
      *
-     * @return array{accessToken: string, expiresIn: int} expiresIn: in seconds, about four hours
+     * @return array{accessToken: string, refreshToken: ?string, expiresIn: int} expiresIn: in seconds, about four hours;
+     *     the login forgets the refresh token, only the bot's account keeps it
      */
     public function exchangeCode(string $code): array
     {
-        $response = $this->request($this->authUrl . '/token', [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query([
-                'grant_type' => 'authorization_code',
-                'code' => $code,
-                'redirect_uri' => $this->redirectUri,
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-            ]),
+        return $this->tokens([
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $this->redirectUri,
         ]);
+    }
 
-        $accessToken = $response['access_token'] ?? null;
-        $expiresIn = $response['expires_in'] ?? null;
+    /**
+     * New tokens in place of the ones that are about to expire. Twitch may give another refresh token,
+     * and then the old one stops working, so the new one must be kept.
+     * Throws with the code 400 or 401 when Twitch no longer takes the refresh token, such as after the account took the access back.
+     *
+     * @return array{accessToken: string, refreshToken: string, expiresIn: int}
+     */
+    public function refresh(string $refreshToken): array
+    {
+        $tokens = $this->tokens(['grant_type' => 'refresh_token', 'refresh_token' => $refreshToken]);
 
-        if (!is_string($accessToken) || $accessToken === '' || !is_int($expiresIn) || $expiresIn <= 0) {
-            throw new RuntimeException('Twitch token response has no access token or no lifetime');
+        if ($tokens['refreshToken'] === null) {
+            throw new RuntimeException('Twitch token response has no refresh token');
         }
 
-        return ['accessToken' => $accessToken, 'expiresIn' => $expiresIn];
+        return ['refreshToken' => $tokens['refreshToken']] + $tokens;
+    }
+
+    /**
+     * Whose token it is and what it allows. Twitch asks apps to do this when they start and every hour after,
+     * and answers with the code 401 once the token no longer works.
+     *
+     * @return array{userId: string, login: string, scopes: list<string>}
+     */
+    public function validate(string $accessToken): array
+    {
+        $token = $this->request($this->authUrl . '/validate', [
+            CURLOPT_HTTPHEADER => ['Authorization: OAuth ' . $accessToken],
+        ]);
+        $userId = $token['user_id'] ?? null;
+        $login = $token['login'] ?? null;
+
+        if (!self::isId($userId) || !is_string($login) || $login === '') {
+            throw new RuntimeException('Twitch token validation has no user: it is not the token of a person');
+        }
+
+        return [
+            'userId' => $userId,
+            'login' => $login,
+            'scopes' => array_values(array_filter(is_array($token['scopes'] ?? null) ? $token['scopes'] : [], 'is_string')),
+        ];
     }
 
     /** @return array{id: string, name: string, avatarUrl: ?string} the user the token belongs to */
@@ -159,11 +195,7 @@ final class TwitchClient
     {
         if ($userId === $channelId) {
             // nobody loses their own channel, but a banned or deleted account loses its token
-            $token = $this->request($this->authUrl . '/validate', [
-                CURLOPT_HTTPHEADER => ['Authorization: OAuth ' . $accessToken],
-            ]);
-
-            return ($token['user_id'] ?? null) === $userId;
+            return $this->validate($accessToken)['userId'] === $userId;
         }
 
         return in_array($channelId, array_column($this->moderatedChannels($accessToken, $userId), 'id'), true);
@@ -249,6 +281,43 @@ final class TwitchClient
         return $this->request($this->apiUrl . $path, [
             CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $accessToken, 'Client-Id: ' . $this->clientId],
         ]);
+    }
+
+    private function buildAuthorizeUrl(string $state, string $scope, bool $forceVerify): string
+    {
+        return $this->authUrl . '/authorize?' . http_build_query([
+            'response_type' => 'code',
+            'client_id' => $this->clientId,
+            'scope' => $scope,
+            'redirect_uri' => $this->redirectUri,
+            'state' => $state,
+        ] + ($forceVerify ? ['force_verify' => 'true'] : []));
+    }
+
+    /** Asks the token endpoint, which wants the client's secret with every grant. */
+    private function tokens(array $grant): array
+    {
+        $response = $this->request($this->authUrl . '/token', [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($grant + [
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+            ]),
+        ]);
+
+        $accessToken = $response['access_token'] ?? null;
+        $refreshToken = $response['refresh_token'] ?? null;
+        $expiresIn = $response['expires_in'] ?? null;
+
+        if (!is_string($accessToken) || $accessToken === '' || !is_int($expiresIn) || $expiresIn <= 0) {
+            throw new RuntimeException('Twitch token response has no access token or no lifetime');
+        }
+
+        return [
+            'accessToken' => $accessToken,
+            'refreshToken' => is_string($refreshToken) && $refreshToken !== '' ? $refreshToken : null,
+            'expiresIn' => $expiresIn,
+        ];
     }
 
     private function request(string $url, array $options): array

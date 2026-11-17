@@ -23,6 +23,8 @@ $routing->get('/auth/discord', AuthController::class, 'discord');
 $routing->get('/auth/discord/callback', AuthController::class, 'discordCallback');
 $routing->get('/auth/twitch', AuthController::class, 'twitch');
 $routing->get('/auth/twitch/callback', AuthController::class, 'twitchCallback');
+$routing->get('/auth/twitch/bot', AuthController::class, 'twitchBot');
+$routing->get('/auth/twitch/bot/result', AuthController::class, 'twitchBotResult');
 $routing->post('/logout', AuthController::class, 'logout');
 $routing->get('/app', PanelController::class, 'overview');
 $routing->get('/app/servers', PanelController::class, 'servers');
