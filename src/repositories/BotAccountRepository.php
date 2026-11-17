@@ -55,15 +55,22 @@ final class BotAccountRepository
         return $this->findIdentity($platform)['name'] ?? null;
     }
 
-    /** Saves the account, replacing the one the platform had before. The tokens are given sealed. */
-    public function save(string $platform, string $platformUserId, string $name, string $refreshToken, string $accessToken, int $expiresAt): void
+    /**
+     * Saves the platform's first account, or new tokens and the current name of the same account. Another account
+     * never replaces it, even one that took over the name the bot had: that one would be made a moderator of every
+     * channel connected after it. The tokens are given sealed.
+     *
+     * @return bool false when the platform already has another account, and nothing was saved
+     */
+    public function save(string $platform, string $platformUserId, string $name, string $refreshToken, string $accessToken, int $expiresAt): bool
     {
         $statement = $this->pdo->prepare(
             'INSERT INTO bot_accounts (platform, platform_user_id, name, refresh_token, access_token, access_expires_at)
              VALUES (:platform, :platform_user_id, :name, :refresh_token, :access_token, to_timestamp(:expires_at))
-             ON CONFLICT (platform) DO UPDATE SET platform_user_id = EXCLUDED.platform_user_id, name = EXCLUDED.name,
+             ON CONFLICT (platform) DO UPDATE SET name = EXCLUDED.name,
                  refresh_token = EXCLUDED.refresh_token, access_token = EXCLUDED.access_token,
-                 access_expires_at = EXCLUDED.access_expires_at',
+                 access_expires_at = EXCLUDED.access_expires_at
+             WHERE bot_accounts.platform_user_id = EXCLUDED.platform_user_id',
         );
         $statement->bindValue('platform', $platform);
         $statement->bindValue('platform_user_id', $platformUserId);
@@ -72,17 +79,23 @@ final class BotAccountRepository
         $statement->bindValue('access_token', $accessToken);
         $statement->bindValue('expires_at', $expiresAt, PDO::PARAM_INT);
         $statement->execute();
+
+        return $statement->rowCount() === 1;
     }
 
-    /** New tokens for the same account, after a refresh. Sealed too. */
-    public function saveTokens(string $platform, string $refreshToken, string $accessToken, int $expiresAt): void
+    /**
+     * New tokens for the same account, after a refresh. Sealed too. Only while it is still the platform's account,
+     * so a refresh that ends after the account was replaced does not give the new one the old one's tokens.
+     */
+    public function saveTokens(string $platform, string $platformUserId, string $refreshToken, string $accessToken, int $expiresAt): void
     {
         $statement = $this->pdo->prepare(
             'UPDATE bot_accounts SET refresh_token = :refresh_token, access_token = :access_token,
                  access_expires_at = to_timestamp(:expires_at)
-             WHERE platform = :platform',
+             WHERE platform = :platform AND platform_user_id = :platform_user_id',
         );
         $statement->bindValue('platform', $platform);
+        $statement->bindValue('platform_user_id', $platformUserId);
         $statement->bindValue('refresh_token', $refreshToken);
         $statement->bindValue('access_token', $accessToken);
         $statement->bindValue('expires_at', $expiresAt, PDO::PARAM_INT);

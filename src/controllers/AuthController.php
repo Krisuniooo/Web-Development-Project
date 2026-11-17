@@ -25,8 +25,14 @@ final class AuthController extends AppController
     // the owner of a channel agreeing that the bot is made a moderator of it, when connecting the channel
     private const PURPOSE_CONNECT = 'connect';
     // how the page after the bot's account agreed can end
-    private const BOT_RESULTS = ['ok', 'wrong_account', 'failed', 'not_configured'];
+    private const BOT_RESULTS = ['ok', 'wrong_account', 'other_account', 'cancelled', 'failed', 'not_configured'];
     private const BOT_RESULT_URL = '/auth/twitch/bot/result?status=';
+    // why a channel is not connected after its owner came back from Twitch, and what they are told
+    private const CONNECT_REFUSALS = [
+        'error' => 'servers.connect_error',
+        'wrong_account' => 'connect.wrong_account',
+        'no_bot' => 'connect.no_bot',
+    ];
 
     /** Sends the browser to Discord, which asks the user for consent. */
     public function discord(): void
@@ -51,7 +57,11 @@ final class AuthController extends AppController
     /** Discord sends the browser back here, with a code or with the reason there is none. */
     public function discordCallback(): void
     {
-        $code = $this->returnedCode();
+        [$code, $error] = $this->returnedCode();
+
+        if ($code === null) {
+            $this->redirect('/login?error=' . $error);
+        }
 
         try {
             $discord = $this->discordClient();
@@ -80,7 +90,8 @@ final class AuthController extends AppController
 
     /**
      * Sends the browser to Twitch for the bot's own account to agree to act as the bot. Anyone can start it, but it ends
-     * only when the account named in TWITCH_BOT_LOGIN comes back, so nobody else can become the bot.
+     * only when the account named in TWITCH_BOT_LOGIN comes back, and once an account is saved, only when that same
+     * account does, so nobody else can become the bot.
      */
     public function twitchBot(): void
     {
@@ -94,14 +105,16 @@ final class AuthController extends AppController
 
     /**
      * Sends the owner of a channel to Twitch to agree that the bot is made a moderator of it: the step after "Connect"
-     * in the panel, which has put the channel in the session. For anyone who did not just ask to connect their own
-     * channel there, this address does nothing.
+     * in the panel, which has put the channel in the session. It works once, right after that form, so for anyone
+     * else, and for a link from another site later, this address does nothing.
      */
     public function twitchConnect(): void
     {
         $user = $this->requireLogin();
+        $isRequested = ($_SESSION['pendingConnect'] ?? null) === $user['id'];
+        unset($_SESSION['pendingConnect']);
 
-        if ($user['platform'] !== 'twitch' || ($_SESSION['pendingConnect'] ?? null) !== $user['id'] || !TwitchClient::isConfigured()) {
+        if ($user['platform'] !== 'twitch' || !$isRequested || !TwitchClient::isConfigured()) {
             $this->redirect('/app/servers');
         }
 
@@ -141,9 +154,15 @@ final class AuthController extends AppController
     /** Twitch sends the browser back here, with a code or with the reason there is none. */
     public function twitchCallback(): void
     {
-        $code = $this->returnedCode();
-        $purpose = $_SESSION['oauth_purpose'] ?? null;
+        $this->startSession();
+        // what the browser went to Twitch for, which also says where it goes back to when Twitch sent no code
+        $purpose = $_SESSION['oauth_purpose'] ?? self::PURPOSE_LOGIN;
         unset($_SESSION['oauth_purpose']);
+        [$code, $error] = $this->returnedCode();
+
+        if ($code === null) {
+            $this->twitchFailed($purpose, $error);
+        }
 
         if ($purpose === self::PURPOSE_BOT) {
             $this->authorizeBot($code);
@@ -163,6 +182,9 @@ final class AuthController extends AppController
             $this->redirect('/login?error=failed');
         }
 
+        // the token of a login before this one in the browser, such as before reading the list of channels anew
+        $this->revokeLoginToken();
+
         // unlike Discord's, the token stays, in the session only: on Twitch nothing else can say whether the user
         // still moderates a channel. The login ends when the token does, so the panel never asks with a dead one.
         $this->logIn(['platform' => 'twitch'] + $user, $channels, [
@@ -181,6 +203,7 @@ final class AuthController extends AppController
         }
 
         if (isset($_COOKIE[session_name()])) {
+            $this->revokeLoginToken();
             $this->endSession();
         }
 
@@ -196,36 +219,76 @@ final class AuthController extends AppController
         return $_SESSION['oauth_state'] = bin2hex(random_bytes(self::STATE_BYTES));
     }
 
-    /**
-     * Saves the account that agreed as the one the bot acts as, with its tokens sealed. Only the account named in
-     * TWITCH_BOT_LOGIN is taken: whoever else got as far as this, the bot would act as them.
-     */
+    /** Back to where the step Twitch did not finish began, with why: "cancelled" when the person said no, or "failed". */
+    private function twitchFailed(string $purpose, string $error): never
+    {
+        if ($purpose === self::PURPOSE_BOT) {
+            $this->redirect(self::BOT_RESULT_URL . $error);
+        }
+
+        if ($purpose === self::PURPOSE_CONNECT) {
+            $this->refuseConnecting($error === 'cancelled' ? 'connect.cancelled' : 'servers.connect_error');
+        }
+
+        $this->redirect('/login?error=' . $error);
+    }
+
+    /** Saves the account that agreed as the one the bot acts as; the tokens of an account that is not saved are revoked. */
     private function authorizeBot(string $code): never
     {
+        $twitch = TwitchClient::fromEnvironment();
+
         try {
-            $twitch = TwitchClient::fromEnvironment();
             $tokens = $twitch->exchangeCode($code);
-            $account = $twitch->validate($tokens['accessToken']);
-            $user = $twitch->fetchUser($tokens['accessToken']);
         } catch (RuntimeException $exception) {
             error_log('Twitch bot authorization failed: ' . $exception->getMessage());
             $this->redirect(self::BOT_RESULT_URL . 'failed');
         }
 
+        $result = $this->saveBotAccount($twitch, $tokens);
+
+        if ($result !== 'ok') {
+            $twitch->revoke($tokens['accessToken']);
+        }
+
+        $this->redirect(self::BOT_RESULT_URL . $result);
+    }
+
+    /**
+     * Saves the account that agreed as the one the bot acts as, with its tokens sealed. Only the account named in
+     * TWITCH_BOT_LOGIN is taken: whoever else got as far as this, the bot would act as them. Once an account is saved,
+     * only the same one is taken again, by its id, since a login can change hands after the bot's account renames.
+     *
+     * @param array{accessToken: string, refreshToken: ?string, expiresIn: int} $tokens
+     * @return 'ok'|'wrong_account'|'other_account'|'failed'
+     */
+    private function saveBotAccount(TwitchClient $twitch, array $tokens): string
+    {
+        try {
+            $account = $twitch->validate($tokens['accessToken']);
+            $user = $twitch->fetchUser($tokens['accessToken']);
+        } catch (RuntimeException $exception) {
+            error_log('Twitch bot authorization failed: ' . $exception->getMessage());
+
+            return 'failed';
+        }
+
         if ($this->botLogin() === '' || strcasecmp($account['login'], $this->botLogin()) !== 0) {
             error_log('Twitch bot authorization refused: the account that agreed is not the one named in TWITCH_BOT_LOGIN');
-            $this->redirect(self::BOT_RESULT_URL . 'wrong_account');
+
+            return 'wrong_account';
         }
 
         // Twitch gives a refresh token to apps with a secret; without one the bot would stop after a few hours
         if ($tokens['refreshToken'] === null) {
             error_log('Twitch bot authorization failed: Twitch gave no refresh token');
-            $this->redirect(self::BOT_RESULT_URL . 'failed');
+
+            return 'failed';
         }
 
         try {
             $secrets = Secrets::fromEnvironment();
-            (new BotAccountRepository((new Database())->connect()))->save(
+            $isSaved = (new BotAccountRepository((new Database())->connect()))->save(
                 'twitch',
                 $account['userId'],
                 $user['name'],
@@ -235,59 +298,88 @@ final class AuthController extends AppController
             );
         } catch (RuntimeException $exception) {
             error_log('Twitch bot authorization failed: ' . strtok($exception->getMessage(), "\n"));
-            $this->redirect(self::BOT_RESULT_URL . 'failed');
+
+            return 'failed';
         }
 
-        $this->redirect(self::BOT_RESULT_URL . 'ok');
+        if (!$isSaved) {
+            error_log('Twitch bot authorization refused: the bot already acts as another account; remove it from bot_accounts first to change it');
+
+            return 'other_account';
+        }
+
+        return 'ok';
     }
 
     /**
-     * The owner agreed that the bot is made a moderator: it is done with the owner's token, which is then forgotten,
-     * and the result goes to the panel, which connects the channel. Only the owner's own account counts, so someone
-     * else logged in to Twitch in the same browser cannot make the bot a moderator of a channel that is not theirs.
+     * The owner agreed that the bot is made a moderator: it is done with the owner's token, which is revoked right after,
+     * whatever happened, and the result goes to the panel, which connects the channel. The state of this step was made
+     * only by twitchConnect(), for the login of now, since a new login replaces the whole session.
      */
     private function finishConnect(string $code): never
     {
         $user = $this->loggedInUser();
-        $pending = $_SESSION['pendingConnect'] ?? null;
-        unset($_SESSION['pendingConnect']);
 
-        // the login ended meanwhile, or this is not the connection the panel asked for
-        if ($user === null || $user['platform'] !== 'twitch' || $pending !== $user['id']) {
+        // the login ended meanwhile
+        if ($user === null || $user['platform'] !== 'twitch') {
             $this->redirect('/login');
         }
 
+        $twitch = TwitchClient::fromEnvironment();
+
         try {
-            $twitch = TwitchClient::fromEnvironment();
             $token = $twitch->exchangeCode($code)['accessToken'];
-            $account = $twitch->validate($token);
         } catch (RuntimeException $exception) {
             error_log('Twitch connecting a channel failed: ' . $exception->getMessage());
             $this->refuseConnecting('servers.connect_error');
         }
 
-        // another account than the one in the panel agreed, since the browser is logged in to Twitch as someone else
-        if ($account['userId'] !== $user['id']) {
-            $this->refuseConnecting('connect.wrong_account');
+        // the token may change who moderates the channel, so it serves this one step and no longer
+        $outcome = $this->makeBotModerator($twitch, $token, $user['id']);
+        $twitch->revoke($token);
+
+        if (isset(self::CONNECT_REFUSALS[$outcome])) {
+            $this->refuseConnecting(self::CONNECT_REFUSALS[$outcome]);
+        }
+
+        $_SESSION['connectResult'] = ['serverId' => $user['id'], 'moderator' => $outcome];
+
+        $this->redirect('/app/servers/connected');
+    }
+
+    /**
+     * Makes the bot a moderator of the owner's channel with the owner's token. Only the owner's own account counts,
+     * so someone else logged in to Twitch in the same browser cannot make the bot a moderator of a channel that is not theirs.
+     *
+     * @return 'added'|'already'|'vip'|'failed'|'error'|'wrong_account'|'no_bot' what Twitch said about the moderator,
+     *     after which the channel is connected, or a key of CONNECT_REFUSALS, after which it is not
+     */
+    private function makeBotModerator(TwitchClient $twitch, string $ownerToken, string $ownerId): string
+    {
+        try {
+            if ($twitch->validate($ownerToken)['userId'] !== $ownerId) {
+                return 'wrong_account';
+            }
+        } catch (RuntimeException $exception) {
+            error_log('Twitch connecting a channel failed: ' . $exception->getMessage());
+
+            return 'error';
         }
 
         try {
             $bot = (new BotAccountRepository((new Database())->connect()))->findIdentity('twitch');
 
             if ($bot === null) {
-                $this->refuseConnecting('connect.no_bot');
+                return 'no_bot';
             }
 
-            $moderator = $twitch->addModerator($token, $user['id'], $bot['userId']);
+            return $twitch->addModerator($ownerToken, $ownerId, $bot['userId']);
         } catch (RuntimeException $exception) {
             error_log('Twitch could not make the bot a moderator: ' . strtok($exception->getMessage(), "\n"));
+
             // the channel is connected all the same, and its owner is told to add the bot by hand
-            $moderator = 'failed';
+            return 'failed';
         }
-
-        $_SESSION['connectResult'] = ['serverId' => $user['id'], 'moderator' => $moderator];
-
-        $this->redirect('/app/servers/connected');
     }
 
     /** Back to the list of channels with the reason nothing was connected. */
@@ -298,6 +390,17 @@ final class AuthController extends AppController
         $this->redirect('/app/servers');
     }
 
+    /** Makes the token of the Twitch login in this session stop working, when the session no longer needs it. */
+    private function revokeLoginToken(): void
+    {
+        $this->startSession();
+        $token = $_SESSION['platformToken'] ?? null;
+
+        if (($_SESSION['user']['platform'] ?? null) === 'twitch' && is_string($token) && TwitchClient::isConfigured()) {
+            TwitchClient::fromEnvironment()->revoke($token);
+        }
+    }
+
     /** The login of the account that may become the bot, from .env. */
     private function botLogin(): string
     {
@@ -305,10 +408,12 @@ final class AuthController extends AppController
     }
 
     /**
-     * The one-time code a platform sent back with the user. A return that does not belong to a login
-     * started in this browser, a refusal and a missing code all end on the login page.
+     * The one-time code a platform sent back with the user, or why there is none: "cancelled" when they said no,
+     * and "failed" for a return that does not belong to a login started in this browser, and for one without a code.
+     *
+     * @return array{string, null}|array{null, 'cancelled'|'failed'}
      */
-    private function returnedCode(): string
+    private function returnedCode(): array
     {
         $this->startSession();
 
@@ -319,20 +424,16 @@ final class AuthController extends AppController
 
         // the state proves this return belongs to a login started in this browser
         if (!is_string($expected) || !is_string($state) || !hash_equals($expected, $state)) {
-            $this->redirect('/login?error=failed');
+            return [null, 'failed'];
         }
 
         if (isset($_GET['error'])) {
-            $this->redirect('/login?error=' . ($_GET['error'] === 'access_denied' ? 'cancelled' : 'failed'));
+            return [null, $_GET['error'] === 'access_denied' ? 'cancelled' : 'failed'];
         }
 
         $code = $_GET['code'] ?? null;
 
-        if (!is_string($code) || $code === '') {
-            $this->redirect('/login?error=failed');
-        }
-
-        return $code;
+        return is_string($code) && $code !== '' ? [$code, null] : [null, 'failed'];
     }
 
     /**

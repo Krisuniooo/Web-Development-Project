@@ -77,7 +77,7 @@ final class BotToken
     }
 
     /**
-     * @param array{refreshToken: string} $account
+     * @param array{userId: string, refreshToken: string} $account
      */
     private function replace(array $account): string
     {
@@ -86,6 +86,7 @@ final class BotToken
         try {
             (new BotAccountRepository($this->connection()))->saveTokens(
                 self::PLATFORM,
+                $account['userId'],
                 $this->secrets->seal($tokens['refreshToken']),
                 $this->secrets->seal($tokens['accessToken']),
                 time() + $tokens['expiresIn'],

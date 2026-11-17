@@ -11,7 +11,7 @@ use RuntimeException;
  * their own and those they moderate. On Twitch no bot can answer that, only the user's own token,
  * so the token is asked at login and again whenever the panel checks the access.
  * The same client also authorizes the bot's own account and keeps its token fresh,
- * and makes the bot a moderator of a channel with its owner's token.
+ * makes the bot a moderator of a channel with its owner's token, and revokes the tokens the app no longer needs.
  */
 final class TwitchClient
 {
@@ -31,6 +31,9 @@ final class TwitchClient
     // the most answers read for one list, so a login never takes long: 500 moderated channels
     private const MAX_PAGES = 5;
     private const TIMEOUT_SECONDS = 10;
+    // revoking runs on the way out, such as at logout, so it waits less
+    private const REVOKE_TIMEOUT_SECONDS = 3;
+    private const OK = 200;
     // how Twitch answers a token that expired or was taken back, and the answers to adding a moderator
     private const UNAUTHORIZED = 401;
     private const NO_CONTENT = 204;
@@ -275,6 +278,31 @@ final class TwitchClient
         return is_string($language) && $language !== '' ? $language : null;
     }
 
+    /**
+     * Makes an access token the app has no more use for stop working at once, instead of in a few hours. Never throws:
+     * a token Twitch does not know is already as good as revoked, and one that could not be revoked still expires,
+     * so a failure only goes to the log.
+     */
+    public function revoke(string $accessToken): void
+    {
+        try {
+            [$status] = $this->send($this->authUrl . '/revoke', [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query(['client_id' => $this->clientId, 'token' => $accessToken]),
+                CURLOPT_TIMEOUT => self::REVOKE_TIMEOUT_SECONDS,
+            ]);
+        } catch (RuntimeException $error) {
+            error_log('Twitch did not revoke a token: ' . $error->getMessage());
+
+            return;
+        }
+
+        // 400 is Twitch's answer to a token it does not know, such as one that expired
+        if ($status !== self::OK && $status !== self::BAD_REQUEST) {
+            error_log("Twitch did not revoke a token: HTTP $status");
+        }
+    }
+
     public static function isUnauthorized(RuntimeException $error): bool
     {
         return $error->getCode() === self::UNAUTHORIZED;
@@ -391,7 +419,7 @@ final class TwitchClient
         [$status, $body] = $this->send($url, $options);
         $data = json_decode($body, true);
 
-        if ($status !== 200 || !is_array($data)) {
+        if ($status !== self::OK || !is_array($data)) {
             // the status is also the code, for a caller that tells an expired token from the rest
             throw new RuntimeException('Twitch request to ' . strtok($url, '?') . " failed: HTTP $status", $status);
         }
