@@ -8,6 +8,7 @@ use App\Config;
 use App\Database;
 use App\Model\ChannelRule;
 use App\Moderation\MessageClassifier;
+use App\Repository\ChannelRepository;
 use App\Service\ServerAccess;
 use PDO;
 use RuntimeException;
@@ -61,6 +62,22 @@ abstract class AbstractPanelController extends AppController
     protected function access(): ServerAccess
     {
         return $this->access ??= new ServerAccess($this->database(...));
+    }
+
+    /**
+     * How the panel differs for a platform someone can log in with, from config/platforms.php.
+     *
+     * @return array{name: string, slug: string, authPath: string, connect: string, channelSlots: int, exemptions: bool}
+     */
+    protected function platform(string $slug): array
+    {
+        return array_column(Config::load('platforms'), null, 'slug')[$slug];
+    }
+
+    /** @return list<int> the places for channels a server of the platform has: both of them, or only the first */
+    protected function channelSlotsOf(string $platform): array
+    {
+        return array_slice(ChannelRepository::SLOTS, 0, $this->platform($platform)['channelSlots']);
     }
 
     /** @return array{model: string, rules: array<string, array{level: string, action: string}>} the settings of a new channel */

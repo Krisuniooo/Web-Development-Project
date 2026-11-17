@@ -130,9 +130,9 @@ final class ChannelController extends AbstractPanelController
             $connected = $repository->findForServer($user['platform'], $managedServer['id']);
             $takenSlots = array_map(fn(Channel $channel): int => $channel->getSlot(), $connected);
 
-            // a free slot, and a language the model of a new channel has questions in
+            // a free slot of those the platform has, and a language the model of a new channel has questions in
             if (
-                in_array($slot, ChannelRepository::SLOTS, true)
+                in_array($slot, $this->channelSlotsOf($user['platform']), true)
                 && !in_array($slot, $takenSlots, true)
                 && in_array($language, $this->modelLanguages($defaults['model']), true)
             ) {
@@ -174,7 +174,10 @@ final class ChannelController extends AbstractPanelController
 
         try {
             $repository = new ChannelRepository($this->database());
-            $connected = $repository->findForServer($user['platform'], $managedServer['id']);
+            // a server that is its own only chat has no other channel to move to
+            $connected = count($this->channelSlotsOf($user['platform'])) > 1
+                ? $repository->findForServer($user['platform'], $managedServer['id'])
+                : [];
 
             foreach ($connected as $current) {
                 if ($current->getSlot() !== $slot) {
@@ -240,8 +243,11 @@ final class ChannelController extends AbstractPanelController
         $isSaved = false;
 
         try {
-            (new ServerRepository($this->database()))->setAdminsExempt($user['platform'], $managedServer['id'], $isExempt);
-            $isSaved = true;
+            // only a platform whose servers have administrators to exempt
+            if ($this->platform($user['platform'])['exemptions']) {
+                (new ServerRepository($this->database()))->setAdminsExempt($user['platform'], $managedServer['id'], $isExempt);
+                $isSaved = true;
+            }
         } catch (RuntimeException $exception) {
             error_log('Panel could not save the exemption of administrators: ' . $exception->getMessage());
         }
@@ -260,12 +266,16 @@ final class ChannelController extends AbstractPanelController
 
         $roleId = $_POST['role'] ?? null;
         $isExempt = ($_POST['exempt'] ?? null) === '1';
+        // only a platform whose servers have roles to exempt
+        $hasRoles = $this->platform($user['platform'])['exemptions'];
         $isSaved = false;
 
         try {
             $repository = new ServerRepository($this->database());
 
-            if (!$isExempt && DiscordClient::isId($roleId)) {
+            if (!$hasRoles) {
+                // nothing is saved
+            } elseif (!$isExempt && DiscordClient::isId($roleId)) {
                 // Discord is not asked, so a role deleted there can still be taken off
                 $repository->removeExemptRole($user['platform'], $managedServer['id'], $roleId);
                 $isSaved = true;

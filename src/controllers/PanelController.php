@@ -83,12 +83,15 @@ final class PanelController extends AbstractPanelController
         [$user, $managedServer] = $this->requireManagedServer();
 
         $channelSlots = $this->channelSlots($user['platform'], $managedServer['id']);
+        // a server that is its own only chat has no other channel to move the settings to
+        $canChange = $channelSlots !== null && count($channelSlots) > 1;
         // the slot whose channel is being changed, after "Change channel"; only a slot with a channel counts
         $changingSlot = filter_var($_GET['change'] ?? null, FILTER_VALIDATE_INT);
-        $changingSlot = is_int($changingSlot) && isset($channelSlots[$changingSlot]) ? $changingSlot : null;
+        $changingSlot = $canChange && is_int($changingSlot) && isset($channelSlots[$changingSlot]) ? $changingSlot : null;
 
         $this->renderSection('channels', $user, $managedServer, [
             'channelSlots' => $channelSlots,
+            'canChange' => $canChange,
             'changingSlot' => $changingSlot,
             // Discord is asked only when there is a channel to choose: for a free slot or a change
             'channelChoice' => $channelSlots !== null && (in_array(null, $channelSlots, true) || $changingSlot !== null)
@@ -114,8 +117,11 @@ final class PanelController extends AbstractPanelController
 
         $this->renderSection('limits', $user, $managedServer, [
             'limits' => $limits,
+            'hasExemptions' => $this->platform($user['platform'])['exemptions'],
             // Discord is asked for the roles only when the server has a channel to leave someone alone on
-            'exemptions' => empty($limits['channels']) ? null : $this->exemptions($user['platform'], $managedServer['id']),
+            'exemptions' => empty($limits['channels']) || !$this->platform($user['platform'])['exemptions']
+                ? null
+                : $this->exemptions($user['platform'], $managedServer['id']),
             'messageCheck' => $this->messageCheck($user['platform'], $managedServer['id']),
         ]);
     }
@@ -184,6 +190,8 @@ final class PanelController extends AbstractPanelController
         ?string $pageTitle = null,
     ): void {
         $navigation = Config::load('panel-navigation');
+        // a text with a version for the account's platform, such as "channel" where Discord says "server", shows in it
+        $this->lang()->usePlatform($user['platform']);
 
         // every section but the list of servers is about one server, so its link waits until one is chosen there
         foreach ($navigation as $key => $item) {
@@ -201,7 +209,7 @@ final class PanelController extends AbstractPanelController
             'activeSection' => $section,
             'sectionView' => $view ?? $section,
             'currentAccount' => $user,
-            'currentPlatformName' => array_column(Config::load('platforms'), 'name', 'slug')[$user['platform']] ?? $user['platform'],
+            'currentPlatformName' => $this->platform($user['platform'])['name'],
             'managedServer' => $managedServer,
             'notice' => is_string($notice['text'] ?? null) ? ['text' => $notice['text'], 'isError' => ($notice['isError'] ?? false) === true] : null,
             'savedChannelId' => is_int($savedChannelId) ? $savedChannelId : null,
@@ -273,7 +281,7 @@ final class PanelController extends AbstractPanelController
 
         try {
             $pdo = $this->database();
-            $seconds = (new ServiceStatusRepository($pdo))->secondsSinceSeen(ServiceStatusRepository::DISCORD_BOT);
+            $seconds = (new ServiceStatusRepository($pdo))->secondsSinceSeen(ServiceStatusRepository::bot($platform));
             $isBotConnected = $seconds !== null && $seconds <= self::BOT_SILENCE_SECONDS;
 
             $channelRepository = new ChannelRepository($pdo);
@@ -484,7 +492,7 @@ final class PanelController extends AbstractPanelController
             return null;
         }
 
-        $slots = array_fill_keys(ChannelRepository::SLOTS, null);
+        $slots = array_fill_keys($this->channelSlotsOf($platform), null);
 
         foreach ($channels as $channel) {
             $slots[$channel->getSlot()] = ['channel' => $channel, 'languages' => $this->modelLanguages($channel->getModel())];

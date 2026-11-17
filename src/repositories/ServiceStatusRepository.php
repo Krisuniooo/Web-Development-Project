@@ -9,7 +9,11 @@ use PDO;
 /** When each background service last said it was working, so the panel can tell a clean chat from a stopped bot. */
 final class ServiceStatusRepository
 {
-    public const DISCORD_BOT = 'discord-bot';
+    /** The name the bot of a platform reports under, such as "discord-bot". */
+    public static function bot(string $platform): string
+    {
+        return $platform . '-bot';
+    }
 
     public function __construct(private PDO $pdo)
     {

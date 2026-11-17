@@ -80,10 +80,12 @@
                                     <span><?= $t($isPaused ? 'channels.resume' : 'channels.pause') ?></span>
                                 </button>
                             </form>
-                            <a href="/app/channels?change=<?= (int) $slot ?>" class="panel-button is-quiet">
-                                <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
-                                <span><?= $t('channels.change') ?></span>
-                            </a>
+                            <?php if ($canChange): ?>
+                                <a href="/app/channels?change=<?= (int) $slot ?>" class="panel-button is-quiet">
+                                    <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+                                    <span><?= $t('channels.change') ?></span>
+                                </a>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
                     <?php if ($isChanging): ?>

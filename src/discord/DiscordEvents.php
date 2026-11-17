@@ -112,7 +112,7 @@ final class DiscordEvents
         }
 
         try {
-            $this->status->report(ServiceStatusRepository::DISCORD_BOT);
+            $this->status->report(ServiceStatusRepository::bot(self::PLATFORM));
         } catch (RuntimeException $error) {
             $this->forgetConnection();
 

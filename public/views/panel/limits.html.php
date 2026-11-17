@@ -77,7 +77,9 @@
         <?php endforeach; ?>
     </ul>
 
-    <?php include __DIR__ . '/exemptions.html.php'; ?>
+    <?php if ($hasExemptions): ?>
+        <?php include __DIR__ . '/exemptions.html.php'; ?>
+    <?php endif; ?>
 <?php endif; ?>
 
 <?php include __DIR__ . '/message-check.html.php'; ?>
