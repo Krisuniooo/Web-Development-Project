@@ -22,6 +22,8 @@ final class AuthController extends AppController
     // what a state was made for: someone logging in, or the bot's account agreeing to act as the bot
     private const PURPOSE_LOGIN = 'login';
     private const PURPOSE_BOT = 'bot';
+    // the owner of a channel agreeing that the bot is made a moderator of it, when connecting the channel
+    private const PURPOSE_CONNECT = 'connect';
     // how the page after the bot's account agreed can end
     private const BOT_RESULTS = ['ok', 'wrong_account', 'failed', 'not_configured'];
     private const BOT_RESULT_URL = '/auth/twitch/bot/result?status=';
@@ -90,6 +92,22 @@ final class AuthController extends AppController
         $this->redirect(TwitchClient::fromEnvironment()->botAuthorizeUrl($this->newState(self::PURPOSE_BOT)));
     }
 
+    /**
+     * Sends the owner of a channel to Twitch to agree that the bot is made a moderator of it: the step after "Connect"
+     * in the panel, which has put the channel in the session. For anyone who did not just ask to connect their own
+     * channel there, this address does nothing.
+     */
+    public function twitchConnect(): void
+    {
+        $user = $this->requireLogin();
+
+        if ($user['platform'] !== 'twitch' || ($_SESSION['pendingConnect'] ?? null) !== $user['id'] || !TwitchClient::isConfigured()) {
+            $this->redirect('/app/servers');
+        }
+
+        $this->redirect(TwitchClient::fromEnvironment()->connectAuthorizeUrl($this->newState(self::PURPOSE_CONNECT)));
+    }
+
     /** What happened to the bot's account, said in words; the page can be opened again without doing anything twice. */
     public function twitchBotResult(): void
     {
@@ -129,6 +147,10 @@ final class AuthController extends AppController
 
         if ($purpose === self::PURPOSE_BOT) {
             $this->authorizeBot($code);
+        }
+
+        if ($purpose === self::PURPOSE_CONNECT) {
+            $this->finishConnect($code);
         }
 
         try {
@@ -217,6 +239,63 @@ final class AuthController extends AppController
         }
 
         $this->redirect(self::BOT_RESULT_URL . 'ok');
+    }
+
+    /**
+     * The owner agreed that the bot is made a moderator: it is done with the owner's token, which is then forgotten,
+     * and the result goes to the panel, which connects the channel. Only the owner's own account counts, so someone
+     * else logged in to Twitch in the same browser cannot make the bot a moderator of a channel that is not theirs.
+     */
+    private function finishConnect(string $code): never
+    {
+        $user = $this->loggedInUser();
+        $pending = $_SESSION['pendingConnect'] ?? null;
+        unset($_SESSION['pendingConnect']);
+
+        // the login ended meanwhile, or this is not the connection the panel asked for
+        if ($user === null || $user['platform'] !== 'twitch' || $pending !== $user['id']) {
+            $this->redirect('/login');
+        }
+
+        try {
+            $twitch = TwitchClient::fromEnvironment();
+            $token = $twitch->exchangeCode($code)['accessToken'];
+            $account = $twitch->validate($token);
+        } catch (RuntimeException $exception) {
+            error_log('Twitch connecting a channel failed: ' . $exception->getMessage());
+            $this->refuseConnecting('servers.connect_error');
+        }
+
+        // another account than the one in the panel agreed, since the browser is logged in to Twitch as someone else
+        if ($account['userId'] !== $user['id']) {
+            $this->refuseConnecting('connect.wrong_account');
+        }
+
+        try {
+            $bot = (new BotAccountRepository((new Database())->connect()))->findIdentity('twitch');
+
+            if ($bot === null) {
+                $this->refuseConnecting('connect.no_bot');
+            }
+
+            $moderator = $twitch->addModerator($token, $user['id'], $bot['userId']);
+        } catch (RuntimeException $exception) {
+            error_log('Twitch could not make the bot a moderator: ' . strtok($exception->getMessage(), "\n"));
+            // the channel is connected all the same, and its owner is told to add the bot by hand
+            $moderator = 'failed';
+        }
+
+        $_SESSION['connectResult'] = ['serverId' => $user['id'], 'moderator' => $moderator];
+
+        $this->redirect('/app/servers/connected');
+    }
+
+    /** Back to the list of channels with the reason nothing was connected. */
+    private function refuseConnecting(string $notice): never
+    {
+        $_SESSION['notice'] = ['text' => $notice, 'isError' => true];
+
+        $this->redirect('/app/servers');
     }
 
     /** The login of the account that may become the bot, from .env. */

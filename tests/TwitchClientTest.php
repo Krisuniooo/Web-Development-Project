@@ -71,6 +71,39 @@ final class TwitchClientTest extends TestCase
         $this->assertSame(false, str_contains($url, 'the-secret'));
     }
 
+    public function testOwnerIsAskedOnlyToAllowTheBotAsAModerator(): void
+    {
+        $url = $this->client()->connectAuthorizeUrl('abc123');
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame('abc123', $query['state']);
+        // one permission, which is used once: no reading of the owner's account, no lasting access
+        $this->assertSame('channel:manage:moderators', $query['scope']);
+        $this->assertSame(false, isset($query['force_verify']));
+        $this->assertSame(false, str_contains($url, 'the-secret'));
+    }
+
+    public function testTwitchsAnswersToAddingAModeratorAreToldApart(): void
+    {
+        $this->assertSame('added', TwitchClient::moderatorResult(204, ''));
+        $this->assertSame('already', TwitchClient::moderatorResult(400, '{"status":400,"message":"The user specified in user_id is already a moderator in the broadcaster\'s chat room."}'));
+        $this->assertSame('vip', TwitchClient::moderatorResult(422, '{"status":422,"message":"The user in user_id is a VIP. To make them a moderator, you must first remove them as a VIP."}'));
+    }
+
+    public function testAnyOtherAnswerToAddingAModeratorIsAFailure(): void
+    {
+        // the channel has too many moderators: also a 422, but not the VIP one
+        $this->assertSame('failed', TwitchClient::moderatorResult(422, '{"message":"The broadcaster\'s channel has reached the maximum number of moderators."}'));
+        $this->assertSame('failed', TwitchClient::moderatorResult(400, '{"message":"The user cannot become a moderator because they are banned from the channel."}'));
+        $this->assertSame('failed', TwitchClient::moderatorResult(429, '{"message":"Too many requests"}'));
+        $this->assertSame('failed', TwitchClient::moderatorResult(500, ''));
+        // an answer that is not JSON, and one with a message that is not text
+        $this->assertSame('failed', TwitchClient::moderatorResult(400, '<html>'));
+        $this->assertSame('failed', TwitchClient::moderatorResult(400, '{"message":["already"]}'));
+        // 204 means it worked whatever the body says; a 200 is not what Twitch answers
+        $this->assertSame('failed', TwitchClient::moderatorResult(200, '{}'));
+    }
+
     public function testLoginDoesNotForceTheConsentAgain(): void
     {
         parse_str(parse_url($this->client()->authorizeUrl('abc123'), PHP_URL_QUERY), $query);

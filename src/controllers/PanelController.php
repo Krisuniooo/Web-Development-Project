@@ -30,6 +30,14 @@ final class PanelController extends AbstractPanelController
         | DiscordPermissions::MANAGE_MESSAGES
         | DiscordPermissions::MODERATE_MEMBERS
         | DiscordPermissions::BAN_MEMBERS;
+    // what the owner is told after connecting a channel, by what Twitch said about making the bot a moderator:
+    // the text and whether it is a warning, since the channel is connected either way
+    private const MODERATOR_NOTICES = [
+        'added' => ['connect.moderator_added', false],
+        'already' => ['connect.moderator_already', false],
+        'vip' => ['connect.moderator_vip', true],
+        'failed' => ['connect.moderator_failed', true],
+    ];
     private const LOG_PAGE_SIZE = 50;
     // the bot reports about every half a minute; after this long without a report it counts as not connected
     private const BOT_SILENCE_SECONDS = 120;
@@ -53,7 +61,7 @@ final class PanelController extends AbstractPanelController
         $idsWithBot = $this->access()->idsWithBot($user['platform'], array_column($servers, 'id'));
 
         $this->renderSection('servers', $user, $managedServer, [
-            'servers' => $this->serverCards($user['platform'], $servers, $idsWithBot, $managedServer),
+            'servers' => $this->serverCards($user, $servers, $idsWithBot, $managedServer),
             // logging in again reads the list anew
             'refreshPath' => $this->platform($user['platform'])['authPath'],
         ]);
@@ -73,9 +81,9 @@ final class PanelController extends AbstractPanelController
     }
 
     /**
-     * Connects a server on a platform where no bot is invited, such as a Twitch channel, and chooses it.
-     * The server is its own only chat, so it gets that channel at once, with the default settings.
-     * One connected before keeps the settings it had.
+     * The first step of connecting a channel on a platform where no bot is invited, such as Twitch. Only the owner of
+     * the channel may, since connecting makes the bot a moderator there, which only the owner can allow.
+     * It sends them on to the platform to agree, and connected() does the rest.
      */
     public function connect(): void
     {
@@ -85,11 +93,48 @@ final class PanelController extends AbstractPanelController
         }
 
         $user = $this->requireLogin();
-        $platform = $user['platform'];
-        // only a server on the user's list, and only after the platform said again that they may manage it
-        $server = $this->platform($platform)['connect'] === 'panel'
-            ? $this->access()->confirmedServer($user, $_POST['server'] ?? null)
-            : null;
+        $platform = $this->platform($user['platform']);
+        $serverId = $_POST['server'] ?? null;
+
+        // only the user's own channel, from their list, which the platform still says is theirs
+        $canConnect = $platform['connect'] === 'panel'
+            && $serverId === $user['id']
+            && $this->access()->confirmedServer($user, $serverId) !== null;
+
+        if (!$canConnect) {
+            $_SESSION['notice'] = ['text' => 'servers.connect_error', 'isError' => true];
+            $this->redirect('/app/servers');
+        }
+
+        // without the bot's account there is nobody to make a moderator, and the channel would not be moderated
+        if (!$this->isBotReady($user['platform'])) {
+            $_SESSION['notice'] = ['text' => 'connect.no_bot', 'isError' => true];
+            $this->redirect('/app/servers');
+        }
+
+        // what only this form can set, so the address of the next step does nothing for anyone else
+        $_SESSION['pendingConnect'] = $user['id'];
+
+        $this->redirect($platform['authPath'] . '/connect');
+    }
+
+    /**
+     * The last step: the owner agreed and the bot was made a moderator, or the platform refused, which only changes
+     * what the owner is told. The channel is connected with the default settings and chosen. One connected before
+     * keeps the settings it had.
+     */
+    public function connected(): void
+    {
+        $user = $this->requireLogin();
+        $result = $_SESSION['connectResult'] ?? null;
+        unset($_SESSION['connectResult']);
+
+        // left only by the platform's answer to the form above, for the user's own channel
+        if (!is_array($result) || ($result['serverId'] ?? null) !== $user['id']) {
+            $this->redirect('/app/servers');
+        }
+
+        $server = $this->access()->confirmedServer($user, $user['id']);
         $isConnected = false;
 
         if ($server !== null) {
@@ -99,9 +144,9 @@ final class PanelController extends AbstractPanelController
                 && in_array('pl', $this->modelLanguages($defaults['model']), true) ? 'pl' : 'en';
 
             try {
-                (new ServerRepository($this->database()))->saveActive($platform, $server['id'], $server['name']);
+                (new ServerRepository($this->database()))->saveActive($user['platform'], $server['id'], $server['name']);
                 (new ChannelRepository($this->database()))->createFirst(
-                    $platform,
+                    $user['platform'],
                     $server['id'],
                     $server['id'],
                     $server['name'],
@@ -121,8 +166,11 @@ final class PanelController extends AbstractPanelController
         }
 
         $this->access()->choose($user, $server['id']);
+        [$text, $isError] = self::MODERATOR_NOTICES[$result['moderator'] ?? ''] ?? self::MODERATOR_NOTICES['failed'];
+        $_SESSION['notice'] = ['text' => $text, 'isError' => $isError];
 
-        $this->redirect('/app');
+        // the chat's page tells how to add the bot by hand, for when that is needed
+        $this->redirect('/app/channels');
     }
 
     public function overview(): void
@@ -277,12 +325,15 @@ final class PanelController extends AbstractPanelController
      * Each server with whether the bot is already there and whether it is the chosen one, and for a server without
      * the bot the link that invites it; on a platform without invites the link is null and the panel connects the server.
      *
+     * @param array{platform: string, id: string} $user
      * @param list<string> $idsWithBot
-     * @return list<array{id: string, name: string, initials: string, iconUrl: ?string, inviteUrl: ?string, hasBot: bool, isManaged: bool}>
+     * @return list<array{id: string, name: string, initials: string, iconUrl: ?string, inviteUrl: ?string, hasBot: bool, canConnect: bool, isManaged: bool}>
+     *     canConnect: where the panel connects servers, only the owner may
      */
-    private function serverCards(string $platform, array $servers, array $idsWithBot, ?array $managedServer): array
+    private function serverCards(array $user, array $servers, array $idsWithBot, ?array $managedServer): array
     {
-        $hasInvites = $this->platform($platform)['connect'] === 'invite';
+        $connect = $this->platform($user['platform'])['connect'];
+        $hasInvites = $connect === 'invite';
         $list = [];
 
         foreach ($servers as $server) {
@@ -304,6 +355,8 @@ final class PanelController extends AbstractPanelController
                     'disable_guild_select' => 'true',
                 ]),
                 'hasBot' => in_array($server['id'], $idsWithBot, true),
+                // connecting makes the bot a moderator, which only the owner of a channel can allow
+                'canConnect' => $connect === 'panel' && $server['id'] === $user['id'],
                 'isManaged' => $server['id'] === ($managedServer['id'] ?? null),
             ];
         }
@@ -422,6 +475,18 @@ final class PanelController extends AbstractPanelController
         }
 
         return ['channels' => $channels, 'levels' => $this->ruleLevels(), 'actions' => self::RULE_ACTIONS];
+    }
+
+    /** Whether the bot's account of the platform is authorized, so there is somebody to make a moderator. */
+    private function isBotReady(string $platform): bool
+    {
+        try {
+            return (new BotAccountRepository($this->database()))->findIdentity($platform) !== null;
+        } catch (RuntimeException $exception) {
+            error_log('Panel could not read the bot account: ' . $exception->getMessage());
+
+            return false;
+        }
     }
 
     /**

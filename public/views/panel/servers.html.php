@@ -43,8 +43,8 @@
                             <?= $t('servers.add_bot') ?>
                             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
                         </a>
-                    <?php else: ?>
-                        <?php // no invite on this platform: the panel connects the server itself ?>
+                    <?php elseif ($server['canConnect']): ?>
+                        <?php // no invite on this platform: the owner connects the channel here, and the bot becomes its moderator ?>
                         <form method="post" action="/app/servers/connect" class="servers-card--form">
                             <input type="hidden" name="server" value="<?= $e($server['id']) ?>" />
                             <button type="submit" class="servers-card--invite">
@@ -52,6 +52,9 @@
                                 <?= $t('servers.connect') ?>
                             </button>
                         </form>
+                    <?php else: ?>
+                        <?php // a moderator sees the channel, but cannot allow the bot to moderate it ?>
+                        <p class="servers-card--note"><?= $t('servers.owner_only') ?></p>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>

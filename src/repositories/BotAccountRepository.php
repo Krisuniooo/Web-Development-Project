@@ -36,14 +36,23 @@ final class BotAccountRepository
         ];
     }
 
-    /** The name of the account, for the panel, which has no use for the tokens. */
+    /**
+     * Who the account is, for the panel, which has no use for the tokens.
+     *
+     * @return array{userId: string, name: string}|null
+     */
+    public function findIdentity(string $platform): ?array
+    {
+        $statement = $this->pdo->prepare('SELECT platform_user_id, name FROM bot_accounts WHERE platform = :platform');
+        $statement->execute(['platform' => $platform]);
+        $row = $statement->fetch();
+
+        return $row === false ? null : ['userId' => $row['platform_user_id'], 'name' => $row['name']];
+    }
+
     public function findName(string $platform): ?string
     {
-        $statement = $this->pdo->prepare('SELECT name FROM bot_accounts WHERE platform = :platform');
-        $statement->execute(['platform' => $platform]);
-        $name = $statement->fetchColumn();
-
-        return is_string($name) ? $name : null;
+        return $this->findIdentity($platform)['name'] ?? null;
     }
 
     /** Saves the account, replacing the one the platform had before. The tokens are given sealed. */

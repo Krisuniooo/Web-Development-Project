@@ -10,7 +10,8 @@ use RuntimeException;
  * Talks to Twitch for the user who logs in: who they are and which channels they may manage,
  * their own and those they moderate. On Twitch no bot can answer that, only the user's own token,
  * so the token is asked at login and again whenever the panel checks the access.
- * The same client also authorizes the bot's own account and keeps its token fresh.
+ * The same client also authorizes the bot's own account and keeps its token fresh,
+ * and makes the bot a moderator of a channel with its owner's token.
  */
 final class TwitchClient
 {
@@ -21,6 +22,8 @@ final class TwitchClient
     private const SCOPE = 'user:read:moderated_channels';
     // what the bot's account needs: to read the chat of the channels, and to delete messages in them
     private const BOT_SCOPE = 'user:read:chat moderator:manage:chat_messages';
+    // what the owner of a channel agrees to when connecting it: that the bot is made a moderator, once
+    private const CONNECT_SCOPE = 'channel:manage:moderators';
     // Twitch keeps profile pictures here, and only a picture from here is shown
     private const PICTURE_URL = 'https://static-cdn.jtvnw.net/';
     // the most channels or users Twitch gives in one answer
@@ -28,8 +31,11 @@ final class TwitchClient
     // the most answers read for one list, so a login never takes long: 500 moderated channels
     private const MAX_PAGES = 5;
     private const TIMEOUT_SECONDS = 10;
-    // how Twitch answers a token that expired or was taken back
+    // how Twitch answers a token that expired or was taken back, and the answers to adding a moderator
     private const UNAUTHORIZED = 401;
+    private const NO_CONTENT = 204;
+    private const BAD_REQUEST = 400;
+    private const UNPROCESSABLE = 422;
 
     public function __construct(
         private string $clientId,
@@ -77,6 +83,12 @@ final class TwitchClient
     public function authorizeUrl(string $state): string
     {
         return $this->buildAuthorizeUrl($state, self::SCOPE, false);
+    }
+
+    /** Where the browser goes for the owner of a channel to agree that the bot is made a moderator of it. */
+    public function connectAuthorizeUrl(string $state): string
+    {
+        return $this->buildAuthorizeUrl($state, self::CONNECT_SCOPE, false);
     }
 
     /**
@@ -185,6 +197,59 @@ final class TwitchClient
         }
 
         return $channels;
+    }
+
+    /**
+     * Makes a user a moderator of the channel. Only the owner's own token can, so the caller gets it for this one
+     * call and forgets it. Twitch answers some refusals the caller can act on, and those come back as words:
+     * "added", "already" (nothing to do), "vip" (the role must go first) and "failed" for any other reason.
+     *
+     * @return 'added'|'already'|'vip'|'failed'
+     * @throws RuntimeException when Twitch does not answer or turns the token down
+     */
+    public function addModerator(string $ownerToken, string $channelId, string $userId): string
+    {
+        [$status, $body] = $this->send(
+            $this->apiUrl . '/moderation/moderators?' . http_build_query(['broadcaster_id' => $channelId, 'user_id' => $userId]),
+            [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => '',
+                CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $ownerToken, 'Client-Id: ' . $this->clientId],
+            ],
+        );
+
+        if ($status === self::UNAUTHORIZED) {
+            throw new RuntimeException('Twitch turned the owner\'s token down: HTTP ' . self::UNAUTHORIZED, self::UNAUTHORIZED);
+        }
+
+        $result = self::moderatorResult($status, $body);
+
+        if ($result === 'failed') {
+            // Twitch's own words, such as that the user is banned in the channel; they quote no message
+            $reason = json_decode($body, true)['message'] ?? '';
+            error_log("Twitch did not make the bot a moderator of channel $channelId: HTTP $status " . (is_string($reason) ? $reason : ''));
+        }
+
+        return $result;
+    }
+
+    /**
+     * What Twitch's answer to adding a moderator means. The words are Twitch's and may change, so anything
+     * not recognized is a plain failure, which the panel answers by telling the owner to add the bot by hand.
+     *
+     * @return 'added'|'already'|'vip'|'failed'
+     */
+    public static function moderatorResult(int $status, string $body): string
+    {
+        $reason = json_decode($body, true)['message'] ?? '';
+        $message = is_string($reason) ? strtolower($reason) : '';
+
+        return match (true) {
+            $status === self::NO_CONTENT => 'added',
+            $status === self::BAD_REQUEST && str_contains($message, 'already') => 'already',
+            $status === self::UNPROCESSABLE && str_contains($message, 'vip') => 'vip',
+            default => 'failed',
+        };
     }
 
     /**
@@ -320,7 +385,26 @@ final class TwitchClient
         ];
     }
 
+    /** Asks Twitch for an answer that is JSON with the status 200, and throws with the status as the code for any other. */
     private function request(string $url, array $options): array
+    {
+        [$status, $body] = $this->send($url, $options);
+        $data = json_decode($body, true);
+
+        if ($status !== 200 || !is_array($data)) {
+            // the status is also the code, for a caller that tells an expired token from the rest
+            throw new RuntimeException('Twitch request to ' . strtok($url, '?') . " failed: HTTP $status", $status);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Sends the request and gives back whatever Twitch answered.
+     *
+     * @return array{int, string} the status and the body
+     */
+    private function send(string $url, array $options): array
     {
         $curl = curl_init($url);
         curl_setopt_array($curl, $options + [
@@ -330,20 +414,12 @@ final class TwitchClient
 
         $body = curl_exec($curl);
         $status = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-        // without the query, which can hold ids; tokens travel in headers and in the body, never in the address
-        $where = strtok($url, '?');
 
         if ($body === false) {
-            throw new RuntimeException("Twitch request to $where failed: " . curl_error($curl));
+            // without the query, which can hold ids; tokens travel in headers and in the body, never in the address
+            throw new RuntimeException('Twitch request to ' . strtok($url, '?') . ' failed: ' . curl_error($curl));
         }
 
-        $data = json_decode($body, true);
-
-        if ($status !== 200 || !is_array($data)) {
-            // the status is also the code, for a caller that tells an expired token from the rest
-            throw new RuntimeException("Twitch request to $where failed: HTTP $status", $status);
-        }
-
-        return $data;
+        return [$status, $body];
     }
 }
